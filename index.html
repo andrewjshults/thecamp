@@ -38,7 +38,8 @@ const GameState = {
   LOADING: 'loading',
   CHARACTER_SELECT: 'characterSelect',
   PLAYING: 'playing',
-  INTERACTING: 'interacting'
+  INTERACTING: 'interacting',
+  CONFIRM_DIALOG: 'confirmDialog'
 };
 
 let state = GameState.LOADING;
@@ -156,6 +157,13 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       selectCharacter(selectedCharIndex);
     }
+  } else if (state === GameState.CONFIRM_DIALOG) {
+    if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
+      state = GameState.CHARACTER_SELECT;
+      player.character = null;
+    } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+      state = GameState.PLAYING;
+    }
   } else if (state === GameState.INTERACTING) {
     if (e.key === 'Escape' || e.key === ' ') {
       closeInteraction();
@@ -163,6 +171,9 @@ window.addEventListener('keydown', (e) => {
   } else if (state === GameState.PLAYING) {
     if (e.key === ' ') {
       handleInteract();
+    }
+    if (e.key === 'Escape') {
+      state = GameState.CONFIRM_DIALOG;
     }
   }
 });
@@ -180,13 +191,29 @@ canvas.addEventListener('mousemove', (e) => {
   }
 });
 canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
   if (state === GameState.CHARACTER_SELECT) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
     const idx = getHoveredCharacter(mx, my);
     if (idx >= 0) {
       selectCharacter(idx);
+    }
+  } else if (state === GameState.CONFIRM_DIALOG) {
+    const panelW = Math.min(400, canvas.width - 40);
+    const panelH = 150;
+    const panelY = canvas.height / 2 - panelH / 2;
+    const btnW = 80;
+    const btnH = 36;
+    const btnY = panelY + panelH - 52;
+    const btnGap = 20;
+    const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
+    const noBtnX = canvas.width / 2 + btnGap / 2;
+    if (mx >= yesBtnX && mx <= yesBtnX + btnW && my >= btnY && my <= btnY + btnH) {
+      state = GameState.CHARACTER_SELECT;
+      player.character = null;
+    } else if (mx >= noBtnX && mx <= noBtnX + btnW && my >= btnY && my <= btnY + btnH) {
+      state = GameState.PLAYING;
     }
   }
 });
@@ -737,7 +764,7 @@ function drawHUD() {
 
   // Mini instructions
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  const instrText = '↑←↓→ Move  •  Space Interact';
+  const instrText = '↑←↓→ Move  •  Space Interact  •  Esc Menu';
   ctx.font = '12px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
   const instrW = ctx.measureText(instrText).width + 20;
@@ -930,6 +957,67 @@ function roundRectPath(x, y, w, h, r) {
   roundRect(x, y, w, h, r);
 }
 
+function drawConfirmDialog() {
+  // Draw game in background
+  drawGame();
+
+  // Overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Dialog panel
+  const panelW = Math.min(400, canvas.width - 40);
+  const panelH = 150;
+  const panelX = canvas.width / 2 - panelW / 2;
+  const panelY = canvas.height / 2 - panelH / 2;
+
+  ctx.fillStyle = '#3E2723';
+  ctx.strokeStyle = '#8D6E63';
+  ctx.lineWidth = 3;
+  roundRect(panelX, panelY, panelW, panelH, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner border
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 1;
+  roundRect(panelX + 6, panelY + 6, panelW - 12, panelH - 12, 12);
+  ctx.stroke();
+
+  // Question text
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 20px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText('Switch camper?', canvas.width / 2, panelY + 42);
+
+  ctx.fillStyle = '#FFECB3';
+  ctx.font = '16px "Comic Sans MS", cursive';
+  ctx.fillText('Go back to character selection?', canvas.width / 2, panelY + 72);
+
+  // Buttons
+  const btnW = 80;
+  const btnH = 36;
+  const btnY = panelY + panelH - 52;
+  const btnGap = 20;
+
+  // Yes button
+  const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
+  ctx.fillStyle = '#4CAF50';
+  roundRect(yesBtnX, btnY, btnW, btnH, 8);
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 16px "Comic Sans MS", cursive';
+  ctx.fillText('Yes (Y)', yesBtnX + btnW / 2, btnY + 24);
+
+  // No button
+  const noBtnX = canvas.width / 2 + btnGap / 2;
+  ctx.fillStyle = '#F44336';
+  roundRect(noBtnX, btnY, btnW, btnH, 8);
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.fillText('No (N)', noBtnX + btnW / 2, btnY + 24);
+}
+
 // --- Main Game Loop ---
 function gameLoop() {
   update();
@@ -946,6 +1034,9 @@ function gameLoop() {
       break;
     case GameState.INTERACTING:
       drawInteraction();
+      break;
+    case GameState.CONFIRM_DIALOG:
+      drawConfirmDialog();
       break;
   }
 
