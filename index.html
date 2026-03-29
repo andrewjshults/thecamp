@@ -181,42 +181,23 @@ window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
 });
 
-// --- Mouse for character select ---
+// --- Mouse / Touch input ---
 canvas.addEventListener('mousemove', (e) => {
   if (state === GameState.CHARACTER_SELECT) {
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    hoveredCharIndex = getHoveredCharacter(mx, my);
+    hoveredCharIndex = getHoveredCharacter(e.clientX - rect.left, e.clientY - rect.top);
   }
 });
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  if (state === GameState.CHARACTER_SELECT) {
-    const idx = getHoveredCharacter(mx, my);
-    if (idx >= 0) {
-      selectCharacter(idx);
-    }
-  } else if (state === GameState.CONFIRM_DIALOG) {
-    const panelW = Math.min(400, canvas.width - 40);
-    const panelH = 150;
-    const panelY = canvas.height / 2 - panelH / 2;
-    const btnW = 80;
-    const btnH = 36;
-    const btnY = panelY + panelH - 52;
-    const btnGap = 20;
-    const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
-    const noBtnX = canvas.width / 2 + btnGap / 2;
-    if (mx >= yesBtnX && mx <= yesBtnX + btnW && my >= btnY && my <= btnY + btnH) {
-      state = GameState.CHARACTER_SELECT;
-      player.character = null;
-    } else if (mx >= noBtnX && mx <= noBtnX + btnW && my >= btnY && my <= btnY + btnH) {
-      state = GameState.PLAYING;
-    }
-  }
+  handleCanvasTap(e.clientX - rect.left, e.clientY - rect.top);
 });
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  handleCanvasTap(touch.clientX - rect.left, touch.clientY - rect.top);
+}, { passive: false });
 
 function getHoveredCharacter(mx, my) {
   const cardW = 120;
@@ -401,6 +382,45 @@ let currentInteraction = null;
 let interactionTimer = 0;
 let interactionAnimation = 0;
 
+// --- Touch / tap-to-move ---
+let tapTarget = null;     // { x, y } in map space
+let tapRipple = null;     // { x, y, age } in screen space for visual feedback
+
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+function handleCanvasTap(screenX, screenY) {
+  if (state === GameState.CHARACTER_SELECT) {
+    const idx = getHoveredCharacter(screenX, screenY);
+    if (idx >= 0) selectCharacter(idx);
+  } else if (state === GameState.CONFIRM_DIALOG) {
+    const panelW = Math.min(400, canvas.width - 40);
+    const panelH = 150;
+    const panelY = canvas.height / 2 - panelH / 2;
+    const btnW = 80, btnH = 36, btnY = panelY + panelH - 52, btnGap = 20;
+    const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
+    const noBtnX = canvas.width / 2 + btnGap / 2;
+    if (screenX >= yesBtnX && screenX <= yesBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
+      state = GameState.CHARACTER_SELECT;
+      player.character = null;
+    } else if (screenX >= noBtnX && screenX <= noBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
+      state = GameState.PLAYING;
+    }
+  } else if (state === GameState.INTERACTING) {
+    closeInteraction();
+  } else if (state === GameState.PLAYING) {
+    if (nearbyObject) {
+      handleInteract();
+    } else {
+      const mapX = screenX + camera.x;
+      const mapY = screenY + camera.y;
+      tapTarget = { x: mapX, y: mapY };
+      tapRipple = { x: screenX, y: screenY, age: 0 };
+    }
+  }
+}
+
 // --- Interaction handling ---
 function handleInteract() {
   if (state === GameState.PLAYING && nearbyObject) {
@@ -428,6 +448,26 @@ function update() {
   if (keys['ArrowRight'] || keys['d']) { dx = player.speed; player.facing = 'right'; player.walking = true; }
   if (keys['ArrowUp'] || keys['w']) { dy = -player.speed; player.walking = true; }
   if (keys['ArrowDown'] || keys['s']) { dy = player.speed; player.walking = true; }
+
+  // Keyboard cancels tap-to-move
+  if (player.walking) {
+    tapTarget = null;
+  }
+
+  // Tap-to-move: walk toward tapped map position
+  if (!player.walking && tapTarget) {
+    const tdx = tapTarget.x - player.x;
+    const tdy = tapTarget.y - player.y;
+    const dist = Math.hypot(tdx, tdy);
+    if (dist < player.speed + 2) {
+      tapTarget = null;
+    } else {
+      dx = (tdx / dist) * player.speed;
+      dy = (tdy / dist) * player.speed;
+      player.facing = tdx < 0 ? 'left' : 'right';
+      player.walking = true;
+    }
+  }
 
   // Normalize diagonal movement
   if (dx !== 0 && dy !== 0) {
@@ -655,7 +695,7 @@ function drawCharacterSelect() {
   ctx.fillStyle = '#BCAAA4';
   ctx.font = '16px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
-  ctx.fillText('← → to browse  •  Enter or Click to pick', canvas.width / 2, canvas.height - 60);
+  ctx.fillText(isTouchDevice() ? 'Tap a camper to pick!' : '← → to browse  •  Enter or Click to pick', canvas.width / 2, canvas.height - 60);
 
   // Stars decoration
   const t = Date.now() / 1000;
@@ -719,10 +759,10 @@ function drawGame() {
       ctx.fillStyle = '#FFEB3B';
       ctx.fillText(obj.name, labelX, labelY);
 
-      // "Press Space" hint
+      // Interact hint
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       const hintY = labelY - 24;
-      const hintText = '[ SPACE ]';
+      const hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
       const hintW = ctx.measureText(hintText).width + 12;
       roundRect(labelX - hintW / 2, hintY - 12, hintW, 18, 4);
       ctx.fill();
@@ -751,6 +791,30 @@ function drawGame() {
 
   ctx.restore();
 
+  // Tap ripple visual
+  if (tapRipple) {
+    tapRipple.age++;
+    const progress = tapRipple.age / 30;
+    if (progress >= 1) {
+      tapRipple = null;
+    } else {
+      const alpha = 1 - progress;
+      const radius = 8 + progress * 24;
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.8;
+      ctx.strokeStyle = '#FFD54F';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tapRipple.x, tapRipple.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.beginPath();
+      ctx.arc(tapRipple.x, tapRipple.y, radius * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   // HUD
   drawHUD();
 }
@@ -768,7 +832,9 @@ function drawHUD() {
 
   // Mini instructions
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  const instrText = '↑←↓→ Move  •  Space Interact  •  Esc Menu';
+  const instrText = isTouchDevice()
+    ? 'Tap to move  •  Tap zone to interact'
+    : '↑←↓→ Move  •  Space Interact  •  Esc Menu';
   ctx.font = '12px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
   const instrW = ctx.measureText(instrText).width + 20;
@@ -841,7 +907,7 @@ function drawInteraction() {
   // Close hint
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.font = '13px "Comic Sans MS", cursive';
-  ctx.fillText('Press Space or Esc to close', canvas.width / 2, panelY + panelH - 15);
+  ctx.fillText(isTouchDevice() ? 'Tap to close' : 'Press Space or Esc to close', canvas.width / 2, panelY + panelH - 15);
 
   ctx.restore();
 }
