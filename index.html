@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Camp - Louisa's Game</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #2a1a0a;
+    overflow: hidden;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+    user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+  }
+  #gameCanvas {
+    cursor: default;
+    image-rendering: auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+// ============================================================
+// THE CAMP - Louisa's Game
+// A 2D exploration game based on Louisa's hand-drawn design
+// ============================================================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Game State ---
+const GameState = {
+  LOADING: 'loading',
+  CHARACTER_SELECT: 'characterSelect',
+  PLAYING: 'playing',
+  INTERACTING: 'interacting'
+};
+
+let state = GameState.LOADING;
+let mapImage = null;
+let mapLoaded = false;
+
+// Map scale: we render the map scaled to fit nicely on screen
+// All game coordinates are in "map space" (the scaled coordinates)
+// The map will be drawn at a scale so its height fits the canvas
+let mapScale = 1;
+let scaledMapW = 0;
+let scaledMapH = 0;
+
+function recalcMapScale() {
+  if (!mapImage) return;
+  // Scale map so it's about 1.4x the canvas height (allows some scrolling)
+  const targetH = canvas.height * 1.4;
+  mapScale = targetH / mapImage.naturalHeight;
+  scaledMapW = mapImage.naturalWidth * mapScale;
+  scaledMapH = mapImage.naturalHeight * mapScale;
+  recalcInteractiveObjects();
+}
+
+// --- Canvas sizing ---
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  recalcMapScale();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// --- Load the map image ---
+mapImage = new Image();
+mapImage.onload = () => {
+  mapLoaded = true;
+  recalcMapScale();
+  state = GameState.CHARACTER_SELECT;
+};
+mapImage.src = 'game_design.jpg';
+
+// --- Characters ---
+const characters = [
+  {
+    name: 'Green Girl',
+    color: '#4CAF50',
+    hairColor: '#8B4513',
+    shirtColor: '#4CAF50',
+    pantsColor: '#2196F3',
+    desc: 'Loves exploring nature'
+  },
+  {
+    name: 'Purple Kid',
+    color: '#9C27B0',
+    hairColor: '#1a1a1a',
+    shirtColor: '#9C27B0',
+    pantsColor: '#FF9800',
+    desc: 'Always ready for adventure'
+  },
+  {
+    name: 'Red Scout',
+    color: '#F44336',
+    hairColor: '#DAA520',
+    shirtColor: '#F44336',
+    pantsColor: '#333333',
+    desc: 'The bravest camper'
+  },
+  {
+    name: 'Blue Explorer',
+    color: '#2196F3',
+    hairColor: '#8B0000',
+    shirtColor: '#2196F3',
+    pantsColor: '#4CAF50',
+    desc: 'Curious about everything'
+  }
+];
+
+let selectedCharIndex = 0;
+let hoveredCharIndex = -1;
+
+// --- Player ---
+const player = {
+  x: 0,
+  y: 0,
+  width: 30,
+  height: 48,
+  speed: 4,
+  facing: 'right',
+  frame: 0,
+  frameTimer: 0,
+  walking: false,
+  character: null
+};
+
+// --- Camera ---
+const camera = {
+  x: 0,
+  y: 0
+};
+
+// --- Input ---
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  if (e.key === ' ') {
+    e.preventDefault();
+  }
+  if (state === GameState.CHARACTER_SELECT) {
+    if (e.key === 'ArrowLeft') {
+      selectedCharIndex = (selectedCharIndex - 1 + characters.length) % characters.length;
+    }
+    if (e.key === 'ArrowRight') {
+      selectedCharIndex = (selectedCharIndex + 1) % characters.length;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      selectCharacter(selectedCharIndex);
+    }
+  } else if (state === GameState.INTERACTING) {
+    if (e.key === 'Escape' || e.key === ' ') {
+      closeInteraction();
+    }
+  } else if (state === GameState.PLAYING) {
+    if (e.key === ' ') {
+      handleInteract();
+    }
+  }
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
+
+// --- Mouse for character select ---
+canvas.addEventListener('mousemove', (e) => {
+  if (state === GameState.CHARACTER_SELECT) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    hoveredCharIndex = getHoveredCharacter(mx, my);
+  }
+});
+canvas.addEventListener('click', (e) => {
+  if (state === GameState.CHARACTER_SELECT) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const idx = getHoveredCharacter(mx, my);
+    if (idx >= 0) {
+      selectCharacter(idx);
+    }
+  }
+});
+
+function getHoveredCharacter(mx, my) {
+  const startX = canvas.width / 2 - (characters.length * 120) / 2;
+  const cardY = canvas.height / 2 - 40;
+  for (let i = 0; i < characters.length; i++) {
+    const cx = startX + i * 120 + 10;
+    if (mx >= cx && mx <= cx + 100 && my >= cardY && my <= cardY + 160) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function selectCharacter(index) {
+  player.character = characters[index];
+  // Starting position - near the people at bottom center of map
+  // Using percentage of scaled map dimensions
+  player.x = scaledMapW * 0.45;
+  player.y = scaledMapH * 0.85;
+  state = GameState.PLAYING;
+}
+
+// --- Interactive Objects ---
+// Positions stored as percentages of image dimensions (0-1)
+// so they work at any scale. Converted to screen coords at runtime.
+const interactiveObjectsDef = [
+  {
+    id: 'tent_red',
+    name: 'Red Tent',
+    px: 0.62, py: 0.82,
+    pw: 0.06, ph: 0.10,
+    action: 'sleep',
+    description: 'A cozy red tent for sleeping',
+    interactionText: 'Zzz... You take a nice nap in the red tent. Sweet dreams!'
+  },
+  {
+    id: 'tent_blue',
+    name: 'Blue Tent',
+    px: 0.71, py: 0.82,
+    pw: 0.07, ph: 0.10,
+    action: 'sleep',
+    description: 'A blue tent with a comfy sleeping bag',
+    interactionText: 'You snuggle into the blue tent. So peaceful!'
+  },
+  {
+    id: 'house',
+    name: 'Rain House',
+    px: 0.82, py: 0.25,
+    pw: 0.10, ph: 0.18,
+    action: 'shelter',
+    description: 'Go inside when it rains!',
+    interactionText: 'You go inside the house. It\'s warm and dry in here!'
+  },
+  {
+    id: 'car_wings',
+    name: 'Flying Car',
+    px: 0.04, py: 0.75,
+    pw: 0.10, ph: 0.12,
+    action: 'fly',
+    description: 'A car with wings!',
+    interactionText: 'VROOOOM! The flying car zooms through the sky! Wheee!'
+  },
+  {
+    id: 'stairs_left',
+    name: 'Stairs',
+    px: 0.01, py: 0.30,
+    pw: 0.04, ph: 0.25,
+    action: 'climb',
+    description: 'Stairs going up to the treehouse',
+    interactionText: 'You climb up the stairs. What a view from up here!'
+  },
+  {
+    id: 'stairs_center',
+    name: 'Purple Stairs',
+    px: 0.30, py: 0.55,
+    pw: 0.07, ph: 0.28,
+    action: 'climb',
+    description: 'The big purple zigzag stairs',
+    interactionText: 'You zigzag up and down the purple stairs. Wheee!'
+  },
+  {
+    id: 'stars',
+    name: 'Stars',
+    px: 0.52, py: 0.02,
+    pw: 0.25, ph: 0.15,
+    action: 'stargaze',
+    description: 'Beautiful stars in the sky',
+    interactionText: 'You look up at the beautiful stars. They twinkle and shine!'
+  },
+  {
+    id: 'tree',
+    name: 'Big Tree',
+    px: 0.22, py: 0.01,
+    pw: 0.12, ph: 0.30,
+    action: 'explore',
+    description: 'The big camp tree',
+    interactionText: 'You look up at the big tree. A leaf flutters down!'
+  },
+  {
+    id: 'stove',
+    name: 'Camp Stove',
+    px: 0.38, py: 0.35,
+    pw: 0.08, ph: 0.08,
+    action: 'cook',
+    description: 'Cook yummy camp food!',
+    interactionText: 'Sizzle sizzle! You cook a delicious camp meal!'
+  },
+  {
+    id: 'sink',
+    name: 'Sink',
+    px: 0.32, py: 0.35,
+    pw: 0.05, ph: 0.06,
+    action: 'wash',
+    description: 'Wash your hands!',
+    interactionText: 'Splish splash! You wash your hands nice and clean!'
+  },
+  {
+    id: 'ball_cart',
+    name: 'Ball Cart',
+    px: 0.18, py: 0.82,
+    pw: 0.05, ph: 0.07,
+    action: 'play',
+    description: 'Get a ball to play with!',
+    interactionText: 'You grab a colorful ball from the cart. Let\'s play!'
+  },
+  {
+    id: 'baseball',
+    name: 'Baseball Game',
+    px: 0.43, py: 0.85,
+    pw: 0.06, ph: 0.08,
+    action: 'play',
+    description: 'Play a game of baseball!',
+    interactionText: 'SWING! You hit the ball far across the camp! Home run!'
+  },
+  {
+    id: 'bathroom',
+    name: 'Bathroom',
+    px: 0.84, py: 0.55,
+    pw: 0.08, ph: 0.10,
+    action: 'bathroom',
+    description: 'The camp bathroom',
+    interactionText: 'You use the bathroom. Don\'t forget to wash your hands!'
+  },
+  {
+    id: 'lunchbox',
+    name: 'Flying Lunchbox',
+    px: 0.10, py: 0.30,
+    pw: 0.06, ph: 0.07,
+    action: 'eat',
+    description: 'A magical lunchbox with wings!',
+    interactionText: 'The lunchbox opens up! Inside there are sandwiches, fruit, and cookies!'
+  },
+  {
+    id: 'moon',
+    name: 'Moon',
+    px: 0.13, py: 0.18,
+    pw: 0.05, ph: 0.08,
+    action: 'stargaze',
+    description: 'The crescent moon',
+    interactionText: 'The moon glows softly. What a magical night at camp!'
+  }
+];
+
+// Convert percentage-based definitions to pixel coords based on current map scale
+let interactiveObjects = [];
+function recalcInteractiveObjects() {
+  interactiveObjects = interactiveObjectsDef.map(def => ({
+    ...def,
+    x: def.px * scaledMapW,
+    y: def.py * scaledMapH,
+    width: def.pw * scaledMapW,
+    height: def.ph * scaledMapH
+  }));
+}
+
+let nearbyObject = null;
+let currentInteraction = null;
+let interactionTimer = 0;
+let interactionAnimation = 0;
+
+// --- Interaction handling ---
+function handleInteract() {
+  if (state === GameState.PLAYING && nearbyObject) {
+    state = GameState.INTERACTING;
+    currentInteraction = nearbyObject;
+    interactionTimer = 0;
+    interactionAnimation = 0;
+  }
+}
+
+function closeInteraction() {
+  state = GameState.PLAYING;
+  currentInteraction = null;
+}
+
+// --- Game Logic ---
+function update() {
+  if (state !== GameState.PLAYING) return;
+
+  // Movement
+  let dx = 0, dy = 0;
+  player.walking = false;
+
+  if (keys['ArrowLeft'] || keys['a']) { dx = -player.speed; player.facing = 'left'; player.walking = true; }
+  if (keys['ArrowRight'] || keys['d']) { dx = player.speed; player.facing = 'right'; player.walking = true; }
+  if (keys['ArrowUp'] || keys['w']) { dy = -player.speed; player.walking = true; }
+  if (keys['ArrowDown'] || keys['s']) { dy = player.speed; player.walking = true; }
+
+  // Normalize diagonal movement
+  if (dx !== 0 && dy !== 0) {
+    dx *= 0.707;
+    dy *= 0.707;
+  }
+
+  // Apply movement with map bounds (using scaled dimensions)
+  if (mapImage) {
+    player.x = Math.max(10, Math.min(scaledMapW - 10, player.x + dx));
+    player.y = Math.max(10, Math.min(scaledMapH - 10, player.y + dy));
+  }
+
+  // Animation frame
+  if (player.walking) {
+    player.frameTimer++;
+    if (player.frameTimer > 8) {
+      player.frame = (player.frame + 1) % 4;
+      player.frameTimer = 0;
+    }
+  } else {
+    player.frame = 0;
+    player.frameTimer = 0;
+  }
+
+  // Check for nearby interactive objects
+  nearbyObject = null;
+  let closestDist = Infinity;
+  const px = player.x;
+  const py = player.y;
+
+  for (const obj of interactiveObjects) {
+    const objCx = obj.x + obj.width / 2;
+    const objCy = obj.y + obj.height / 2;
+    const dist = Math.hypot(px - objCx, py - objCy);
+    const threshold = Math.max(obj.width, obj.height) * 0.7 + 30;
+
+    if (dist < threshold && dist < closestDist) {
+      closestDist = dist;
+      nearbyObject = obj;
+    }
+  }
+
+  // Update camera to follow player
+  updateCamera();
+}
+
+function updateCamera() {
+  if (!mapImage) return;
+
+  // Camera targets player center
+  let targetX = player.x - canvas.width / 2;
+  let targetY = player.y - canvas.height / 2;
+
+  // Clamp camera to scaled map bounds
+  targetX = Math.max(0, Math.min(scaledMapW - canvas.width, targetX));
+  targetY = Math.max(0, Math.min(scaledMapH - canvas.height, targetY));
+
+  // If the map is smaller than canvas, center it
+  if (scaledMapW < canvas.width) targetX = -(canvas.width - scaledMapW) / 2;
+  if (scaledMapH < canvas.height) targetY = -(canvas.height - scaledMapH) / 2;
+
+  // Smooth camera follow
+  camera.x += (targetX - camera.x) * 0.1;
+  camera.y += (targetY - camera.y) * 0.1;
+}
+
+// --- Drawing ---
+function drawCharacterSprite(x, y, char, frame, facing, scale) {
+  const s = scale || 1;
+  const w = 30 * s;
+  const h = 48 * s;
+
+  ctx.save();
+
+  if (facing === 'left') {
+    ctx.translate(x + w / 2, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-(x + w / 2), 0);
+  }
+
+  // Legs
+  const legOffset = Math.sin(frame * Math.PI / 2) * 4 * s;
+  ctx.fillStyle = char.pantsColor;
+  ctx.fillRect(x + 7 * s, y + 30 * s + legOffset, 6 * s, 18 * s);
+  ctx.fillRect(x + 17 * s, y + 30 * s - legOffset, 6 * s, 18 * s);
+
+  // Shoes
+  ctx.fillStyle = '#5D4037';
+  ctx.fillRect(x + 5 * s, y + 44 * s + legOffset, 10 * s, 4 * s);
+  ctx.fillRect(x + 15 * s, y + 44 * s - legOffset, 10 * s, 4 * s);
+
+  // Body
+  ctx.fillStyle = char.shirtColor;
+  ctx.fillRect(x + 5 * s, y + 16 * s, 20 * s, 18 * s);
+
+  // Arms
+  const armSwing = Math.sin(frame * Math.PI / 2) * 3 * s;
+  ctx.fillStyle = char.shirtColor;
+  ctx.fillRect(x, y + 17 * s + armSwing, 6 * s, 14 * s);
+  ctx.fillRect(x + 24 * s, y + 17 * s - armSwing, 6 * s, 14 * s);
+
+  // Hands
+  ctx.fillStyle = '#FFCC80';
+  ctx.fillRect(x, y + 29 * s + armSwing, 6 * s, 4 * s);
+  ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
+
+  // Head
+  ctx.fillStyle = '#FFCC80';
+  ctx.beginPath();
+  ctx.arc(x + 15 * s, y + 10 * s, 10 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = char.hairColor;
+  ctx.beginPath();
+  ctx.arc(x + 15 * s, y + 7 * s, 10 * s, Math.PI, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#333';
+  ctx.fillRect(x + 11 * s, y + 8 * s, 3 * s, 3 * s);
+  ctx.fillRect(x + 18 * s, y + 8 * s, 3 * s, 3 * s);
+
+  // Smile
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1.5 * s;
+  ctx.beginPath();
+  ctx.arc(x + 15 * s, y + 12 * s, 4 * s, 0.1, Math.PI - 0.1);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawLoadingScreen() {
+  ctx.fillStyle = '#2a1a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = '36px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loading The Camp...', canvas.width / 2, canvas.height / 2);
+
+  // Simple loading spinner
+  const t = Date.now() / 200;
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2 + t;
+    const alpha = ((i / 8 + (t % 1)) % 1);
+    ctx.fillStyle = `rgba(255, 213, 79, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(
+      canvas.width / 2 + Math.cos(angle) * 30,
+      canvas.height / 2 + 50 + Math.sin(angle) * 30,
+      5, 0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+}
+
+function drawCharacterSelect() {
+  // Background
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw faded map as background
+  if (mapImage) {
+    ctx.globalAlpha = 0.15;
+    const scale = Math.max(canvas.width / mapImage.naturalWidth, canvas.height / mapImage.naturalHeight);
+    ctx.drawImage(mapImage, 0, 0, mapImage.naturalWidth * scale, mapImage.naturalHeight * scale);
+    ctx.globalAlpha = 1;
+  }
+
+  // Title
+  ctx.fillStyle = '#FF9800';
+  ctx.font = 'bold 48px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 4;
+  ctx.strokeText('The Camp', canvas.width / 2, 80);
+  ctx.fillText('The Camp', canvas.width / 2, 80);
+
+  ctx.fillStyle = '#FFE0B2';
+  ctx.font = '20px "Comic Sans MS", cursive';
+  ctx.fillText('Choose your camper!', canvas.width / 2, 120);
+
+  // Character cards
+  const cardW = 100;
+  const cardH = 160;
+  const gap = 20;
+  const totalW = characters.length * (cardW + gap) - gap;
+  const startX = canvas.width / 2 - totalW / 2;
+  const cardY = canvas.height / 2 - 40;
+
+  for (let i = 0; i < characters.length; i++) {
+    const cx = startX + i * (cardW + gap);
+    const isSelected = i === selectedCharIndex;
+    const isHovered = i === hoveredCharIndex;
+
+    // Card background
+    ctx.fillStyle = isSelected ? 'rgba(255, 152, 0, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+    if (isHovered && !isSelected) ctx.fillStyle = 'rgba(255, 152, 0, 0.15)';
+    ctx.strokeStyle = isSelected ? '#FF9800' : (isHovered ? '#FFB74D' : '#5D4037');
+    ctx.lineWidth = isSelected ? 3 : 2;
+
+    roundRect(cx, cardY, cardW, cardH, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw character
+    drawCharacterSprite(cx + 35, cardY + 15, characters[i], 0, 'right', 1);
+
+    // Name
+    ctx.fillStyle = '#FFE0B2';
+    ctx.font = '14px "Comic Sans MS", cursive';
+    ctx.textAlign = 'center';
+    ctx.fillText(characters[i].name, cx + cardW / 2, cardY + 85);
+
+    // Description
+    ctx.fillStyle = '#BCAAA4';
+    ctx.font = '11px "Comic Sans MS", cursive';
+    ctx.fillText(characters[i].desc, cx + cardW / 2, cardY + 105);
+  }
+
+  // Instructions
+  ctx.fillStyle = '#BCAAA4';
+  ctx.font = '16px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText('← → to browse  •  Enter or Click to pick', canvas.width / 2, canvas.height - 60);
+
+  // Stars decoration
+  const t = Date.now() / 1000;
+  ctx.fillStyle = '#FFD54F';
+  for (let i = 0; i < 15; i++) {
+    const sx = (Math.sin(i * 2.5 + t * 0.3) * 0.5 + 0.5) * canvas.width;
+    const sy = (Math.cos(i * 1.7 + t * 0.2) * 0.5 + 0.5) * canvas.height * 0.3;
+    const size = 2 + Math.sin(t + i) * 1.5;
+    drawStar(sx, sy, size);
+  }
+}
+
+function drawStar(x, y, size) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+    const method = i === 0 ? 'moveTo' : 'lineTo';
+    ctx[method](Math.cos(angle) * size, Math.sin(angle) * size);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGame() {
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (!mapImage) return;
+
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+
+  // Draw map at scaled size
+  ctx.drawImage(mapImage, 0, 0, scaledMapW, scaledMapH);
+
+  // Draw interaction highlights
+  for (const obj of interactiveObjects) {
+    if (obj === nearbyObject) {
+      // Glowing outline for nearby object
+      const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+      ctx.strokeStyle = `rgba(255, 235, 59, ${pulse})`;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      roundRectPath(obj.x - 4, obj.y - 4, obj.width + 8, obj.height + 8, 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.font = 'bold 13px "Comic Sans MS", cursive';
+      ctx.textAlign = 'center';
+      const labelX = obj.x + obj.width / 2;
+      const labelY = obj.y - 12;
+      const labelW = ctx.measureText(obj.name).width + 16;
+      roundRect(labelX - labelW / 2, labelY - 14, labelW, 22, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFEB3B';
+      ctx.fillText(obj.name, labelX, labelY);
+
+      // "Press Space" hint
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      const hintY = labelY - 24;
+      const hintText = '[ SPACE ]';
+      const hintW = ctx.measureText(hintText).width + 12;
+      roundRect(labelX - hintW / 2, hintY - 12, hintW, 18, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFF9C4';
+      ctx.font = '11px "Comic Sans MS", cursive';
+      ctx.fillText(hintText, labelX, hintY);
+    }
+  }
+
+  // Draw player
+  drawCharacterSprite(
+    player.x - player.width / 2,
+    player.y - player.height,
+    player.character,
+    player.frame,
+    player.facing,
+    1.2
+  );
+
+  // Player shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y + 2, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // HUD
+  drawHUD();
+}
+
+function drawHUD() {
+  // Character name badge
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  roundRect(10, 10, 160, 36, 8);
+  ctx.fill();
+
+  ctx.fillStyle = player.character.color;
+  ctx.font = 'bold 16px "Comic Sans MS", cursive';
+  ctx.textAlign = 'left';
+  ctx.fillText('♦ ' + player.character.name, 20, 34);
+
+  // Mini instructions
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  const instrText = '↑←↓→ Move  •  Space Interact';
+  ctx.font = '12px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  const instrW = ctx.measureText(instrText).width + 20;
+  roundRect(canvas.width / 2 - instrW / 2, canvas.height - 36, instrW, 26, 6);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fillText(instrText, canvas.width / 2, canvas.height - 18);
+}
+
+function drawInteraction() {
+  // Draw game in background
+  drawGame();
+
+  interactionAnimation = Math.min(1, interactionAnimation + 0.05);
+  interactionTimer++;
+
+  // Overlay
+  ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * interactionAnimation})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Interaction panel
+  const panelW = Math.min(500, canvas.width - 40);
+  const panelH = 220;
+  const panelX = canvas.width / 2 - panelW / 2;
+  const panelY = canvas.height / 2 - panelH / 2;
+  const scale = interactionAnimation;
+
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+  // Panel background
+  ctx.fillStyle = '#3E2723';
+  ctx.strokeStyle = '#8D6E63';
+  ctx.lineWidth = 3;
+  roundRect(panelX, panelY, panelW, panelH, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner border
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 1;
+  roundRect(panelX + 6, panelY + 6, panelW - 12, panelH - 12, 12);
+  ctx.stroke();
+
+  // Object name
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 24px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText(currentInteraction.name, canvas.width / 2, panelY + 45);
+
+  // Animated interaction emoji/text
+  const text = currentInteraction.interactionText;
+  ctx.fillStyle = '#FFECB3';
+  ctx.font = '18px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+
+  // Typewriter effect
+  const visibleChars = Math.min(text.length, Math.floor(interactionTimer * 0.8));
+  const displayText = text.substring(0, visibleChars);
+
+  // Word wrap
+  wrapText(displayText, canvas.width / 2, panelY + 85, panelW - 40, 24);
+
+  // Action animation
+  drawActionAnimation(currentInteraction.action, canvas.width / 2, panelY + panelH - 55, interactionTimer);
+
+  // Close hint
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.font = '13px "Comic Sans MS", cursive';
+  ctx.fillText('Press Space or Esc to close', canvas.width / 2, panelY + panelH - 15);
+
+  ctx.restore();
+}
+
+function drawActionAnimation(action, x, y, timer) {
+  const t = timer * 0.1;
+  ctx.font = '28px serif';
+  ctx.textAlign = 'center';
+
+  switch (action) {
+    case 'sleep': {
+      for (let i = 0; i < 3; i++) {
+        const zx = x - 30 + i * 30;
+        const zy = y - Math.sin(t + i) * 8;
+        const size = 16 + i * 6;
+        ctx.globalAlpha = 0.5 + Math.sin(t + i) * 0.3;
+        ctx.font = `${size}px "Comic Sans MS", cursive`;
+        ctx.fillStyle = '#90CAF9';
+        ctx.fillText('z', zx, zy);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'fly': {
+      const fx = Math.sin(t * 2) * 40;
+      const fy = Math.cos(t * 3) * 10;
+      ctx.fillText('✈️', x + fx, y + fy);
+      // Trail
+      for (let i = 1; i <= 3; i++) {
+        ctx.globalAlpha = 0.3 / i;
+        ctx.fillText('·', x + fx - i * 12, y + fy + i * 2);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'cook': {
+      const flames = ['🔥', '🍳', '🔥'];
+      flames.forEach((f, i) => {
+        const fofs = Math.sin(t * 3 + i * 2) * 5;
+        ctx.fillText(f, x - 30 + i * 30, y + fofs);
+      });
+      break;
+    }
+    case 'stargaze': {
+      for (let i = 0; i < 5; i++) {
+        const sx = x - 60 + i * 30;
+        const sy = y + Math.sin(t * 2 + i) * 6;
+        ctx.globalAlpha = 0.5 + Math.sin(t + i * 1.5) * 0.5;
+        ctx.fillStyle = '#FFD54F';
+        ctx.font = `${14 + Math.sin(t + i) * 4}px serif`;
+        ctx.fillText('⭐', sx, sy);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'play': {
+      const bx = x + Math.sin(t * 4) * 30;
+      const by = y - Math.abs(Math.sin(t * 3)) * 20;
+      ctx.fillText('⚾', bx, by);
+      break;
+    }
+    case 'wash': {
+      const drops = ['💧', '💧', '💧'];
+      drops.forEach((d, i) => {
+        const dy = Math.sin(t * 2 + i * 2) * 8;
+        ctx.globalAlpha = 0.5 + Math.sin(t + i) * 0.5;
+        ctx.fillText(d, x - 25 + i * 25, y + dy);
+      });
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'eat': {
+      ctx.fillText('🍱', x, y + Math.sin(t) * 3);
+      break;
+    }
+    default: {
+      const bounce = Math.sin(t * 2) * 5;
+      ctx.fillText('✨', x, y + bounce);
+    }
+  }
+}
+
+function wrapText(text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  let lineY = y;
+
+  for (const word of words) {
+    const testLine = line + word + ' ';
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && line) {
+      ctx.fillText(line.trim(), x, lineY);
+      line = word + ' ';
+      lineY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, lineY);
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function roundRectPath(x, y, w, h, r) {
+  roundRect(x, y, w, h, r);
+}
+
+// --- Main Game Loop ---
+function gameLoop() {
+  update();
+
+  switch (state) {
+    case GameState.LOADING:
+      drawLoadingScreen();
+      break;
+    case GameState.CHARACTER_SELECT:
+      drawCharacterSelect();
+      break;
+    case GameState.PLAYING:
+      drawGame();
+      break;
+    case GameState.INTERACTING:
+      drawInteraction();
+      break;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Start!
+gameLoop();
+</script>
+</body>
+</html>
