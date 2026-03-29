@@ -79,7 +79,7 @@ mapImage.onload = () => {
   recalcMapScale();
   state = GameState.CHARACTER_SELECT;
 };
-mapImage.src = 'game_design.jpg';
+mapImage.src = 'assets/game_design.jpg';
 
 // --- Characters ---
 const characters = [
@@ -219,11 +219,15 @@ canvas.addEventListener('click', (e) => {
 });
 
 function getHoveredCharacter(mx, my) {
-  const startX = canvas.width / 2 - (characters.length * 120) / 2;
+  const cardW = 120;
+  const cardH = 170;
+  const gap = 20;
+  const totalW = characters.length * (cardW + gap) - gap;
+  const startX = canvas.width / 2 - totalW / 2;
   const cardY = canvas.height / 2 - 40;
   for (let i = 0; i < characters.length; i++) {
-    const cx = startX + i * 120 + 10;
-    if (mx >= cx && mx <= cx + 100 && my >= cardY && my <= cardY + 160) {
+    const cx = startX + i * (cardW + gap);
+    if (mx >= cx && mx <= cx + cardW && my >= cardY && my <= cardY + cardH) {
       return i;
     }
   }
@@ -610,8 +614,8 @@ function drawCharacterSelect() {
   ctx.fillText('Choose your camper!', canvas.width / 2, 120);
 
   // Character cards
-  const cardW = 100;
-  const cardH = 160;
+  const cardW = 120;
+  const cardH = 170;
   const gap = 20;
   const totalW = characters.length * (cardW + gap) - gap;
   const startX = canvas.width / 2 - totalW / 2;
@@ -641,10 +645,10 @@ function drawCharacterSelect() {
     ctx.textAlign = 'center';
     ctx.fillText(characters[i].name, cx + cardW / 2, cardY + 85);
 
-    // Description
+    // Description (word-wrapped within card)
     ctx.fillStyle = '#BCAAA4';
     ctx.font = '11px "Comic Sans MS", cursive';
-    ctx.fillText(characters[i].desc, cx + cardW / 2, cardY + 105);
+    wrapText(characters[i].desc, cx + cardW / 2, cardY + 105, cardW - 12, 14);
   }
 
   // Instructions
