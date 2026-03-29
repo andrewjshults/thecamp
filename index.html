@@ -410,7 +410,11 @@ function handleCanvasTap(screenX, screenY) {
   } else if (state === GameState.INTERACTING) {
     closeInteraction();
   } else if (state === GameState.PLAYING) {
-    if (nearbyObject) {
+    // Tapping the character sprite triggers interaction; tapping elsewhere walks there
+    const spriteScreenX = player.x - camera.x;
+    const spriteScreenY = player.y - player.height - camera.y;
+    const hitDist = Math.hypot(screenX - spriteScreenX, screenY - (spriteScreenY + player.height / 2));
+    if (nearbyObject && hitDist < 36) {
       handleInteract();
     } else {
       const mapX = screenX + camera.x;
