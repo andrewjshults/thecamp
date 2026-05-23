@@ -37,21 +37,21 @@
   "image": "assets/game_design.jpg",
   "playerStart": { "px": 0.45, "py": 0.85 },
   "hotspots": [
-    { "id": "tent_red",      "name": "Red Tent",        "px": 0.72,   "py": 0.82,   "pw": 0.09,   "ph": 0.13,   "action": "sleep",    "description": "A cozy red tent for sleeping",          "interactionText": "Zzz... You take a nice nap in the red tent. Sweet dreams!" },
-    { "id": "tent_blue",     "name": "Blue Tent",       "px": 0.85,   "py": 0.8,    "pw": 0.12,   "ph": 0.15,   "action": "sleep",    "description": "A blue tent with a comfy sleeping bag", "interactionText": "You snuggle into the blue tent. So peaceful!" },
-    { "id": "house",         "name": "Rain House",      "px": 0.86,   "py": 0.33,   "pw": 0.11,   "ph": 0.22,   "action": "shelter",  "description": "Go inside when it rains!",              "interactionText": "You go inside the house. It's warm and dry in here!" },
-    { "id": "car_wings",     "name": "Flying Car",      "px": 0.12,   "py": 0.72,   "pw": 0.13,   "ph": 0.22,   "action": "fly",      "description": "A car with wings!",                     "interactionText": "VROOOOM! The flying car zooms through the sky! Wheee!" },
-    { "id": "stairs_left",   "name": "Stairs",          "px": 0.1009, "py": 0.5613, "pw": 0.0543, "ph": 0.1035, "action": "climb",    "description": "Stairs going up to the treehouse",      "interactionText": "You climb up the stairs. What a view from up here!" },
-    { "id": "stairs_center", "name": "Purple Stairs",   "px": 0.2951, "py": 0.5211, "pw": 0.1181, "ph": 0.2115, "action": "climb",    "description": "The big purple zigzag stairs",          "interactionText": "You zigzag up and down the purple stairs. Wheee!" },
-    { "id": "stars",         "name": "Stars",           "px": 0.49,   "py": 0.02,   "pw": 0.28,   "ph": 0.23,   "action": "stargaze", "description": "Beautiful stars in the sky",            "interactionText": "You look up at the beautiful stars. They twinkle and shine!" },
-    { "id": "tree",          "name": "Big Tree",        "px": 0.68,   "py": 0,      "pw": 0.2,    "ph": 0.3,    "action": "explore",  "description": "The big camp tree",                     "interactionText": "You look up at the big tree. A leaf flutters down!" },
-    { "id": "stove",         "name": "Camp Stove",      "px": 0.36,   "py": 0.34,   "pw": 0.08,   "ph": 0.1,    "action": "cook",     "description": "Cook yummy camp food!",                 "interactionText": "Sizzle sizzle! You cook a delicious camp meal!" },
-    { "id": "sink",          "name": "Sink",            "px": 0.32,   "py": 0.38,   "pw": 0.05,   "ph": 0.08,   "action": "wash",     "description": "Wash your hands!",                      "interactionText": "Splish splash! You wash your hands nice and clean!" },
-    { "id": "ball_cart",     "name": "Ball Cart",       "px": 0.3595, "py": 0.781,  "pw": 0.0806, "ph": 0.1765, "action": "play",     "description": "Get a ball to play with!",              "interactionText": "You grab a colorful ball from the cart. Let's play!" },
-    { "id": "baseball",      "name": "Baseball Game",   "px": 0.4462, "py": 0.8019, "pw": 0.1379, "ph": 0.1832, "action": "play",     "description": "Play a game of baseball!",              "interactionText": "SWING! You hit the ball far across the camp! Home run!" },
-    { "id": "bathroom",      "name": "Bathroom",        "px": 0.87,   "py": 0.49,   "pw": 0.1,    "ph": 0.14,   "action": "bathroom", "description": "The camp bathroom",                     "interactionText": "You use the bathroom. Don't forget to wash your hands!" },
-    { "id": "lunchbox",      "name": "Flying Lunchbox", "px": 0.14,   "py": 0.2,    "pw": 0.1,    "ph": 0.2,    "action": "eat",      "description": "A magical lunchbox with wings!",         "interactionText": "The lunchbox opens up! Inside there are sandwiches, fruit, and cookies!" },
-    { "id": "moon",          "name": "Moon",            "px": 0.25,   "py": 0.25,   "pw": 0.08,   "ph": 0.14,   "action": "stargaze", "description": "The crescent moon",                     "interactionText": "The moon glows softly. What a magical night at camp!" }
+    { "id": "tent_red",      "name": "Red Tent",        "px": 0.72,   "py": 0.82,   "pw": 0.09,   "ph": 0.13,   "action": "sleep",    "description": "A cozy red tent for sleeping",          "interactionText": "Zzz... You take a nice nap in the red tent. Sweet dreams!", "items": [ { "id": "pillow", "name": "Pillow", "emoji": "🛏️" }, { "id": "teddy_bear", "name": "Teddy Bear", "emoji": "🧸" }, { "id": "flashlight", "name": "Flashlight", "emoji": "🔦" } ] },
+    { "id": "tent_blue",     "name": "Blue Tent",       "px": 0.85,   "py": 0.8,    "pw": 0.12,   "ph": 0.15,   "action": "sleep",    "description": "A blue tent with a comfy sleeping bag", "interactionText": "You snuggle into the blue tent. So peaceful!", "items": [ { "id": "sleeping_bag", "name": "Sleeping Bag", "emoji": "💤" }, { "id": "lantern", "name": "Lantern", "emoji": "🏮" } ] },
+    { "id": "house",         "name": "Rain House",      "px": 0.86,   "py": 0.33,   "pw": 0.11,   "ph": 0.22,   "action": "shelter",  "description": "Go inside when it rains!",              "interactionText": "You go inside the house. It's warm and dry in here!", "items": [ { "id": "umbrella", "name": "Umbrella", "emoji": "☂️" }, { "id": "raincoat", "name": "Raincoat", "emoji": "🧥" }, { "id": "mug", "name": "Mug", "emoji": "🍵" } ] },
+    { "id": "car_wings",     "name": "Flying Car",      "px": 0.12,   "py": 0.72,   "pw": 0.13,   "ph": 0.22,   "action": "fly",      "description": "A car with wings!",                     "interactionText": "VROOOOM! The flying car zooms through the sky! Wheee!", "items": [ { "id": "goggles", "name": "Goggles", "emoji": "🥽" }, { "id": "map", "name": "Map", "emoji": "🗺️" }, { "id": "keys", "name": "Keys", "emoji": "🔑" } ] },
+    { "id": "stairs_left",   "name": "Stairs",          "px": 0.1009, "py": 0.5613, "pw": 0.0543, "ph": 0.1035, "action": "climb",    "description": "Stairs going up to the treehouse",      "interactionText": "You climb up the stairs. What a view from up here!", "items": [ { "id": "rope", "name": "Rope", "emoji": "🪢" } ] },
+    { "id": "stairs_center", "name": "Purple Stairs",   "px": 0.2951, "py": 0.5211, "pw": 0.1181, "ph": 0.2115, "action": "climb",    "description": "The big purple zigzag stairs",          "interactionText": "You zigzag up and down the purple stairs. Wheee!", "items": [ { "id": "helmet", "name": "Helmet", "emoji": "⛑️" }, { "id": "walking_stick", "name": "Walking Stick", "emoji": "🥾" } ] },
+    { "id": "stars",         "name": "Stars",           "px": 0.49,   "py": 0.02,   "pw": 0.28,   "ph": 0.23,   "action": "stargaze", "description": "Beautiful stars in the sky",            "interactionText": "You look up at the beautiful stars. They twinkle and shine!", "items": [ { "id": "telescope", "name": "Telescope", "emoji": "🔭" }, { "id": "star_chart", "name": "Star Chart", "emoji": "🌌" } ] },
+    { "id": "tree",          "name": "Big Tree",        "px": 0.68,   "py": 0,      "pw": 0.2,    "ph": 0.3,    "action": "explore",  "description": "The big camp tree",                     "interactionText": "You look up at the big tree. A leaf flutters down!", "items": [ { "id": "binoculars", "name": "Binoculars", "emoji": "🔭" }, { "id": "acorn", "name": "Acorn", "emoji": "🌰" }, { "id": "leaf", "name": "Leaf", "emoji": "🍃" } ] },
+    { "id": "stove",         "name": "Camp Stove",      "px": 0.36,   "py": 0.34,   "pw": 0.08,   "ph": 0.1,    "action": "cook",     "description": "Cook yummy camp food!",                 "interactionText": "Sizzle sizzle! You cook a delicious camp meal!", "items": [ { "id": "marshmallow", "name": "Marshmallow", "emoji": "🍡" }, { "id": "frying_pan", "name": "Frying Pan", "emoji": "🍳" }, { "id": "hot_cocoa", "name": "Hot Cocoa", "emoji": "☕" } ] },
+    { "id": "sink",          "name": "Sink",            "px": 0.32,   "py": 0.38,   "pw": 0.05,   "ph": 0.08,   "action": "wash",     "description": "Wash your hands!",                      "interactionText": "Splish splash! You wash your hands nice and clean!", "items": [ { "id": "soap", "name": "Soap", "emoji": "🧼" }, { "id": "sponge", "name": "Sponge", "emoji": "🧽" } ] },
+    { "id": "ball_cart",     "name": "Ball Cart",       "px": 0.3595, "py": 0.781,  "pw": 0.0806, "ph": 0.1765, "action": "play",     "description": "Get a ball to play with!",              "interactionText": "You grab a colorful ball from the cart. Let's play!", "items": [ { "id": "soccer_ball", "name": "Soccer Ball", "emoji": "⚽" }, { "id": "beach_ball", "name": "Beach Ball", "emoji": "🏐" }, { "id": "frisbee", "name": "Frisbee", "emoji": "🥏" } ] },
+    { "id": "baseball",      "name": "Baseball Game",   "px": 0.4462, "py": 0.8019, "pw": 0.1379, "ph": 0.1832, "action": "play",     "description": "Play a game of baseball!",              "interactionText": "SWING! You hit the ball far across the camp! Home run!", "items": [ { "id": "bat", "name": "Bat", "emoji": "🏏" }, { "id": "glove", "name": "Glove", "emoji": "🧤" }, { "id": "baseball", "name": "Baseball", "emoji": "⚾" } ] },
+    { "id": "bathroom",      "name": "Bathroom",        "px": 0.87,   "py": 0.49,   "pw": 0.1,    "ph": 0.14,   "action": "bathroom", "description": "The camp bathroom",                     "interactionText": "You use the bathroom. Don't forget to wash your hands!", "items": [ { "id": "toilet_paper", "name": "Toilet Paper", "emoji": "🧻" }, { "id": "toothbrush", "name": "Toothbrush", "emoji": "🪥" } ] },
+    { "id": "lunchbox",      "name": "Flying Lunchbox", "px": 0.14,   "py": 0.2,    "pw": 0.1,    "ph": 0.2,    "action": "eat",      "description": "A magical lunchbox with wings!",         "interactionText": "The lunchbox opens up! Inside there are sandwiches, fruit, and cookies!", "items": [ { "id": "sandwich", "name": "Sandwich", "emoji": "🥪" }, { "id": "apple", "name": "Apple", "emoji": "🍎" }, { "id": "cookie", "name": "Cookie", "emoji": "🍪" } ] },
+    { "id": "moon",          "name": "Moon",            "px": 0.25,   "py": 0.25,   "pw": 0.08,   "ph": 0.14,   "action": "stargaze", "description": "The crescent moon",                     "interactionText": "The moon glows softly. What a magical night at camp!", "items": [ { "id": "moon_rock", "name": "Moon Rock", "emoji": "🌑" } ] }
   ]
 }
 </script>
@@ -69,8 +69,10 @@ const ctx = canvas.getContext('2d');
 const GameState = {
   LOADING: 'loading',
   CHARACTER_SELECT: 'characterSelect',
+  RESUME_PROMPT: 'resumePrompt',
   PLAYING: 'playing',
   INTERACTING: 'interacting',
+  ITEM_ACTION: 'itemAction',
   CONFIRM_DIALOG: 'confirmDialog'
 };
 
@@ -209,6 +211,71 @@ let devSelectedHotspot = null;  // index into interactiveObjects
 let devDrag = null;             // { index, corner:'TL'|'TR'|'BL'|'BR' }
 const DEV_HANDLE_R = 14;        // corner handle radius in screen px
 
+// --- Inventory ---
+const BACKPACK_CAPACITY = 10;
+const HOTSPOT_CAPACITY = 3;
+const SAVE_VERSION = 1;
+let backpack = [];                                  // up to BACKPACK_CAPACITY items
+let hotspotItems = {};                              // hotspotId -> item[]
+let backpackOpen = false;
+let backpackSelection = { row: 'backpack', col: 0 };
+let backpackActionButton = 0;                       // index of focused button in action modal
+let currentItemAction = null;                       // { source:'backpack'|'hotspot', index, hotspotId }
+let backpackSlotRects = { backpack: [], hotspot: [] };
+let itemActionButtonRects = [];                     // [{ x,y,w,h,id,disabled }]
+let lastCharTapTime = 0;
+let useToast = null;                                // { text, age }
+
+function saveKey(name) {
+  return `louisas-game:save:${name}`;
+}
+function loadSave(name) {
+  try {
+    const raw = localStorage.getItem(saveKey(name));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function writeSave() {
+  if (!player.character) return;
+  const payload = {
+    version: SAVE_VERSION,
+    backpack,
+    hotspots: hotspotItems
+  };
+  try {
+    localStorage.setItem(saveKey(player.character.name), JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Failed to write save', e);
+  }
+}
+function defaultHotspotItems() {
+  const out = {};
+  if (!mapConfig) return out;
+  for (const def of mapConfig.hotspots) {
+    out[def.id] = (def.items || []).map(it => ({ ...it }));
+  }
+  return out;
+}
+function initFreshSave() {
+  backpack = [];
+  hotspotItems = defaultHotspotItems();
+  writeSave();
+}
+function applySave(save) {
+  backpack = Array.isArray(save.backpack) ? save.backpack.map(it => ({ ...it })) : [];
+  const defaults = defaultHotspotItems();
+  hotspotItems = {};
+  for (const def of mapConfig.hotspots) {
+    if (save.hotspots && Array.isArray(save.hotspots[def.id])) {
+      hotspotItems[def.id] = save.hotspots[def.id].map(it => ({ ...it }));
+    } else {
+      hotspotItems[def.id] = defaults[def.id];
+    }
+  }
+}
+
 // --- Input ---
 const keys = {};
 window.addEventListener('keydown', (e) => {
@@ -232,6 +299,16 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       selectCharacter(selectedCharIndex);
     }
+  } else if (state === GameState.RESUME_PROMPT) {
+    if (e.key === 'Enter' || e.key === 'r' || e.key === 'R') {
+      resumePendingSave();
+    } else if (e.key === 'f' || e.key === 'F') {
+      startFreshSave();
+    } else if (e.key === 'Escape') {
+      pendingResumeSave = null;
+      player.character = null;
+      state = GameState.CHARACTER_SELECT;
+    }
   } else if (state === GameState.CONFIRM_DIALOG) {
     if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
       state = GameState.CHARACTER_SELECT;
@@ -243,7 +320,17 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || e.key === ' ') {
       closeInteraction();
     }
+  } else if (state === GameState.ITEM_ACTION) {
+    handleItemActionKey(e);
   } else if (state === GameState.PLAYING) {
+    if (e.key === 'b' || e.key === 'B') {
+      toggleBackpack();
+      return;
+    }
+    if (backpackOpen) {
+      handleBackpackKey(e);
+      return;
+    }
     if (e.key === ' ') {
       handleInteract();
     }
@@ -280,6 +367,17 @@ canvas.addEventListener('click', (e) => {
   if (devMode) return;  // dev mode uses mousedown instead
   const rect = canvas.getBoundingClientRect();
   handleCanvasTap(e.clientX - rect.left, e.clientY - rect.top);
+});
+canvas.addEventListener('dblclick', (e) => {
+  if (devMode) return;
+  if (state !== GameState.PLAYING || backpackOpen) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const spriteScreenX = player.x - camera.x;
+  const spriteScreenY = player.y - player.height - camera.y;
+  const hitDist = Math.hypot(sx - spriteScreenX, sy - (spriteScreenY + player.height / 2));
+  if (hitDist < 108) toggleBackpack();
 });
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -318,12 +416,36 @@ function getHoveredCharacter(mx, my) {
   return -1;
 }
 
+let pendingResumeSave = null;
+
 function selectCharacter(index) {
   player.character = characters[index];
   // Starting position comes from the map's JSON config
   const start = mapConfig.playerStart;
   player.x = scaledMapW * start.px;
   player.y = scaledMapH * start.py;
+  backpackOpen = false;
+  backpackSelection = { row: 'backpack', col: 0 };
+
+  const existing = loadSave(player.character.name);
+  if (existing) {
+    pendingResumeSave = existing;
+    state = GameState.RESUME_PROMPT;
+  } else {
+    initFreshSave();
+    state = GameState.PLAYING;
+  }
+}
+
+function resumePendingSave() {
+  if (pendingResumeSave) applySave(pendingResumeSave);
+  pendingResumeSave = null;
+  state = GameState.PLAYING;
+}
+
+function startFreshSave() {
+  initFreshSave();
+  pendingResumeSave = null;
   state = GameState.PLAYING;
 }
 
@@ -572,6 +694,15 @@ function handleCanvasTap(screenX, screenY) {
   if (state === GameState.CHARACTER_SELECT) {
     const idx = getHoveredCharacter(screenX, screenY);
     if (idx >= 0) selectCharacter(idx);
+  } else if (state === GameState.RESUME_PROMPT) {
+    const btns = resumePromptButtonRects();
+    for (const b of btns) {
+      if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
+        if (b.id === 'resume') resumePendingSave();
+        else if (b.id === 'fresh') startFreshSave();
+        return;
+      }
+    }
   } else if (state === GameState.CONFIRM_DIALOG) {
     const panelW = Math.min(400, canvas.width - 40);
     const panelH = 150;
@@ -587,13 +718,57 @@ function handleCanvasTap(screenX, screenY) {
     }
   } else if (state === GameState.INTERACTING) {
     closeInteraction();
+  } else if (state === GameState.ITEM_ACTION) {
+    for (const r of itemActionButtonRects) {
+      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+        if (!r.disabled) performItemAction(r.id);
+        return;
+      }
+    }
   } else if (state === GameState.PLAYING) {
+    // Backpack overlay hit-tests (slots) take precedence when open
+    if (backpackOpen) {
+      const allRects = [
+        ...backpackSlotRects.hotspot.map(r => ({ ...r, row: 'hotspot' })),
+        ...backpackSlotRects.backpack.map(r => ({ ...r, row: 'backpack' }))
+      ];
+      for (const r of allRects) {
+        if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+          backpackSelection = { row: r.row, col: r.col };
+          // Open action modal when player is inside a hotspot and slot has an item
+          if (nearbyObject) {
+            const item = r.row === 'backpack'
+              ? backpack[r.col]
+              : (hotspotItems[nearbyObject.id] || [])[r.col];
+            if (item) openItemAction();
+          }
+          return;
+        }
+      }
+      // Tap outside any slot but still within the overlay band closes the backpack
+      const overlayTop = backpackOverlayTop();
+      if (screenY >= overlayTop) {
+        backpackOpen = false;
+        return;
+      }
+    }
+
     // Tapping the character sprite triggers interaction; tapping elsewhere walks there
     const spriteScreenX = player.x - camera.x;
     const spriteScreenY = player.y - player.height - camera.y;
     const hitDist = Math.hypot(screenX - spriteScreenX, screenY - (spriteScreenY + player.height / 2));
-    if (nearbyObject && hitDist < 108) {
+    const onCharacter = hitDist < 108;
+    const now = performance.now();
+    if (onCharacter && nearbyObject) {
       handleInteract();
+      lastCharTapTime = now;
+    } else if (onCharacter) {
+      if (now - lastCharTapTime < 350) {
+        toggleBackpack();
+        lastCharTapTime = 0;
+      } else {
+        lastCharTapTime = now;
+      }
     } else {
       const mapX = screenX + camera.x;
       const mapY = screenY + camera.y;
@@ -618,19 +793,183 @@ function closeInteraction() {
   currentInteraction = null;
 }
 
+// --- Backpack / Inventory ---
+function toggleBackpack() {
+  backpackOpen = !backpackOpen;
+  if (backpackOpen) {
+    // Re-anchor selection; prefer hotspot row if items are there
+    if (nearbyObject && (hotspotItems[nearbyObject.id] || []).length > 0) {
+      backpackSelection = { row: 'hotspot', col: 0 };
+    } else {
+      backpackSelection = { row: 'backpack', col: 0 };
+    }
+  }
+}
+
+function selectedItem() {
+  if (!backpackOpen) return null;
+  if (backpackSelection.row === 'backpack') {
+    return backpack[backpackSelection.col] || null;
+  }
+  if (!nearbyObject) return null;
+  const items = hotspotItems[nearbyObject.id] || [];
+  return items[backpackSelection.col] || null;
+}
+
+function backpackRowCount(row) {
+  if (row === 'backpack') return BACKPACK_CAPACITY;
+  if (!nearbyObject) return 0;
+  return HOTSPOT_CAPACITY;
+}
+
+function handleBackpackKey(e) {
+  if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
+    backpackOpen = false;
+    return;
+  }
+  if (e.key === 'ArrowLeft') {
+    const n = backpackRowCount(backpackSelection.row);
+    if (n > 0) backpackSelection.col = (backpackSelection.col - 1 + n) % n;
+  } else if (e.key === 'ArrowRight') {
+    const n = backpackRowCount(backpackSelection.row);
+    if (n > 0) backpackSelection.col = (backpackSelection.col + 1) % n;
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    if (nearbyObject) {
+      backpackSelection.row = backpackSelection.row === 'backpack' ? 'hotspot' : 'backpack';
+      const n = backpackRowCount(backpackSelection.row);
+      if (n > 0) backpackSelection.col = Math.min(backpackSelection.col, n - 1);
+      else backpackSelection.col = 0;
+    }
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    openItemAction();
+  }
+}
+
+function openItemAction() {
+  if (!nearbyObject) return;            // outside hotspot = view-only
+  const item = selectedItem();
+  if (!item) return;
+  currentItemAction = {
+    source: backpackSelection.row,
+    index: backpackSelection.col,
+    hotspotId: nearbyObject.id
+  };
+  backpackActionButton = 0;
+  state = GameState.ITEM_ACTION;
+}
+
+function closeItemAction() {
+  currentItemAction = null;
+  state = GameState.PLAYING;
+}
+
+function itemActionButtons() {
+  if (!currentItemAction) return [];
+  const a = currentItemAction;
+  if (a.source === 'hotspot') {
+    const backpackFull = backpack.length >= BACKPACK_CAPACITY;
+    const buttons = [
+      { id: 'pickup', label: 'Pick up', disabled: backpackFull }
+    ];
+    // Items can only be "used" once in the backpack — offer a combined
+    // pick-up-and-use shortcut from the hotspot, but only when there's room.
+    if (!backpackFull) {
+      buttons.push({ id: 'pickup_use', label: 'Pick up & Use', disabled: false });
+    }
+    buttons.push({ id: 'cancel', label: 'Cancel', disabled: false });
+    return buttons;
+  }
+  const hotspotFull = !a.hotspotId || (hotspotItems[a.hotspotId] || []).length >= HOTSPOT_CAPACITY;
+  return [
+    { id: 'drop',   label: 'Drop here', disabled: hotspotFull },
+    { id: 'use',    label: 'Use',       disabled: false },
+    { id: 'cancel', label: 'Cancel',    disabled: false }
+  ];
+}
+
+function performItemAction(buttonId) {
+  if (!currentItemAction) return;
+  const a = currentItemAction;
+  if (buttonId === 'cancel') {
+    closeItemAction();
+    return;
+  }
+  if (buttonId === 'use') {
+    const item = a.source === 'backpack'
+      ? backpack[a.index]
+      : (hotspotItems[a.hotspotId] || [])[a.index];
+    if (item) useItem(item);
+    closeItemAction();
+    return;
+  }
+  if ((buttonId === 'pickup' || buttonId === 'pickup_use') && a.source === 'hotspot') {
+    if (backpack.length >= BACKPACK_CAPACITY) return;
+    const items = hotspotItems[a.hotspotId] || [];
+    const [item] = items.splice(a.index, 1);
+    if (item) backpack.push(item);
+    writeSave();
+    // Snap selection to remaining hotspot items or fall back to backpack
+    const remaining = (hotspotItems[a.hotspotId] || []).length;
+    if (remaining > 0) {
+      backpackSelection = { row: 'hotspot', col: Math.min(a.index, remaining - 1) };
+    } else {
+      backpackSelection = { row: 'backpack', col: Math.max(0, backpack.length - 1) };
+    }
+    if (buttonId === 'pickup_use' && item) useItem(item);
+    closeItemAction();
+    return;
+  }
+  if (buttonId === 'drop' && a.source === 'backpack') {
+    const items = hotspotItems[a.hotspotId] || [];
+    if (items.length >= HOTSPOT_CAPACITY) return;
+    const [item] = backpack.splice(a.index, 1);
+    if (item) items.push(item);
+    hotspotItems[a.hotspotId] = items;
+    writeSave();
+    // Keep cursor on backpack row at a valid position
+    const newCol = Math.min(a.index, Math.max(0, backpack.length - 1));
+    backpackSelection = { row: 'backpack', col: newCol };
+    closeItemAction();
+    return;
+  }
+}
+
+function useItem(item) {
+  console.log('useItem', item);
+  useToast = { text: `You used the ${item.name}!`, age: 0 };
+}
+
+function handleItemActionKey(e) {
+  const btns = itemActionButtons();
+  if (e.key === 'Escape') {
+    closeItemAction();
+    return;
+  }
+  if (e.key === 'ArrowLeft') {
+    backpackActionButton = (backpackActionButton - 1 + btns.length) % btns.length;
+  } else if (e.key === 'ArrowRight') {
+    backpackActionButton = (backpackActionButton + 1) % btns.length;
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    const b = btns[backpackActionButton];
+    if (b && !b.disabled) performItemAction(b.id);
+  }
+}
+
 // --- Game Logic ---
 function update() {
   if (state !== GameState.PLAYING) return;
   if (devMode) return;  // freeze everything while editing hotspots
 
-  // Movement
+  // Movement (suppressed while backpack overlay is open — arrow keys drive selection)
   let dx = 0, dy = 0;
   player.walking = false;
 
-  if (keys['ArrowLeft'] || keys['a']) { dx = -player.speed; player.facing = 'left'; player.walking = true; }
-  if (keys['ArrowRight'] || keys['d']) { dx = player.speed; player.facing = 'right'; player.walking = true; }
-  if (keys['ArrowUp'] || keys['w']) { dy = -player.speed; player.walking = true; }
-  if (keys['ArrowDown'] || keys['s']) { dy = player.speed; player.walking = true; }
+  if (!backpackOpen) {
+    if (keys['ArrowLeft'] || keys['a']) { dx = -player.speed; player.facing = 'left'; player.walking = true; }
+    if (keys['ArrowRight'] || keys['d']) { dx = player.speed; player.facing = 'right'; player.walking = true; }
+    if (keys['ArrowUp'] || keys['w']) { dy = -player.speed; player.walking = true; }
+    if (keys['ArrowDown'] || keys['s']) { dy = player.speed; player.walking = true; }
+  }
 
   // Keyboard cancels tap-to-move
   if (player.walking) {
@@ -1000,6 +1339,12 @@ function drawGame() {
 
   // HUD
   drawHUD();
+
+  // Backpack overlay (also visible behind ITEM_ACTION modal)
+  if (backpackOpen) drawBackpack();
+
+  // Transient "you used X" toast
+  drawUseToast();
 }
 
 function drawHUD() {
@@ -1210,6 +1555,311 @@ function roundRectPath(x, y, w, h, r) {
   roundRect(x, y, w, h, r);
 }
 
+// --- Resume / Start Fresh prompt ---
+function resumePromptButtonRects() {
+  const panelW = Math.min(420, canvas.width - 40);
+  const panelH = 170;
+  const panelY = canvas.height / 2 - panelH / 2;
+  const btnW = 130, btnH = 40, btnY = panelY + panelH - 56, btnGap = 18;
+  const resumeX = canvas.width / 2 - btnW - btnGap / 2;
+  const freshX = canvas.width / 2 + btnGap / 2;
+  return [
+    { id: 'resume', x: resumeX, y: btnY, w: btnW, h: btnH },
+    { id: 'fresh',  x: freshX,  y: btnY, w: btnW, h: btnH }
+  ];
+}
+
+function drawResumePrompt() {
+  // Faded map background, like character select
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (mapImage) {
+    ctx.globalAlpha = 0.15;
+    const scale = Math.max(canvas.width / mapImage.naturalWidth, canvas.height / mapImage.naturalHeight);
+    ctx.drawImage(mapImage, 0, 0, mapImage.naturalWidth * scale, mapImage.naturalHeight * scale);
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const panelW = Math.min(420, canvas.width - 40);
+  const panelH = 170;
+  const panelX = canvas.width / 2 - panelW / 2;
+  const panelY = canvas.height / 2 - panelH / 2;
+
+  ctx.fillStyle = '#3E2723';
+  ctx.strokeStyle = '#8D6E63';
+  ctx.lineWidth = 3;
+  roundRect(panelX, panelY, panelW, panelH, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 1;
+  roundRect(panelX + 6, panelY + 6, panelW - 12, panelH - 12, 12);
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 22px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText('Welcome back, ' + (player.character ? player.character.name : '') + '!', canvas.width / 2, panelY + 50);
+
+  ctx.fillStyle = '#FFECB3';
+  ctx.font = '15px "Comic Sans MS", cursive';
+  ctx.fillText('Resume your adventure or start fresh?', canvas.width / 2, panelY + 80);
+
+  const btns = resumePromptButtonRects();
+  const labels = { resume: 'Resume (R)', fresh: 'Start Fresh (F)' };
+  const colors = { resume: '#4CAF50', fresh: '#F44336' };
+  ctx.font = 'bold 15px "Comic Sans MS", cursive';
+  for (const b of btns) {
+    ctx.fillStyle = colors[b.id];
+    roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[b.id], b.x + b.w / 2, b.y + 26);
+  }
+}
+
+// --- Backpack overlay ---
+function backpackMetrics() {
+  const slotSize = Math.max(36, Math.min(64, Math.floor((canvas.width - 40) / 11)));
+  const gap = Math.max(4, Math.floor(slotSize * 0.15));
+  const padding = 12;
+  const backpackRowW = BACKPACK_CAPACITY * slotSize + (BACKPACK_CAPACITY - 1) * gap;
+  const hotspotRowW = HOTSPOT_CAPACITY * slotSize + (HOTSPOT_CAPACITY - 1) * gap;
+  const hasHotspotRow = !!nearbyObject;
+  const rowSpacing = 14;
+  const labelH = 22;
+  const titleH = 24;
+  const overlayBottomMargin = 12;
+
+  const backpackRowY = canvas.height - overlayBottomMargin - slotSize;
+  const hotspotRowY = hasHotspotRow
+    ? backpackRowY - slotSize - rowSpacing - labelH
+    : backpackRowY;
+  const overlayTop = (hasHotspotRow ? hotspotRowY - labelH : backpackRowY) - titleH - padding;
+
+  const backpackRowX = canvas.width / 2 - backpackRowW / 2;
+  const hotspotRowX = canvas.width / 2 - hotspotRowW / 2;
+
+  return { slotSize, gap, padding, backpackRowW, hotspotRowW, hasHotspotRow, rowSpacing, labelH, titleH, overlayBottomMargin, backpackRowY, hotspotRowY, overlayTop, backpackRowX, hotspotRowX };
+}
+
+function backpackOverlayTop() {
+  return backpackMetrics().overlayTop;
+}
+
+function drawBackpackSlot(x, y, size, item, isSelected, isAvailable) {
+  const r = Math.max(6, size * 0.16);
+  // Solid dark base for both states so the emoji always has consistent contrast
+  ctx.fillStyle = 'rgba(62, 39, 35, 0.92)';
+  roundRect(x, y, size, size, r);
+  ctx.fill();
+  // Selected: yellow highlight tint on top of the dark base, then a thicker yellow border
+  if (isSelected) {
+    ctx.fillStyle = 'rgba(255, 213, 79, 0.22)';
+    roundRect(x, y, size, size, r);
+    ctx.fill();
+  }
+  ctx.strokeStyle = isSelected ? '#FFD600' : (isAvailable ? '#8D6E63' : '#5D4037');
+  ctx.lineWidth = isSelected ? 3 : 1.5;
+  roundRect(x, y, size, size, r);
+  ctx.stroke();
+
+  if (item) {
+    ctx.font = `${Math.floor(size * 0.6)}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.emoji || '?', x + size / 2, y + size / 2 + 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+}
+
+function drawBackpack() {
+  const m = backpackMetrics();
+  backpackSlotRects = { backpack: [], hotspot: [] };
+
+  // Panel background
+  const panelX = 8;
+  const panelY = m.overlayTop;
+  const panelW = canvas.width - 16;
+  const panelH = canvas.height - panelY - 4;
+  ctx.fillStyle = 'rgba(20, 12, 6, 0.78)';
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 2;
+  roundRect(panelX, panelY, panelW, panelH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 15px "Comic Sans MS", cursive';
+  ctx.textAlign = 'left';
+  ctx.fillText(`🎒 Backpack (${backpack.length}/${BACKPACK_CAPACITY})`, panelX + 14, panelY + 18);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.font = '11px "Comic Sans MS", cursive';
+  ctx.textAlign = 'right';
+  const hint = nearbyObject
+    ? '← → select  •  ↑ ↓ switch row  •  Enter act  •  B/Esc close'
+    : '← → select  •  B/Esc close  •  (move to a spot to pick up)';
+  ctx.fillText(hint, panelX + panelW - 14, panelY + 18);
+
+  // Hotspot row (if applicable)
+  if (m.hasHotspotRow) {
+    const items = hotspotItems[nearbyObject.id] || [];
+    ctx.fillStyle = '#FFECB3';
+    ctx.font = 'bold 12px "Comic Sans MS", cursive';
+    ctx.textAlign = 'center';
+    ctx.fillText('At ' + nearbyObject.name, canvas.width / 2, m.hotspotRowY - 6);
+
+    for (let i = 0; i < HOTSPOT_CAPACITY; i++) {
+      const x = m.hotspotRowX + i * (m.slotSize + m.gap);
+      const y = m.hotspotRowY;
+      const isSelected = backpackOpen && backpackSelection.row === 'hotspot' && backpackSelection.col === i;
+      drawBackpackSlot(x, y, m.slotSize, items[i] || null, isSelected, true);
+      backpackSlotRects.hotspot.push({ x, y, w: m.slotSize, h: m.slotSize, col: i });
+    }
+  }
+
+  // Backpack row
+  for (let i = 0; i < BACKPACK_CAPACITY; i++) {
+    const x = m.backpackRowX + i * (m.slotSize + m.gap);
+    const y = m.backpackRowY;
+    const isSelected = backpackOpen && backpackSelection.row === 'backpack' && backpackSelection.col === i;
+    drawBackpackSlot(x, y, m.slotSize, backpack[i] || null, isSelected, true);
+    backpackSlotRects.backpack.push({ x, y, w: m.slotSize, h: m.slotSize, col: i });
+  }
+
+  // Selected item name tooltip — below the slot for the hotspot row (the
+  // "At <name>" header sits above and shouldn't be overlapped); above the
+  // backpack row since it's anchored at the very bottom of the canvas.
+  const item = selectedItem();
+  if (item) {
+    const isBackpackRow = backpackSelection.row === 'backpack';
+    const rects = isBackpackRow ? backpackSlotRects.backpack : backpackSlotRects.hotspot;
+    const r = rects[backpackSelection.col];
+    if (r) {
+      ctx.font = 'bold 13px "Comic Sans MS", cursive';
+      ctx.textAlign = 'center';
+      const label = item.name;
+      const labelW = ctx.measureText(label).width + 14;
+      const labelX = Math.max(8, Math.min(canvas.width - labelW - 8, r.x + r.w / 2 - labelW / 2));
+      const labelY = isBackpackRow ? r.y - 22 : r.y + r.h + 4;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      roundRect(labelX, labelY, labelW, 20, 5);
+      ctx.fill();
+      ctx.fillStyle = '#FFEB3B';
+      ctx.fillText(label, labelX + labelW / 2, labelY + 14);
+    }
+  }
+}
+
+// --- Use toast (transient floating message) ---
+function drawUseToast() {
+  if (!useToast) return;
+  useToast.age++;
+  if (useToast.age > 90) { useToast = null; return; }
+  const alpha = useToast.age < 60 ? 1 : 1 - (useToast.age - 60) / 30;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = 'bold 18px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(useToast.text).width + 28;
+  const y = canvas.height * 0.35;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+  roundRect(canvas.width / 2 - w / 2, y - 24, w, 36, 10);
+  ctx.fill();
+  ctx.fillStyle = '#FFEB3B';
+  ctx.fillText(useToast.text, canvas.width / 2, y);
+  ctx.restore();
+}
+
+// --- Item action modal ---
+function drawItemActionDialog() {
+  drawGame();
+  if (backpackOpen) drawBackpack();
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const a = currentItemAction;
+  const item = a && (a.source === 'backpack'
+    ? backpack[a.index]
+    : (hotspotItems[a.hotspotId] || [])[a.index]);
+  if (!item) { closeItemAction(); return; }
+
+  const panelW = Math.min(440, canvas.width - 40);
+  const panelH = 200;
+  const panelX = canvas.width / 2 - panelW / 2;
+  const panelY = canvas.height / 2 - panelH / 2;
+
+  ctx.fillStyle = '#3E2723';
+  ctx.strokeStyle = '#8D6E63';
+  ctx.lineWidth = 3;
+  roundRect(panelX, panelY, panelW, panelH, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = '#5D4037';
+  ctx.lineWidth = 1;
+  roundRect(panelX + 6, panelY + 6, panelW - 12, panelH - 12, 12);
+  ctx.stroke();
+
+  // Emoji + name
+  ctx.font = '36px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(item.emoji || '?', canvas.width / 2 - 80, panelY + 60);
+
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 22px "Comic Sans MS", cursive';
+  ctx.fillText(item.name, canvas.width / 2 + 30, panelY + 50);
+
+  ctx.fillStyle = '#FFECB3';
+  ctx.font = '13px "Comic Sans MS", cursive';
+  const src = a.source === 'backpack' ? 'In your backpack' : 'At ' + (nearbyObject ? nearbyObject.name : 'this spot');
+  ctx.fillText(src, canvas.width / 2 + 30, panelY + 75);
+
+  // Buttons
+  const btns = itemActionButtons();
+  const btnW = Math.min(120, Math.floor((panelW - 60) / btns.length));
+  const btnH = 40;
+  const btnGap = 12;
+  const totalW = btnW * btns.length + btnGap * (btns.length - 1);
+  const startX = canvas.width / 2 - totalW / 2;
+  const btnY = panelY + panelH - 60;
+  itemActionButtonRects = [];
+
+  const colorMap = { pickup: '#4CAF50', pickup_use: '#FF9800', drop: '#4CAF50', use: '#FF9800', cancel: '#757575' };
+
+  ctx.font = 'bold 14px "Comic Sans MS", cursive';
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    const x = startX + i * (btnW + btnGap);
+    const isFocused = i === backpackActionButton;
+    const baseColor = colorMap[b.id] || '#5D4037';
+    ctx.fillStyle = b.disabled ? '#555' : baseColor;
+    roundRect(x, btnY, btnW, btnH, 8);
+    ctx.fill();
+    if (isFocused) {
+      ctx.strokeStyle = '#FFD600';
+      ctx.lineWidth = 3;
+      roundRect(x, btnY, btnW, btnH, 8);
+      ctx.stroke();
+    }
+    ctx.fillStyle = b.disabled ? '#999' : 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.label, x + btnW / 2, btnY + 26);
+    itemActionButtonRects.push({ x, y: btnY, w: btnW, h: btnH, id: b.id, disabled: b.disabled });
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.font = '12px "Comic Sans MS", cursive';
+  ctx.fillText(isTouchDevice() ? 'Tap a button' : '← → choose  •  Enter confirm  •  Esc cancel', canvas.width / 2, panelY + panelH - 12);
+}
+
 function drawConfirmDialog() {
   // Draw game in background
   drawGame();
@@ -1282,11 +1932,17 @@ function gameLoop() {
     case GameState.CHARACTER_SELECT:
       drawCharacterSelect();
       break;
+    case GameState.RESUME_PROMPT:
+      drawResumePrompt();
+      break;
     case GameState.PLAYING:
       drawGame();
       break;
     case GameState.INTERACTING:
       drawInteraction();
+      break;
+    case GameState.ITEM_ACTION:
+      drawItemActionDialog();
       break;
     case GameState.CONFIRM_DIALOG:
       drawConfirmDialog();

@@ -27,9 +27,25 @@ JSON file at `assets/game_design.json` — one JSON per map image.
   "ph": 0.1,         // height as fraction of image height
   "action":          "sleep|fly|cook|climb|stargaze|play|wash|eat|explore|shelter|bathroom",
   "description":     "Short tooltip description",
-  "interactionText": "Text shown when the player interacts with this hotspot."
+  "interactionText": "Text shown when the player interacts with this hotspot.",
+  "items": [         // 0–3 entries — default items present at this hotspot
+    { "id": "snake_case_id", "name": "Display Name", "emoji": "🍡" }
+  ]
 }
 ```
+
+### Items / backpack
+Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
+The player has a 10-slot backpack (`BACKPACK_CAPACITY`). The `items` array in
+the JSON is the **default** seeding; the runtime contents (per-hotspot and the
+player's backpack) are persisted to `localStorage` under
+`louisas-game:save:<character.name>`. Selecting a character with an existing
+save shows a Resume / Start Fresh prompt; Start Fresh wipes that character's
+key and re-seeds from the JSON defaults.
+
+When adding new items to a hotspot, update **both** `assets/game_design.json`
+and the inline `<script id="map-config">` copy in `index.html`, exactly like
+hotspot bounds. The two must stay in sync.
 
 ## Developer mode — adjusting hotspot bounds in-game
 
