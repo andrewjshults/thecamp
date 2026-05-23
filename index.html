@@ -232,6 +232,7 @@ let completedUses = [];           // [{ hotspotId, hotspotName, itemId, itemName
 let currentItemUse = null;        // { item, use, hotspot, timer, animation } — active use dialog
 let itemUseAnimation = 0;         // 0→1 popup scale
 let completionToast = null;       // { age } — all-done celebration
+let interactionUseRects = [];     // hit-rects for backpack items shown in interaction dialog
 
 let journalOpen = false;
 let journalScroll = 0;            // current scroll pixel offset (clamped during draw)
@@ -806,6 +807,14 @@ function handleCanvasTap(screenX, screenY) {
       state = GameState.PLAYING;
     }
   } else if (state === GameState.INTERACTING) {
+    // Check if the tap hit one of the usable-item buttons
+    for (const r of interactionUseRects) {
+      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+        closeInteraction();
+        useItem(r.item);
+        return;
+      }
+    }
     closeInteraction();
   } else if (state === GameState.ITEM_ACTION) {
     for (const r of itemActionButtonRects) {
@@ -1865,13 +1874,22 @@ function drawInteraction() {
   interactionAnimation = Math.min(1, interactionAnimation + 0.05);
   interactionTimer++;
 
+  // Compute which backpack items can be used here (valid use, not already done)
+  const usableItems = backpack.filter(item => {
+    if (!item) return false;
+    const use = getItemUseAtHotspot(item, currentInteraction);
+    return use && !isUseAlreadyDone(item.id, currentInteraction.id);
+  });
+
   // Overlay
   ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * interactionAnimation})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Interaction panel
+  // Interaction panel — expand when usable items exist
   const panelW = Math.min(500, canvas.width - 40);
-  const panelH = 220;
+  const BASE_H = 220;
+  const useStripH = usableItems.length > 0 ? 80 : 0;
+  const panelH = BASE_H + useStripH;
   const panelX = canvas.width / 2 - panelW / 2;
   const panelY = Math.max(10, Math.min(canvas.height - panelH - 10, canvas.height / 2 - panelH / 2));
   const scale = interactionAnimation;
@@ -1914,13 +1932,62 @@ function drawInteraction() {
   // Word wrap
   wrapText(displayText, canvas.width / 2, panelY + 85, panelW - 40, 24);
 
-  // Action animation
-  drawActionAnimation(currentInteraction.action, canvas.width / 2, panelY + panelH - 55, interactionTimer);
+  // Action animation — pinned to panelY + BASE_H - 55 regardless of extra strip
+  drawActionAnimation(currentInteraction.action, canvas.width / 2, panelY + BASE_H - 55, interactionTimer);
+
+  // --- Usable items strip ---
+  interactionUseRects = [];
+  if (usableItems.length > 0) {
+    const stripTop = panelY + BASE_H - 22;
+
+    // Separator
+    ctx.strokeStyle = 'rgba(141, 110, 99, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(panelX + 20, stripTop);
+    ctx.lineTo(panelX + panelW - 20, stripTop);
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = '#FFD54F';
+    ctx.font = 'bold 12px "Comic Sans MS", cursive';
+    ctx.textAlign = 'left';
+    ctx.fillText('✨ Use from backpack:', panelX + 20, stripTop + 15);
+
+    // Item emoji buttons
+    const items = usableItems.slice(0, 8);
+    const btnSize = 38;
+    const btnGap = 6;
+    const totalBtnW = items.length * (btnSize + btnGap) - btnGap;
+    const startX = panelX + panelW / 2 - totalBtnW / 2;
+    const btnY = stripTop + 22;
+
+    items.forEach((item, i) => {
+      const bx = startX + i * (btnSize + btnGap);
+
+      // Bubble background
+      ctx.fillStyle = 'rgba(255, 213, 79, 0.15)';
+      ctx.strokeStyle = '#FFD54F';
+      ctx.lineWidth = 1.5;
+      roundRect(bx, btnY, btnSize, btnSize, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Emoji
+      ctx.font = `${Math.floor(btnSize * 0.58)}px serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(item.emoji || '?', bx + btnSize / 2, btnY + btnSize * 0.73);
+
+      // Store hit rect in canvas coords (accurate at scale=1)
+      interactionUseRects.push({ x: bx, y: btnY, w: btnSize, h: btnSize, item });
+    });
+  }
 
   // Close hint
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.font = '13px "Comic Sans MS", cursive';
-  ctx.fillText(isTouchDevice() ? 'Tap to close' : 'Press Space or Esc to close', canvas.width / 2, panelY + panelH - 15);
+  ctx.textAlign = 'center';
+  ctx.fillText(isTouchDevice() ? 'Tap outside to close' : 'Press Space or Esc to close', canvas.width / 2, panelY + panelH - 10);
 
   ctx.restore();
 }
