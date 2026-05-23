@@ -57,12 +57,19 @@ repositioned or resized without manually editing JSON fractions.
    `assets/game_design.json` with the new values.
 
 ### What the clipboard contains
-```
-Update assets/game_design.json — replace the "hotspots" array with the following:
+The clipboard message instructs you to update hotspot bounds in **two places**:
 
-[
-  { "id": "tent_red", "name": "Red Tent", "px": 0.72, "py": 0.82, ... },
-  ...
-]
-```
-Paste this directly into a Claude Code chat to apply the changes.
+1. **`assets/game_design.json`** — authoritative source, used when the game
+   is served over HTTP (local server, GitHub Pages).
+2. **`<script type="application/json" id="map-config">` in `index.html`** —
+   an identical inline copy used as a fallback when `index.html` is opened
+   directly via `file://` (no server). `fetch()` is blocked by the browser
+   in that context, so this copy makes the game work without a server.
+
+Paste the clipboard content into a Claude Code chat; Claude will update both
+locations in one step.
+
+### Keeping the two copies in sync
+Both copies contain identical hotspot data. They diverge only if you edit one
+manually without updating the other. Always use the dev-mode workflow to keep
+them consistent — it always reflects the current in-memory state.
