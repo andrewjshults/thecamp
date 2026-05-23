@@ -233,6 +233,8 @@ let currentItemUse = null;        // { item, use, hotspot, timer, animation } �
 let itemUseAnimation = 0;         // 0→1 popup scale
 let completionToast = null;       // { age } — all-done celebration
 let interactionUseRects = [];     // hit-rects for backpack items shown in interaction dialog
+let interactionDimmedRects = [];  // hit-rects for items not in backpack (dimmed, show hint)
+let interactionHintText = null;   // tooltip text set by hover/tap on a dimmed item
 
 let journalOpen = false;
 let journalScroll = 0;            // current scroll pixel offset (clamped during draw)
@@ -387,6 +389,23 @@ canvas.addEventListener('mousemove', (e) => {
   }
   if (state === GameState.CHARACTER_SELECT) {
     hoveredCharIndex = getHoveredCharacter(sx, sy);
+  }
+  // Hover over dimmed item buttons in the interaction dialog (desktop only)
+  if (state === GameState.INTERACTING) {
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = sx * scaleX;
+    const my = sy * scaleY;
+    let found = null;
+    for (const r of interactionDimmedRects) {
+      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+        found = r;
+        break;
+      }
+    }
+    interactionHintText = found
+      ? `Find the ${found.item.emoji} ${found.item.name} at the ${found.location}!`
+      : null;
   }
 });
 canvas.addEventListener('mousedown', (e) => {
@@ -807,7 +826,14 @@ function handleCanvasTap(screenX, screenY) {
       state = GameState.PLAYING;
     }
   } else if (state === GameState.INTERACTING) {
-    // Check if the tap hit one of the usable-item buttons
+    // Dimmed item tap: show location hint, stay in dialog
+    for (const r of interactionDimmedRects) {
+      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+        interactionHintText = `Find the ${r.item.emoji} ${r.item.name} at the ${r.location}!`;
+        return;
+      }
+    }
+    // Usable item tap: use it
     for (const r of interactionUseRects) {
       if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
         closeInteraction();
@@ -889,6 +915,7 @@ function handleInteract() {
 function closeInteraction() {
   state = GameState.PLAYING;
   currentInteraction = null;
+  interactionHintText = null;
 }
 
 // --- Backpack / Inventory ---
@@ -1874,21 +1901,51 @@ function drawInteraction() {
   interactionAnimation = Math.min(1, interactionAnimation + 0.05);
   interactionTimer++;
 
-  // Compute which backpack items can be used here (valid use, not already done)
+  // --- Compute usable items (in backpack, valid use, not done) ---
   const usableItems = backpack.filter(item => {
     if (!item) return false;
     const use = getItemUseAtHotspot(item, currentInteraction);
     return use && !isUseAlreadyDone(item.id, currentInteraction.id);
   });
 
+  // --- Compute dimmed items (use defined, NOT in backpack, not done) ---
+  const backpackItemIds = new Set(backpack.filter(Boolean).map(i => i.id));
+  const dimmedItems = [];
+  const hotspotDef = mapConfig && mapConfig.hotspots.find(h => h.id === currentInteraction.id);
+  for (const useEntry of (hotspotDef && hotspotDef.uses || [])) {
+    if (isUseAlreadyDone(useEntry.itemId, currentInteraction.id)) continue;
+    if (backpackItemIds.has(useEntry.itemId)) continue; // already shown bright
+    // Find where the item currently lives (hotspotItems first, then JSON default)
+    let itemInfo = null;
+    let location = null;
+    for (const hId of Object.keys(hotspotItems)) {
+      const found = (hotspotItems[hId] || []).find(it => it.id === useEntry.itemId);
+      if (found) {
+        const hDef = mapConfig.hotspots.find(h => h.id === hId);
+        itemInfo = found;
+        location = hDef ? hDef.name : hId;
+        break;
+      }
+    }
+    if (!itemInfo && mapConfig) {
+      for (const h of mapConfig.hotspots) {
+        const found = (h.items || []).find(it => it.id === useEntry.itemId);
+        if (found) { itemInfo = found; location = h.name; break; }
+      }
+    }
+    if (itemInfo) dimmedItems.push({ ...itemInfo, location });
+  }
+
+  const hasAnyItems = usableItems.length > 0 || dimmedItems.length > 0;
+
   // Overlay
   ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * interactionAnimation})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Interaction panel — expand when usable items exist
+  // Panel height: base + strip (larger when dimmed items need a hint line)
   const panelW = Math.min(500, canvas.width - 40);
   const BASE_H = 220;
-  const useStripH = usableItems.length > 0 ? 80 : 0;
+  const useStripH = !hasAnyItems ? 0 : (dimmedItems.length > 0 ? 96 : 80);
   const panelH = BASE_H + useStripH;
   const panelX = canvas.width / 2 - panelW / 2;
   const panelY = Math.max(10, Math.min(canvas.height - panelH - 10, canvas.height / 2 - panelH / 2));
@@ -1919,28 +1976,25 @@ function drawInteraction() {
   ctx.textAlign = 'center';
   ctx.fillText(currentInteraction.name, canvas.width / 2, panelY + 45);
 
-  // Animated interaction emoji/text
+  // Interaction text (typewriter)
   const text = currentInteraction.interactionText;
   ctx.fillStyle = '#FFECB3';
   ctx.font = '18px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
-
-  // Typewriter effect
   const visibleChars = Math.min(text.length, Math.floor(interactionTimer * 0.8));
-  const displayText = text.substring(0, visibleChars);
+  wrapText(text.substring(0, visibleChars), canvas.width / 2, panelY + 85, panelW - 40, 24);
 
-  // Word wrap
-  wrapText(displayText, canvas.width / 2, panelY + 85, panelW - 40, 24);
-
-  // Action animation — pinned to panelY + BASE_H - 55 regardless of extra strip
+  // Action animation — pinned relative to BASE_H
   drawActionAnimation(currentInteraction.action, canvas.width / 2, panelY + BASE_H - 55, interactionTimer);
 
-  // --- Usable items strip ---
+  // --- Items strip ---
   interactionUseRects = [];
-  if (usableItems.length > 0) {
+  interactionDimmedRects = [];
+
+  if (hasAnyItems) {
     const stripTop = panelY + BASE_H - 22;
 
-    // Separator
+    // Separator line
     ctx.strokeStyle = 'rgba(141, 110, 99, 0.6)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1948,39 +2002,69 @@ function drawInteraction() {
     ctx.lineTo(panelX + panelW - 20, stripTop);
     ctx.stroke();
 
-    // Label
+    // Strip label
     ctx.fillStyle = '#FFD54F';
     ctx.font = 'bold 12px "Comic Sans MS", cursive';
     ctx.textAlign = 'left';
     ctx.fillText('✨ Use from backpack:', panelX + 20, stripTop + 15);
 
-    // Item emoji buttons
-    const items = usableItems.slice(0, 8);
+    // All item buttons: usable (bright) then dimmed
+    const allButtons = [
+      ...usableItems.map(item => ({ item, dimmed: false })),
+      ...dimmedItems.map(item => ({ item, dimmed: true })),
+    ];
+    const allSlice = allButtons.slice(0, 9);
     const btnSize = 38;
     const btnGap = 6;
-    const totalBtnW = items.length * (btnSize + btnGap) - btnGap;
+    const totalBtnW = allSlice.length * (btnSize + btnGap) - btnGap;
     const startX = panelX + panelW / 2 - totalBtnW / 2;
     const btnY = stripTop + 22;
 
-    items.forEach((item, i) => {
+    allSlice.forEach(({ item, dimmed }, i) => {
       const bx = startX + i * (btnSize + btnGap);
 
+      ctx.globalAlpha = dimmed ? 0.38 : 1.0;
+
       // Bubble background
-      ctx.fillStyle = 'rgba(255, 213, 79, 0.15)';
-      ctx.strokeStyle = '#FFD54F';
+      ctx.fillStyle = dimmed ? 'rgba(120,120,120,0.12)' : 'rgba(255, 213, 79, 0.15)';
       ctx.lineWidth = 1.5;
+      if (dimmed) {
+        ctx.strokeStyle = '#8D6E63';
+        ctx.setLineDash([3, 3]);
+      } else {
+        ctx.strokeStyle = '#FFD54F';
+        ctx.setLineDash([]);
+      }
       roundRect(bx, btnY, btnSize, btnSize, 8);
       ctx.fill();
       ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1.0;
 
-      // Emoji
+      // Emoji (slightly faded for dimmed)
+      ctx.globalAlpha = dimmed ? 0.38 : 1.0;
       ctx.font = `${Math.floor(btnSize * 0.58)}px serif`;
       ctx.textAlign = 'center';
       ctx.fillText(item.emoji || '?', bx + btnSize / 2, btnY + btnSize * 0.73);
+      ctx.globalAlpha = 1.0;
 
-      // Store hit rect in canvas coords (accurate at scale=1)
-      interactionUseRects.push({ x: bx, y: btnY, w: btnSize, h: btnSize, item });
+      if (dimmed) {
+        interactionDimmedRects.push({ x: bx, y: btnY, w: btnSize, h: btnSize, item, location: item.location });
+      } else {
+        interactionUseRects.push({ x: bx, y: btnY, w: btnSize, h: btnSize, item });
+      }
     });
+
+    // Hint line (shown when dimmed items exist)
+    if (dimmedItems.length > 0) {
+      const hintY = btnY + btnSize + 10;
+      const hintMsg = interactionHintText
+        || (isTouchDevice() ? 'Tap a faded item to see where to find it' : 'Hover a faded item to see where to find it');
+      ctx.fillStyle = interactionHintText ? '#FFD54F' : 'rgba(255,236,179,0.45)';
+      ctx.font = `${interactionHintText ? 'bold ' : ''}11px "Comic Sans MS", cursive`;
+      ctx.textAlign = 'center';
+      ctx.fillText(hintMsg, canvas.width / 2, hintY, panelW - 30);
+    }
   }
 
   // Close hint
