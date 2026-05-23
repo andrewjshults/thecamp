@@ -64,12 +64,17 @@ function recalcMapScale() {
 }
 
 // --- Canvas sizing ---
+// Use visualViewport when available so iOS Safari's dynamic toolbar
+// doesn't cause canvas to extend below the visible area.
 function resizeCanvas() {
   canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   recalcMapScale();
 }
 window.addEventListener('resize', resizeCanvas);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resizeCanvas);
+}
 resizeCanvas();
 
 // --- Load the map image ---
@@ -124,8 +129,8 @@ let hoveredCharIndex = -1;
 const player = {
   x: 0,
   y: 0,
-  width: 30,
-  height: 48,
+  width: 90,
+  height: 144,
   speed: 4,
   facing: 'right',
   frame: 0,
@@ -414,7 +419,7 @@ function handleCanvasTap(screenX, screenY) {
     const spriteScreenX = player.x - camera.x;
     const spriteScreenY = player.y - player.height - camera.y;
     const hitDist = Math.hypot(screenX - spriteScreenX, screenY - (spriteScreenY + player.height / 2));
-    if (nearbyObject && hitDist < 36) {
+    if (nearbyObject && hitDist < 108) {
       handleInteract();
     } else {
       const mapX = screenX + camera.x;
@@ -784,13 +789,13 @@ function drawGame() {
     player.character,
     player.frame,
     player.facing,
-    1.2
+    3.6
   );
 
   // Player shadow
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
   ctx.beginPath();
-  ctx.ellipse(player.x, player.y + 2, 14, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(player.x, player.y + 2, 42, 15, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -864,7 +869,7 @@ function drawInteraction() {
   const panelW = Math.min(500, canvas.width - 40);
   const panelH = 220;
   const panelX = canvas.width / 2 - panelW / 2;
-  const panelY = canvas.height / 2 - panelH / 2;
+  const panelY = Math.max(10, Math.min(canvas.height - panelH - 10, canvas.height / 2 - panelH / 2));
   const scale = interactionAnimation;
 
   ctx.save();
