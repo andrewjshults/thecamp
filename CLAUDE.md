@@ -74,11 +74,7 @@ repositioned or resized without manually editing JSON fractions.
    labelled IDs. Drag any **corner handle** (white/yellow circle) to
    resize a box. Click a box interior to select it (highlights yellow).
 4. When you are happy with the layout, press **Cmd+D** again to exit.
-   The updated bounds are automatically **copied to your clipboard**.
-5. Paste the clipboard contents into a message to Claude Code, e.g.:
-
-   > "Update game_design.json with these hotspot bounds:"
-   > *[paste clipboard]*
-
-   Claude Code will replace the `"hotspots"` array in
-   `assets/game_design.json`. That's the only file that needs changing.
+   The **complete updated JSON** (the full map config, not just bounds) is
+   automatically copied to your clipboard.
+5. Paste the clipboard contents directly over `assets/game_design.json`
+   — it is the complete file replacement, no editing needed.

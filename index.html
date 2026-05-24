@@ -507,23 +507,23 @@ function exitDevMode() {
 }
 
 function copyHotspotsToClipboard() {
-  const updated = mapConfig.hotspots.map(h => ({
-    id: h.id,
-    name: h.name,
-    px: parseFloat(h.px.toFixed(4)),
-    py: parseFloat(h.py.toFixed(4)),
-    pw: parseFloat(h.pw.toFixed(4)),
-    ph: parseFloat(h.ph.toFixed(4)),
-    action: h.action,
-    description: h.description,
-    interactionText: h.interactionText
-  }));
-  const json = JSON.stringify(updated, null, 2);
-  const text =
-    'Update hotspot bounds in assets/game_design.json — ' +
-    'replace the "hotspots" array with:\n\n' +
-    json + '\n';
-  navigator.clipboard.writeText(text).catch(() => console.log(text));
+  // Build full map JSON — preserves all fields (items, uses, etc.)
+  // and rounds fractional bounds to 4 decimal places.
+  const fullConfig = {
+    name: mapConfig.name,
+    image: mapConfig.image,
+    playerStart: mapConfig.playerStart,
+    hotspots: mapConfig.hotspots.map(h => {
+      const out = { ...h };
+      out.px = parseFloat(h.px.toFixed(4));
+      out.py = parseFloat(h.py.toFixed(4));
+      out.pw = parseFloat(h.pw.toFixed(4));
+      out.ph = parseFloat(h.ph.toFixed(4));
+      return out;
+    })
+  };
+  const json = JSON.stringify(fullConfig, null, 2);
+  navigator.clipboard.writeText(json).catch(() => console.log(json));
 }
 
 // Returns the four corner handles for an interactiveObject in screen space
