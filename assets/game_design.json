@@ -66,10 +66,10 @@
     {
       "id": "car_wings",
       "name": "Flying Car",
-      "px": 0.12,
-      "py": 0.72,
-      "pw": 0.13,
-      "ph": 0.22,
+      "px": 0.1323,
+      "py": 0.6805,
+      "pw": 0.1415,
+      "ph": 0.2897,
       "action": "fly",
       "description": "A car with wings!",
       "interactionText": "VROOOOM! The flying car zooms through the sky! Wheee!",
@@ -86,6 +86,19 @@
         { "itemId": "glove",      "text": "You use the baseball glove to catch the Flying Car as it zooms by! Caught it! 🧤", "animation": "fly" },
         { "itemId": "sponge",     "text": "You scrub the Flying Car with the sponge until it shines like a mirror! ✨", "animation": "fly" }
       ]
+    },
+    {
+      "id": "inside_house",
+      "name": "Enter the House",
+      "px": 0.0365,
+      "py": 0.787,
+      "pw": 0.0918,
+      "ph": 0.2108,
+      "action": "fly",
+      "description": "Go inside the house to explore more",
+      "interactionText": "Enter the house to explore more",
+      "items": [],
+      "uses": []
     },
     {
       "id": "stairs_left",
