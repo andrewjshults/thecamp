@@ -84,14 +84,23 @@ resizeCanvas();
 // --- Map config (loaded from JSON) ---
 let mapConfig = null;   // the parsed JSON for the active map
 
+// --- Multi-map state ---
+let currentMapPath = 'assets/game_design.json';
+let allMapConfigs  = {};   // mapPath → config object (cached after first fetch)
+let allMapSaves    = {};   // mapPath → { hotspots: {} } for non-active maps
+let loadingMessage = 'Loading...';
+
 // --- Load map config then image ---
 // Convention: each map image has a sibling .json file with the same base name.
 // To add a new map, drop a new image + json pair in assets/ and call loadMap().
 function loadMap(jsonPath) {
+  currentMapPath = jsonPath;
   state = GameState.LOADING;
 
   function applyConfig(config) {
     mapConfig = config;
+    allMapConfigs[jsonPath] = config;
+    loadingMessage = `Loading ${config.name}...`;
     mapImage = new Image();
     mapImage.onload = () => {
       mapLoaded = true;
@@ -104,6 +113,54 @@ function loadMap(jsonPath) {
   fetch(jsonPath)
     .then(r => r.json())
     .then(applyConfig);
+}
+
+// --- Switch to a different map mid-game ---
+// Saves current state, loads the new map, positions player at targetHotspotId.
+// If targetHotspotId is null, uses the map's playerStart.
+function switchMap(targetPath, targetHotspotId) {
+  // Stash current map's hotspot items
+  allMapSaves[currentMapPath] = { hotspots: hotspotItems };
+  writeSave();
+
+  currentMapPath = targetPath;
+  loadingMessage = 'Loading...';
+  state = GameState.LOADING;
+
+  fetch(targetPath)
+    .then(r => r.json())
+    .then(config => {
+      mapConfig = config;
+      allMapConfigs[targetPath] = config;
+      loadingMessage = `Loading ${config.name}...`;
+
+      // Restore or default hotspot items for the new map
+      hotspotItems = restoreOrDefaultHotspots(config, allMapSaves[targetPath] || {});
+
+      mapImage = new Image();
+      mapImage.onload = () => {
+        mapLoaded = true;
+        recalcMapScale();
+
+        // Place player at the centre of the arrival hotspot (or playerStart)
+        const portal = targetHotspotId
+          ? config.hotspots.find(h => h.id === targetHotspotId)
+          : null;
+        if (portal) {
+          player.x = scaledMapW * (portal.px + portal.pw / 2);
+          player.y = scaledMapH * (portal.py + portal.ph / 2);
+        } else {
+          player.x = scaledMapW * config.playerStart.px;
+          player.y = scaledMapH * config.playerStart.py;
+        }
+        nearbyObject = null;
+        tapTarget    = null;
+        backpackOpen = false;
+        state = GameState.PLAYING;
+        writeSave();  // persist new currentMap
+      };
+      mapImage.src = config.image;
+    });
 }
 
 loadMap('assets/game_design.json');
@@ -176,7 +233,7 @@ const DEV_HANDLE_R = 14;        // corner handle radius in screen px
 // --- Inventory ---
 const BACKPACK_CAPACITY = 10;
 const HOTSPOT_CAPACITY = 3;
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 let backpack = [];                                  // up to BACKPACK_CAPACITY items
 let hotspotItems = {};                              // hotspotId -> item[]
 let backpackOpen = false;
@@ -220,9 +277,13 @@ function writeSave() {
   if (!player.character) return;
   const payload = {
     version: SAVE_VERSION,
+    currentMap: currentMapPath,
     backpack,
-    hotspots: hotspotItems,
-    completedUses
+    completedUses,
+    maps: {
+      ...allMapSaves,
+      [currentMapPath]: { hotspots: hotspotItems }
+    }
   };
   try {
     localStorage.setItem(saveKey(player.character.name), JSON.stringify(payload));
@@ -230,6 +291,7 @@ function writeSave() {
     console.warn('Failed to write save', e);
   }
 }
+// Return default hotspot items seeded from a config's JSON definitions
 function defaultHotspotItems() {
   const out = {};
   if (!mapConfig) return out;
@@ -238,24 +300,39 @@ function defaultHotspotItems() {
   }
   return out;
 }
+// Config-agnostic version: restore from mapSave or fall back to config defaults
+function restoreOrDefaultHotspots(config, mapSave) {
+  const out = {};
+  for (const def of config.hotspots) {
+    const saved = mapSave.hotspots && mapSave.hotspots[def.id];
+    out[def.id] = Array.isArray(saved)
+      ? saved.map(it => ({ ...it }))
+      : (def.items || []).map(it => ({ ...it }));
+  }
+  return out;
+}
 function initFreshSave() {
   backpack = [];
   hotspotItems = defaultHotspotItems();
   completedUses = [];
+  allMapSaves = {};
   writeSave();
 }
 function applySave(save) {
-  backpack = Array.isArray(save.backpack) ? save.backpack.map(it => ({ ...it })) : [];
-  const defaults = defaultHotspotItems();
-  hotspotItems = {};
-  for (const def of mapConfig.hotspots) {
-    if (save.hotspots && Array.isArray(save.hotspots[def.id])) {
-      hotspotItems[def.id] = save.hotspots[def.id].map(it => ({ ...it }));
-    } else {
-      hotspotItems[def.id] = defaults[def.id];
-    }
-  }
+  backpack      = Array.isArray(save.backpack)      ? save.backpack.map(it => ({ ...it }))    : [];
   completedUses = Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
+  // v2: maps object keyed by map path
+  if (save.maps) {
+    allMapSaves = {};
+    for (const [path, ms] of Object.entries(save.maps)) {
+      allMapSaves[path] = { hotspots: ms.hotspots || {} };
+    }
+  } else {
+    // v1 save: flat hotspots belonged to the default map
+    allMapSaves = { 'assets/game_design.json': { hotspots: save.hotspots || {} } };
+  }
+  // Apply hotspot items for the currently loaded map
+  hotspotItems = restoreOrDefaultHotspots(mapConfig, allMapSaves[currentMapPath] || {});
 }
 
 // --- Input ---
@@ -480,9 +557,24 @@ function selectCharacter(index) {
 }
 
 function resumePendingSave() {
-  if (pendingResumeSave) applySave(pendingResumeSave);
+  if (!pendingResumeSave) return;
+  const save = pendingResumeSave;
   pendingResumeSave = null;
-  state = GameState.PLAYING;
+
+  // Apply global state (backpack, journal, per-map hotspot caches)
+  applySave(save);
+
+  const savedMap = save.currentMap || 'assets/game_design.json';
+  if (savedMap !== currentMapPath) {
+    // Player saved while on a different map — switch to it
+    switchMap(savedMap, null);
+  } else {
+    // Already on the right map — just start playing
+    const start = mapConfig.playerStart;
+    player.x = scaledMapW * start.px;
+    player.y = scaledMapH * start.py;
+    state = GameState.PLAYING;
+  }
 }
 
 function startFreshSave() {
@@ -862,6 +954,11 @@ function handleCanvasTap(screenX, screenY) {
 // --- Interaction handling ---
 function handleInteract() {
   if (state === GameState.PLAYING && nearbyObject) {
+    // Portal hotspot: switch maps immediately, no interaction dialog
+    if (nearbyObject.targetMap) {
+      switchMap(nearbyObject.targetMap, nearbyObject.targetHotspot);
+      return;
+    }
     state = GameState.INTERACTING;
     currentInteraction = nearbyObject;
     interactionTimer = 0;
@@ -959,8 +1056,10 @@ function isUseAlreadyDone(itemId, hotspotId) {
 }
 
 function totalUsesCount() {
-  if (!mapConfig) return 0;
-  return mapConfig.hotspots.reduce((sum, h) => sum + (h.uses ? h.uses.length : 0), 0);
+  // Count across all cached map configs so the journal progress bar is global
+  return Object.values(allMapConfigs)
+    .flatMap(c => c.hotspots)
+    .reduce((sum, h) => sum + (h.uses ? h.uses.length : 0), 0);
 }
 
 function itemActionButtons() {
@@ -1249,7 +1348,7 @@ function drawLoadingScreen() {
   ctx.fillStyle = '#FFD54F';
   ctx.font = '36px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
-  ctx.fillText('Loading The Camp...', canvas.width / 2, canvas.height / 2);
+  ctx.fillText(loadingMessage, canvas.width / 2, canvas.height / 2);
 
   // Simple loading spinner
   const t = Date.now() / 200;
@@ -1399,10 +1498,15 @@ function drawGame() {
       ctx.fillStyle = '#FFEB3B';
       ctx.fillText(obj.name, labelX, labelY);
 
-      // Interact hint
+      // Interact hint (portals get a special "ENTER" label)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       const hintY = labelY - 24;
-      const hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
+      let hintText;
+      if (obj.targetMap) {
+        hintText = isTouchDevice() ? '🚪 [ TAP ]' : '🚪 [ ENTER ]';
+      } else {
+        hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
+      }
       const hintW = ctx.measureText(hintText).width + 12;
       roundRect(labelX - hintW / 2, hintY - 12, hintW, 18, 4);
       ctx.fill();

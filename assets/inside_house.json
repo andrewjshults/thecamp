@@ -1,0 +1,178 @@
+{
+  "name": "Inside the House",
+  "image": "assets/inside_house.jpg",
+  "playerStart": { "px": 0.5, "py": 0.5 },
+  "hotspots": [
+    {
+      "id": "camp_painting",
+      "name": "Camp Painting",
+      "px": 0.03,
+      "py": 0.02,
+      "pw": 0.18,
+      "ph": 0.22,
+      "action": "go_outside",
+      "description": "A painting of the camp outside",
+      "interactionText": "You peek at the painting. It shows the camp outside! You head out!",
+      "items": [],
+      "uses": [
+        { "itemId": "telescope",   "text": "You peer through the telescope at the camp painting. The flying car is RIGHT THERE! 🔭", "animation": "explore" },
+        { "itemId": "binoculars",  "text": "You look through binoculars at the painting. You can see the campfire smoke rising! 🔭", "animation": "explore" }
+      ],
+      "targetMap": "assets/game_design.json",
+      "targetHotspot": "inside_house"
+    },
+    {
+      "id": "armchair",
+      "name": "Comfy Armchair",
+      "px": 0.02,
+      "py": 0.27,
+      "pw": 0.16,
+      "ph": 0.22,
+      "action": "sit",
+      "description": "A big cozy blue armchair",
+      "interactionText": "You sink into the big blue armchair. So cozy and warm in here!",
+      "items": [
+        { "id": "book",            "name": "Book",            "emoji": "📚" },
+        { "id": "reading_glasses", "name": "Reading Glasses", "emoji": "👓" }
+      ],
+      "uses": [
+        { "itemId": "hot_cocoa",   "text": "You curl up in the armchair with your hot cocoa. THIS IS PEAK COZY. ☕", "animation": "sit" },
+        { "itemId": "teddy_bear",  "text": "You tuck Teddy Bear into the armchair by the fireplace. The house feels even cozier! 🧸", "animation": "sit" },
+        { "itemId": "pillow",      "text": "You prop the pillow behind your head in the armchair. A PERFECT nap spot! 🛏️", "animation": "sleep" },
+        { "itemId": "cookie",      "text": "You munch a cookie in the big blue armchair. Crumbs everywhere! Worth it! 🍪", "animation": "eat" },
+        { "itemId": "sleeping_bag","text": "You stuff the sleeping bag into the armchair like a cozy nest. HIBERNATION MODE! 💤", "animation": "sleep" }
+      ]
+    },
+    {
+      "id": "wardrobe",
+      "name": "Big Wardrobe",
+      "px": 0.23,
+      "py": 0.08,
+      "pw": 0.20,
+      "ph": 0.42,
+      "action": "explore",
+      "description": "A tall brown wardrobe — who knows what's inside?",
+      "interactionText": "You open the wardrobe. It's FULL of coats and hats and mystery!",
+      "items": [
+        { "id": "raincoat",  "name": "Raincoat",   "emoji": "🧥" },
+        { "id": "umbrella",  "name": "Umbrella",   "emoji": "☂️" },
+        { "id": "fancy_hat", "name": "Fancy Hat",  "emoji": "🎩" }
+      ],
+      "uses": [
+        { "itemId": "flashlight",  "text": "You shine your flashlight into the dark wardrobe. There's a secret back wall! Is this NARNIA?! 🔦", "animation": "explore" },
+        { "itemId": "rope",        "text": "You toss the rope over the wardrobe door. Now it's a climbing wall! 🪢", "animation": "climb" },
+        { "itemId": "moon_rock",   "text": "You hide the Moon Rock in the wardrobe. It glows between the coats. Magical! 🌑", "animation": "explore" },
+        { "itemId": "teddy_bear",  "text": "Teddy Bear fits PERFECTLY in the wardrobe. Cosy Narnia bear! 🧸", "animation": "explore" }
+      ]
+    },
+    {
+      "id": "dining_table",
+      "name": "Dining Table",
+      "px": 0.58,
+      "py": 0.02,
+      "pw": 0.38,
+      "ph": 0.27,
+      "action": "eat",
+      "description": "A big dining table with chairs",
+      "interactionText": "You sit down at the dining table. Time for a proper meal!",
+      "items": [
+        { "id": "juice",  "name": "Juice",  "emoji": "🧃" },
+        { "id": "plate",  "name": "Plate",  "emoji": "🍽️" },
+        { "id": "candle", "name": "Candle", "emoji": "🕯️" }
+      ],
+      "uses": [
+        { "itemId": "sandwich",   "text": "You eat your sandwich at the proper dining table like a distinguished camper. So fancy! 🥪", "animation": "eat" },
+        { "itemId": "apple",      "text": "You place the apple in the fruit bowl on the table. A perfect centrepiece! 🍎", "animation": "eat" },
+        { "itemId": "cookie",     "text": "You have cookies for dessert at the dining table. The fanciest tea party ever! 🍪", "animation": "eat" },
+        { "itemId": "mug",        "text": "You drink from your mug at the dining table. Very sophisticated! ☕", "animation": "eat" },
+        { "itemId": "frying_pan", "text": "You bang the frying pan on the dining table like a dinner bell. DONG DONG! Dinner is served! 🍳", "animation": "play" }
+      ]
+    },
+    {
+      "id": "tea_corner",
+      "name": "Tea Corner",
+      "px": 0.82,
+      "py": 0.28,
+      "pw": 0.12,
+      "ph": 0.16,
+      "action": "drink",
+      "description": "A cozy corner with a pink mug",
+      "interactionText": "You find a pink mug in the cozy corner. Time for tea!",
+      "items": [
+        { "id": "pink_mug", "name": "Pink Mug",  "emoji": "🩷" },
+        { "id": "tea_bag",  "name": "Tea Bag",   "emoji": "🍵" },
+        { "id": "honey",    "name": "Honey",     "emoji": "🍯" }
+      ],
+      "uses": [
+        { "itemId": "marshmallow", "text": "You drop marshmallows into the tea. FLOATING MARSHMALLOW TEA! Absolutely delicious! 🍡", "animation": "drink" },
+        { "itemId": "hot_cocoa",   "text": "You mix the hot cocoa into your tea. A choccy-tea invention! The world is changed forever! ☕", "animation": "drink" },
+        { "itemId": "cookie",      "text": "You dunk the cookie into your tea. It gets perfectly soggy. GENIUS! 🍪", "animation": "eat" }
+      ]
+    },
+    {
+      "id": "craft_table",
+      "name": "Craft Table",
+      "px": 0.33,
+      "py": 0.30,
+      "pw": 0.35,
+      "ph": 0.45,
+      "action": "craft",
+      "description": "A big round table for making things",
+      "interactionText": "You sit at the big round craft table. So many things to make!",
+      "items": [
+        { "id": "crayons",  "name": "Crayons",  "emoji": "🖍️" },
+        { "id": "paper",    "name": "Paper",    "emoji": "📄" },
+        { "id": "stickers", "name": "Stickers", "emoji": "⭐" }
+      ],
+      "uses": [
+        { "itemId": "leaf",       "text": "You press the leaf onto paper with crayons. A beautiful leaf rubbing! Nature art! 🍃", "animation": "craft" },
+        { "itemId": "star_chart", "text": "You spread the star chart on the craft table and trace the constellations! ✨", "animation": "craft" },
+        { "itemId": "map",        "text": "You copy the map onto fresh paper with crayons. You made a TREASURE MAP! 🗺️", "animation": "craft" },
+        { "itemId": "acorn",      "text": "You dip the acorn in paint and stamp acorn shapes all over the paper! 🌰🎨", "animation": "craft" },
+        { "itemId": "telescope",  "text": "You draw a picture of the night sky using your telescope notes. An astronomical masterpiece! 🔭", "animation": "craft" }
+      ]
+    },
+    {
+      "id": "kitchen_sink",
+      "name": "Kitchen Sink",
+      "px": 0.00,
+      "py": 0.62,
+      "pw": 0.22,
+      "ph": 0.38,
+      "action": "wash",
+      "description": "The kitchen sink with soap and sponges",
+      "interactionText": "Splish splash! The kitchen sink is great for washing up!",
+      "items": [
+        { "id": "mug",       "name": "Mug",       "emoji": "🍵" },
+        { "id": "dish_soap", "name": "Dish Soap", "emoji": "🧴" },
+        { "id": "sponge",    "name": "Sponge",    "emoji": "🧽" }
+      ],
+      "uses": [
+        { "itemId": "soap",        "text": "You use both soaps in the kitchen sink. DOUBLE BUBBLES! The suds are EVERYWHERE! 🧼🫧", "animation": "wash" },
+        { "itemId": "toothbrush",  "text": "You rinse your toothbrush under the kitchen tap. Minty fresh! 🪥", "animation": "wash" },
+        { "itemId": "raincoat",    "text": "You wash the raincoat in the kitchen sink. It comes out gleaming! 🧥", "animation": "wash" }
+      ]
+    },
+    {
+      "id": "cozy_chair",
+      "name": "Cozy Chair",
+      "px": 0.82,
+      "py": 0.72,
+      "pw": 0.15,
+      "ph": 0.25,
+      "action": "sit",
+      "description": "A cozy blue-purple chair",
+      "interactionText": "You plop into the cozy blue-purple chair. It's the PERFECT sitting chair!",
+      "items": [
+        { "id": "cushion",  "name": "Cushion",  "emoji": "🛋️" },
+        { "id": "magazine", "name": "Magazine", "emoji": "📰" }
+      ],
+      "uses": [
+        { "itemId": "book",        "text": "You curl up in the cozy chair with your book. Best reading spot in the whole house! 📚", "animation": "sit" },
+        { "itemId": "sleeping_bag","text": "You wrap yourself in the sleeping bag in the cozy chair. The cosiest cocoon ever! 💤", "animation": "sleep" },
+        { "itemId": "teddy_bear",  "text": "You sit Teddy Bear in the cozy chair like royalty. The chair is now Teddy's throne! 🧸", "animation": "sit" },
+        { "itemId": "hot_cocoa",   "text": "You sip hot cocoa in the cozy chair. Outside it's camp. In here it's HEAVEN. ☕", "animation": "drink" }
+      ]
+    }
+  ]
+}

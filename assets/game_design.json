@@ -94,11 +94,13 @@
       "py": 0.787,
       "pw": 0.0918,
       "ph": 0.2108,
-      "action": "fly",
+      "action": "enter",
       "description": "Go inside the house to explore more",
-      "interactionText": "Enter the house to explore more",
+      "interactionText": "You head inside the cozy house!",
       "items": [],
-      "uses": []
+      "uses": [],
+      "targetMap": "assets/inside_house.json",
+      "targetHotspot": "camp_painting"
     },
     {
       "id": "stairs_left",
