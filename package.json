@@ -1,0 +1,8 @@
+{
+  "name": "louisas-game",
+  "version": "1.0.0",
+  "description": "Louisa's Camp exploration game",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}

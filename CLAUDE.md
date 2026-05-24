@@ -6,6 +6,21 @@ The map is a hand-drawn image (`assets/game_design.jpg`).
 Interactive hotspots (bounds + interaction text) live in a companion
 JSON file at `assets/game_design.json` — one JSON per map image.
 
+## Dev server
+
+Start the game with:
+
+```bash
+npm run dev
+```
+
+This runs `server.js` (zero npm dependencies — pure Node built-ins) which:
+- Serves the project at **http://localhost:3000**
+- Injects a live-reload snippet so the browser auto-refreshes on any file save
+
+`assets/game_design.json` is fetched over HTTP at runtime, so it is the
+**single source of truth** — there is no inline copy to keep in sync.
+
 ## Adding a new map
 1. Drop the image into `assets/` (e.g. `assets/map2.jpg`).
 2. Create `assets/map2.json` following the same schema as `game_design.json`:
@@ -13,8 +28,7 @@ JSON file at `assets/game_design.json` — one JSON per map image.
    - `image` — path to the image (e.g. `"assets/map2.jpg"`)
    - `playerStart` — `{ "px": 0–1, "py": 0–1 }` fractional spawn point
    - `hotspots` — array of hotspot objects (see schema below)
-3. In `index.html` change the `loadMap(...)` call at the bottom of the
-   loading section to point at the new JSON.
+3. In `index.html` change the `loadMap(...)` call to point at the new JSON.
 
 ### Hotspot schema
 ```json
@@ -43,9 +57,8 @@ player's backpack) are persisted to `localStorage` under
 save shows a Resume / Start Fresh prompt; Start Fresh wipes that character's
 key and re-seeds from the JSON defaults.
 
-When adding new items to a hotspot, update **both** `assets/game_design.json`
-and the inline `<script id="map-config">` copy in `index.html`, exactly like
-hotspot bounds. The two must stay in sync.
+When adding new items to a hotspot, edit **only** `assets/game_design.json`.
+The server fetches it fresh on every reload — no other file needs updating.
 
 ## Developer mode — adjusting hotspot bounds in-game
 
@@ -54,38 +67,18 @@ or **Ctrl+D** (Win/Linux). Use it whenever hotspot boxes need to be
 repositioned or resized without manually editing JSON fractions.
 
 ### Workflow
-1. Open the game in the browser and navigate your character near the
-   area you want to edit.
+1. Open the game in the browser (`npm run dev` → http://localhost:3000).
 2. Press **Cmd+D** — a red **🔧 DEV MODE** badge appears in the top-right
    corner. Character movement and all interactions are frozen.
 3. All hotspot bounding boxes are now visible as dashed rectangles with
    labelled IDs. Drag any **corner handle** (white/yellow circle) to
    resize a box. Click a box interior to select it (highlights yellow).
 4. When you are happy with the layout, press **Cmd+D** again to exit.
-   The updated bounds are automatically **copied to your clipboard** as
-   a JSON array with instructions.
+   The updated bounds are automatically **copied to your clipboard**.
 5. Paste the clipboard contents into a message to Claude Code, e.g.:
 
    > "Update game_design.json with these hotspot bounds:"
    > *[paste clipboard]*
 
    Claude Code will replace the `"hotspots"` array in
-   `assets/game_design.json` with the new values.
-
-### What the clipboard contains
-The clipboard message instructs you to update hotspot bounds in **two places**:
-
-1. **`assets/game_design.json`** — authoritative source, used when the game
-   is served over HTTP (local server, GitHub Pages).
-2. **`<script type="application/json" id="map-config">` in `index.html`** —
-   an identical inline copy used as a fallback when `index.html` is opened
-   directly via `file://` (no server). `fetch()` is blocked by the browser
-   in that context, so this copy makes the game work without a server.
-
-Paste the clipboard content into a Claude Code chat; Claude will update both
-locations in one step.
-
-### Keeping the two copies in sync
-Both copies contain identical hotspot data. They diverge only if you edit one
-manually without updating the other. Always use the dev-mode workflow to keep
-them consistent — it always reflects the current in-memory state.
+   `assets/game_design.json`. That's the only file that needs changing.
