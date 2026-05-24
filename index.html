@@ -212,6 +212,7 @@ const player = {
   height: 144,
   speed: 4,
   facing: 'right',
+  rotation: 0,
   frame: 0,
   frameTimer: 0,
   walking: false,
@@ -397,6 +398,10 @@ window.addEventListener('keydown', (e) => {
     }
     if (e.key === 'b' || e.key === 'B') {
       toggleBackpack();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      player.rotation = (player.rotation + 90) % 360;
       return;
     }
     if (backpackOpen) {
@@ -1518,14 +1523,32 @@ function drawGame() {
   }
 
   // Draw player
-  drawCharacterSprite(
-    player.x - player.width / 2,
-    player.y - player.height,
-    player.character,
-    player.frame,
-    player.facing,
-    3.6
-  );
+  if (player.rotation !== 0) {
+    const cx = player.x;
+    const cy = player.y - player.height / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(player.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+    drawCharacterSprite(
+      player.x - player.width / 2,
+      player.y - player.height,
+      player.character,
+      player.frame,
+      player.facing,
+      3.6
+    );
+    ctx.restore();
+  } else {
+    drawCharacterSprite(
+      player.x - player.width / 2,
+      player.y - player.height,
+      player.character,
+      player.frame,
+      player.facing,
+      3.6
+    );
+  }
 
   // Player shadow
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
