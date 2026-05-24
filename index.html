@@ -1629,6 +1629,7 @@ function drawJournal() {
     // Emoji
     ctx.font = '28px serif';
     ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
     ctx.fillText(entry.itemEmoji, PANEL_X + 30, ey + 36);
 
     // Item name + hotspot
@@ -1727,6 +1728,7 @@ function drawItemUseDialog() {
   const t = currentItemUse.timer * 0.1;
   ctx.font = '52px serif';
   ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
   const emojiX = panelX + 58;
   const emojiY = panelY + 80 + Math.sin(t * 2) * 5;
   ctx.fillText(currentItemUse.item.emoji || '?', emojiX, emojiY);
@@ -1963,6 +1965,7 @@ function drawInteraction() {
         ctx.setLineDash([]);
         ctx.font      = `${Math.floor(BTN_SIZE * 0.58)}px serif`;
         ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
         ctx.fillText(item.emoji || '?', bx + BTN_SIZE / 2, curY + BTN_SIZE * 0.73);
         ctx.globalAlpha = 1.0;
         rowRects.push({ x: bx, y: curY, w: BTN_SIZE, h: BTN_SIZE, item });
@@ -2232,18 +2235,14 @@ function drawBackpackSlot(x, y, size, item, isSelected, isAvailable) {
   ctx.fillStyle = 'rgba(62, 39, 35, 0.92)';
   roundRect(x, y, size, size, r);
   ctx.fill();
-  // Selected: yellow highlight tint on top of the dark base, then a thicker yellow border
-  if (isSelected) {
-    ctx.fillStyle = 'rgba(255, 213, 79, 0.22)';
-    roundRect(x, y, size, size, r);
-    ctx.fill();
-  }
+
   ctx.strokeStyle = isSelected ? '#FFD600' : (isAvailable ? '#8D6E63' : '#5D4037');
   ctx.lineWidth = isSelected ? 3 : 1.5;
   roundRect(x, y, size, size, r);
   ctx.stroke();
 
   if (item) {
+    ctx.fillStyle = '#ffffff';
     ctx.font = `${Math.floor(size * 0.6)}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2386,6 +2385,7 @@ function drawItemActionDialog() {
   // Emoji + name
   ctx.font = '36px serif';
   ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
   ctx.fillText(item.emoji || '?', canvas.width / 2 - 80, panelY + 60);
 
   ctx.fillStyle = '#FFD54F';
