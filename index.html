@@ -253,6 +253,7 @@ let itemUseAnimation = 0;         // 0→1 popup scale
 let completionToast = null;       // { age } — all-done celebration
 let interactionUseRects = [];     // hit-rects for backpack items shown in interaction dialog
 let interactionDimmedRects = [];  // hit-rects for items not in backpack (dimmed, show hint)
+let interactionHereRects = [];    // hit-rects for items sitting at this hotspot (tap to pick up)
 let interactionHintText = null;   // tooltip text set by hover/tap on a dimmed item
 
 let journalOpen = false;
@@ -439,16 +440,16 @@ canvas.addEventListener('mousemove', (e) => {
     const scaleY = canvas.height / rect.height;
     const mx = sx * scaleX;
     const my = sy * scaleY;
-    let found = null;
-    for (const r of interactionDimmedRects) {
-      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
-        found = r;
-        break;
-      }
+    const hit = rects => rects.find(r => mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h);
+    const here  = hit(interactionHereRects);
+    const found = hit(interactionDimmedRects);
+    if (here) {
+      interactionHintText = `Pick up the ${here.item.emoji} ${here.item.name}`;
+    } else if (found) {
+      interactionHintText = `Find the ${found.item.emoji} ${found.item.name} at the ${found.location}!`;
+    } else {
+      interactionHintText = null;
     }
-    interactionHintText = found
-      ? `Find the ${found.item.emoji} ${found.item.name} at the ${found.location}!`
-      : null;
   }
 });
 canvas.addEventListener('mousedown', (e) => {
@@ -880,6 +881,15 @@ function handleCanvasTap(screenX, screenY) {
       state = GameState.PLAYING;
     }
   } else if (state === GameState.INTERACTING) {
+    // Item at this hotspot: pick it up, stay in dialog
+    for (const r of interactionHereRects) {
+      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+        interactionHintText = pickUpHotspotItem(currentInteraction.id, r.index)
+          ? `${r.item.emoji} ${r.item.name} is in your backpack!`
+          : 'Your backpack is full!';
+        return;
+      }
+    }
     // Dimmed item tap: show location hint, stay in dialog
     for (const r of interactionDimmedRects) {
       if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
@@ -1085,6 +1095,19 @@ function itemActionButtons() {
   ];
 }
 
+// Move a hotspot item into the backpack. Returns false if the backpack is full.
+function pickUpHotspotItem(hotspotId, index) {
+  if (backpack.length >= BACKPACK_CAPACITY) return false;
+  const items = hotspotItems[hotspotId] || [];
+  const [item] = items.splice(index, 1);
+  if (item) {
+    item.pickedUpFrom = hotspotId; // record origin so it can't be used there
+    backpack.push(item);
+  }
+  writeSave();
+  return true;
+}
+
 function performItemAction(buttonId) {
   if (!currentItemAction) return;
   const a = currentItemAction;
@@ -1093,14 +1116,7 @@ function performItemAction(buttonId) {
     return;
   }
   if (buttonId === 'pickup' && a.source === 'hotspot') {
-    if (backpack.length >= BACKPACK_CAPACITY) return;
-    const items = hotspotItems[a.hotspotId] || [];
-    const [item] = items.splice(a.index, 1);
-    if (item) {
-      item.pickedUpFrom = a.hotspotId; // record origin so it can't be used there
-      backpack.push(item);
-    }
-    writeSave();
+    if (!pickUpHotspotItem(a.hotspotId, a.index)) return;
     // Snap selection to remaining hotspot items or fall back to backpack
     const remaining = (hotspotItems[a.hotspotId] || []).length;
     if (remaining > 0) {
@@ -2000,7 +2016,10 @@ function drawInteraction() {
     if (itemInfo) dimmedItems.push({ ...itemInfo, location });
   }
 
-  const hasAnyItems = usableItems.length > 0 || dimmedItems.length > 0;
+  // --- Items sitting at this hotspot (can be picked up) ---
+  const hereItems = hotspotItems[currentInteraction.id] || [];
+
+  const hasAnyItems = hereItems.length > 0 || usableItems.length > 0 || dimmedItems.length > 0;
 
   // Overlay
   ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * interactionAnimation})`;
@@ -2017,9 +2036,12 @@ function drawInteraction() {
   let stripH = 0;
   if (hasAnyItems) {
     stripH += 14; // separator
+    if (hereItems.length > 0) stripH += LABEL_H + BTN_SIZE;
+    if (hereItems.length > 0 && (usableItems.length > 0 || dimmedItems.length > 0)) stripH += GAP_H;
     if (usableItems.length > 0) stripH += LABEL_H + BTN_SIZE;
     if (usableItems.length > 0 && dimmedItems.length > 0) stripH += GAP_H;
-    if (dimmedItems.length > 0) stripH += LABEL_H + BTN_SIZE + LABEL_H; // label + buttons + hint
+    if (dimmedItems.length > 0) stripH += LABEL_H + BTN_SIZE;
+    if (hereItems.length > 0 || dimmedItems.length > 0) stripH += LABEL_H; // hint line
   }
   const panelH = CONTENT_END + stripH + CLOSE_H;
 
@@ -2062,6 +2084,7 @@ function drawInteraction() {
   // --- Items strip (running-Y layout) ---
   interactionUseRects  = [];
   interactionDimmedRects = [];
+  interactionHereRects = [];
   let curY = panelY + CONTENT_END;
 
   if (hasAnyItems) {
@@ -2100,6 +2123,19 @@ function drawInteraction() {
       return rowRects;
     }
 
+    // 🧺 Items at this hotspot row
+    if (hereItems.length > 0) {
+      ctx.fillStyle = '#FFD54F';
+      ctx.font      = 'bold 12px "Comic Sans MS", cursive';
+      ctx.textAlign = 'left';
+      ctx.fillText(`🧺 Here (${isTouchDevice() ? 'tap' : 'click'} to pick up):`, panelX + 20, curY + 12);
+      curY += LABEL_H;
+      const rects = drawItemRow(hereItems, false);
+      rects.forEach((r, index) => interactionHereRects.push({ ...r, index }));
+      curY += BTN_SIZE;
+      if (usableItems.length > 0 || dimmedItems.length > 0) curY += GAP_H;
+    }
+
     // ✨ Usable items row
     if (usableItems.length > 0) {
       ctx.fillStyle = '#FFD54F';
@@ -2122,16 +2158,23 @@ function drawInteraction() {
       curY += LABEL_H;
       const rects = drawItemRow(dimmedItems, true);
       rects.forEach(r => interactionDimmedRects.push({ ...r, location: r.item.location }));
-      curY += BTN_SIZE + 6;
+      curY += BTN_SIZE;
+    }
 
-      // Hint line
-      const hintMsg = interactionHintText
-        || (isTouchDevice() ? 'Tap a faded item to see where to find it'
-                            : 'Hover a faded item to see where to find it');
-      ctx.fillStyle = interactionHintText ? '#FFD54F' : 'rgba(255,236,179,0.45)';
-      ctx.font      = `${interactionHintText ? 'bold ' : ''}11px "Comic Sans MS", cursive`;
-      ctx.textAlign = 'center';
-      ctx.fillText(hintMsg, canvas.width / 2, curY + 10, panelW - 30);
+    // Hint line (pick-up feedback, or where to find a faded item)
+    if (hereItems.length > 0 || dimmedItems.length > 0) {
+      curY += 6;
+      let hintMsg = interactionHintText;
+      if (!hintMsg && dimmedItems.length > 0) {
+        hintMsg = isTouchDevice() ? 'Tap a faded item to see where to find it'
+                                  : 'Hover a faded item to see where to find it';
+      }
+      if (hintMsg) {
+        ctx.fillStyle = interactionHintText ? '#FFD54F' : 'rgba(255,236,179,0.45)';
+        ctx.font      = `${interactionHintText ? 'bold ' : ''}11px "Comic Sans MS", cursive`;
+        ctx.textAlign = 'center';
+        ctx.fillText(hintMsg, canvas.width / 2, curY + 10, panelW - 30);
+      }
     }
   }
 
