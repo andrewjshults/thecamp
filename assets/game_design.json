@@ -284,22 +284,18 @@
     },
     {
       "id": "bathroom",
-      "name": "Bathroom",
+      "name": "Camp Bathroom",
       "px": 0.8489,
       "py": 0.4749,
       "pw": 0.1394,
       "ph": 0.1475,
-      "action": "bathroom",
-      "description": "The camp bathroom",
-      "interactionText": "You use the bathroom. Don't forget to wash your hands!",
-      "items": [
-        { "id": "toilet_paper", "name": "Toilet Paper", "emoji": "🧻" },
-        { "id": "toothbrush",   "name": "Toothbrush",   "emoji": "🪥" }
-      ],
-      "uses": [
-        { "itemId": "soap",   "text": "You bring the soap to the bathroom. Now the handwashing station is COMPLETE! Very sanitary! 🧼", "animation": "wash" },
-        { "itemId": "sponge", "text": "You use the sponge to wipe down the bathroom. Spick and span! Camp chores: ✅ 🧽", "animation": "wash" }
-      ]
+      "action": "enter",
+      "description": "The camp bathroom — go inside!",
+      "interactionText": "You head into the camp bathroom!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_bathroom.json",
+      "targetHotspot": "exit_door"
     },
     {
       "id": "lunchbox",
@@ -350,6 +346,29 @@
         { "itemId": "binoculars",   "text": "You peer at the Moon through binoculars. You can see the craters clearly! 🌙🔭", "animation": "stargaze" },
         { "itemId": "lantern",      "text": "Your lantern has a long chat with the Moon about who glows brighter. The Moon wins... barely. 🏮🌙", "animation": "stargaze" }
       ]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "red_scout",
+      "character": "Red Scout",
+      "px": 0.63,
+      "py": 0.78,
+      "personality": "The bravest camper. Loves daring adventures, climbing the stairs, and pretending the Flying Car is a rocket ship. Talks with big excitement and loves to shout \"Let's go!\""
+    },
+    {
+      "id": "purple_kid",
+      "character": "Purple Kid",
+      "px": 0.22,
+      "py": 0.67,
+      "personality": "A giggly joker who loves riddles, knock-knock jokes, and silly made-up words. Is pretty sure the Moon is secretly made of purple cheese."
+    },
+    {
+      "id": "blue_explorer",
+      "character": "Blue Explorer",
+      "px": 0.9,
+      "py": 0.7,
+      "personality": "Curious about everything. Asks lots of questions and loves sharing fun little facts about stars, bugs, trees, and animals."
     }
   ]
 }

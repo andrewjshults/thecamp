@@ -58,8 +58,132 @@ const RELOAD_SNIPPET = `
 })();
 </script>`;
 
+// ── NPC dialogue (Claude) ──────────────────────────────────────────────────
+// POST /api/npc-reply  { npc, playerName, mapName, places, backpack, history }
+//   → 200 { reply: "..." }  or { reply: null } when Claude declined
+//   → 503 when the SDK isn't installed / no credentials (browser falls back
+//     to its built-in reply generator).
+// The SDK is optional: `npm install` adds it; without it the game still runs.
+let anthropic = null;
+let AnthropicSDK = null;
+try {
+  const mod = require('@anthropic-ai/sdk');
+  AnthropicSDK = mod.default || mod;
+  anthropic = new AnthropicSDK({ timeout: 30_000, maxRetries: 1 });
+} catch (err) {
+  console.log('    (NPC chat: @anthropic-ai/sdk unavailable — using built-in replies.\n' +
+              '     Run `npm install` and set ANTHROPIC_API_KEY to let characters think for themselves.)\n');
+}
+
+const NPC_MODEL = 'claude-opus-5-5';
+const MAX_HISTORY = 20;
+const MAX_LINE = 300;
+
+function clean(s, max) {
+  return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function buildNpcSystemPrompt(b) {
+  const npc = b.npc || {};
+  const places = Array.isArray(b.places) ? b.places.map(p => clean(p, 40)).filter(Boolean).slice(0, 30) : [];
+  const backpack = Array.isArray(b.backpack) ? b.backpack.map(p => clean(p, 40)).filter(Boolean).slice(0, 10) : [];
+  return [
+    `You are ${clean(npc.name, 40)}, a kid camper in a cozy, hand-drawn exploration game made for young children.`,
+    npc.desc ? `About you: ${clean(npc.desc, 120)}.` : '',
+    npc.personality ? `Your personality: ${clean(npc.personality, 400)}` : '',
+    `You are hanging out at "${clean(b.mapName, 60)}". Things around here: ${places.join(', ') || 'lots of fun spots'}.`,
+    `You are talking with your friend ${clean(b.playerName, 40)}, another camper.` +
+      (backpack.length ? ` They're carrying: ${backpack.join(', ')}.` : ''),
+    '',
+    'How to talk:',
+    '- Your words appear in a speech bubble that a 6-8 year old reads, so reply with one or two short sentences (under 25 words) using simple words.',
+    '- Stay in character as a friendly, playful camper. Be warm and silly, and sometimes ask a question back or suggest something fun to do at the camp.',
+    '- Plain text only: no markdown, no stage directions in asterisks, no quotation marks around your reply. An emoji now and then is fine.',
+    '- Keep everything kind and age-appropriate. If your friend says something mean or scary, respond gently and steer toward something fun.',
+    '- You are a character in the game; never talk about being an AI, a model, or a computer program.',
+  ].filter(Boolean).join('\n');
+}
+
+async function generateNpcReply(body) {
+  const history = (Array.isArray(body.history) ? body.history : [])
+    .slice(-MAX_HISTORY)
+    .map(t => ({
+      role: t.speaker === 'npc' ? 'assistant' : 'user',
+      content: clean(t.text, MAX_LINE),
+    }))
+    .filter(m => m.content);
+  // The conversation must start and end with the player speaking.
+  while (history.length && history[0].role !== 'user') history.shift();
+  if (!history.length || history[history.length - 1].role !== 'user') {
+    throw Object.assign(new Error('history must end with the player speaking'), { status: 400 });
+  }
+
+  const response = await anthropic.beta.messages.create({
+    model: NPC_MODEL,
+    max_tokens: 2000,
+    output_config: { effort: 'low' },   // snappy chat replies
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',               // re-run on a fallback model if declined
+    system: buildNpcSystemPrompt(body),
+    messages: history,
+  });
+
+  if (response.stop_reason === 'refusal') return null;
+  const text = response.content
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join(' ');
+  return clean(text, 220) || null;
+}
+
+function handleNpcReply(req, res) {
+  const send = (code, obj) => {
+    res.writeHead(code, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(obj));
+  };
+  if (!anthropic) return send(503, { error: 'npc chat unavailable' });
+
+  let raw = '';
+  req.on('data', chunk => {
+    raw += chunk;
+    if (raw.length > 32_000) { send(413, { error: 'too large' }); req.destroy(); }
+  });
+  req.on('end', async () => {
+    if (res.writableEnded) return;
+    let body;
+    try { body = JSON.parse(raw); } catch (_) { return send(400, { error: 'bad json' }); }
+    try {
+      const reply = await generateNpcReply(body);
+      send(200, { reply });
+    } catch (err) {
+      if (err.status === 400 && !(err instanceof AnthropicSDK.APIError)) {
+        return send(400, { error: err.message });
+      }
+      if (err instanceof AnthropicSDK.AuthenticationError) {
+        console.log('  ✗  NPC chat: no valid Anthropic credentials (set ANTHROPIC_API_KEY)');
+        return send(503, { error: 'no credentials' });
+      }
+      if (err instanceof AnthropicSDK.RateLimitError) {
+        console.log('  ✗  NPC chat: rate limited');
+        return send(503, { error: 'rate limited' });
+      }
+      if (err instanceof AnthropicSDK.APIError) {
+        console.log(`  ✗  NPC chat: API error ${err.status}: ${err.message}`);
+        return send(502, { error: 'api error' });
+      }
+      console.log(`  ✗  NPC chat: ${err.message}`);
+      send(503, { error: 'unavailable' });
+    }
+  });
+}
+
 // ── HTTP server ────────────────────────────────────────────────────────────
 const server = http.createServer((req, res) => {
+
+  if (req.method === 'POST' && req.url === '/api/npc-reply') {
+    handleNpcReply(req, res);
+    return;
+  }
 
   // SSE live-reload endpoint
   if (req.url === '/~~livereload') {

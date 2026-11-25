@@ -25,10 +25,36 @@ This runs `server.js` (zero npm dependencies — pure Node built-ins) which:
 1. Drop the image into `assets/` (e.g. `assets/map2.jpg`).
 2. Create `assets/map2.json` following the same schema as `game_design.json`:
    - `name` — display name shown on the character-select screen
-   - `image` — path to the image (e.g. `"assets/map2.jpg"`)
+   - `image` — path to the image (e.g. `"assets/map2.jpg"`), **or** a `scene` (see below)
    - `playerStart` — `{ "px": 0–1, "py": 0–1 }` fractional spawn point
    - `hotspots` — array of hotspot objects (see schema below)
 3. In `index.html` change the `loadMap(...)` call to point at the new JSON.
+
+### Rooms without a drawing (`scene` maps)
+A map can use a `scene` object **instead of** `image`. Index.html turns it
+into a marker-style SVG (wobbly ink, streaky colouring, emoji stickers) at
+load time, so new rooms/tents need no hand-drawn background. Example:
+`assets/camp_bathroom.json` (entered from the main map's `bathroom` hotspot).
+```json
+"scene": {
+  "width": 2400, "height": 1700,
+  "ceiling": { "height": 0.05, "color": "#7a4a2a" },          // optional striped roof band
+  "wall":    { "pattern": "blocks|planks|canvas", "color": "#e1ecaf" },
+  "floor":   { "from": 0.45, "pattern": "concrete|tiles|planks", "color": "#cbc5ba" },
+  "props": [ { "kind": "door", "px": 0.05, "py": 0.15, "pw": 0.09, "ph": 0.3 } ]
+}
+```
+Props are drawn in order, with boxes in the same 0–1 fractions as hotspots.
+Kinds live in `SCENE_PROPS` in `index.html`: `emoji` (`emoji`, `rotate`),
+`sign` (`text` with `\n`, `color`, `rotate`), `door`, `mat`, `window`, `bulb`,
+`cobweb` (`spider`), `mirror`, `sinks` (`count`), `dryer`, `stalls` (`doors`:
+`label`/`sign`/`occupied`/`feet`), `shower` (`curtain`), `bench` (`towel`),
+`box` (`label`, `peek` emojis), `trashCan` (`label`, `peek`), `mopBucket`,
+`drain`, `puddle`, `footprints`. Hotspots are separate: they're placed over
+the props by hand.
+
+A portal hotspot may have `"arrive": { "px", "py" }` — where the player lands
+when entering the map through it (default: the hotspot's centre).
 
 ### Hotspot schema
 ```json
@@ -47,6 +73,21 @@ This runs `server.js` (zero npm dependencies — pure Node built-ins) which:
   ]
 }
 ```
+
+### NPC friends / talking
+A map JSON may also have an `npcs` array. Each entry places one of the
+`characters` (from `index.html`) on the map; the player's own character is
+hidden. Walk up and press **T** (or tap them) to talk: the player types a line,
+it pops out of their mouth as a speech bubble, then the NPC replies.
+```json
+{ "id": "red_scout", "character": "Red Scout",   // must match a characters[].name
+  "px": 0.63, "py": 0.78,                          // FEET position, fractions of the image
+  "personality": "Free text that shapes how they talk." }
+```
+Replies come from Claude via `POST /api/npc-reply` in `server.js` (needs
+`npm install` and `ANTHROPIC_API_KEY`). If that endpoint is unavailable (no
+key, static hosting like GitHub Pages), the browser uses `localNpcReply()`.
+Conversations live in memory only.
 
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).

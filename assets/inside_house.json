@@ -382,5 +382,14 @@
         }
       ]
     }
+  ],
+  "npcs": [
+    {
+      "id": "green_girl",
+      "character": "Green Girl",
+      "px": 0.3,
+      "py": 0.72,
+      "personality": "Gentle and cozy. Loves plants, trees, tea parties, and crafts, and always notices the small, pretty things that other people miss."
+    }
   ]
 }

@@ -20,10 +20,64 @@
     cursor: default;
     image-rendering: auto;
   }
+  /* --- Talk bar (typing what your character says to an NPC) --- */
+  #talkBar {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    width: min(640px, calc(100vw - 24px));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(40, 24, 8, 0.88);
+    border: 3px solid #FFD54F;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    font-family: inherit;
+  }
+  #talkBar[hidden] { display: none; }
+  #talkTo {
+    flex-basis: 100%;
+    color: #FFEB3B;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  #talkInput {
+    flex: 1 1 200px;
+    min-width: 0;
+    font: 18px 'Comic Sans MS', 'Chalkboard SE', cursive;
+    padding: 8px 12px;
+    border: 2px solid #FFF9C4;
+    border-radius: 12px;
+    outline: none;
+    user-select: text;
+  }
+  #talkInput:focus { border-color: #FFD54F; box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.35); }
+  #talkInput:disabled { background: #eee; color: #888; }
+  #talkBar button {
+    font: bold 16px 'Comic Sans MS', 'Chalkboard SE', cursive;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    color: white;
+  }
+  #talkSay { background: #4CAF50; }
+  #talkSay:disabled { background: #9E9E9E; cursor: default; }
+  #talkBye { background: #E57373; }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
+<form id="talkBar" hidden autocomplete="off">
+  <div id="talkTo"></div>
+  <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
+  <button id="talkSay" type="submit">Say it 💬</button>
+  <button id="talkBye" type="button">Bye 👋</button>
+</form>
 
 <script>
 // ============================================================
@@ -43,7 +97,8 @@ const GameState = {
   INTERACTING: 'interacting',
   ITEM_ACTION: 'itemAction',
   USING_ITEM: 'usingItem',
-  CONFIRM_DIALOG: 'confirmDialog'
+  CONFIRM_DIALOG: 'confirmDialog',
+  TALKING: 'talking'
 };
 
 let state = GameState.LOADING;
@@ -101,13 +156,12 @@ function loadMap(jsonPath) {
     mapConfig = config;
     allMapConfigs[jsonPath] = config;
     loadingMessage = `Loading ${config.name}...`;
-    mapImage = new Image();
-    mapImage.onload = () => {
+    loadMapImage(config).then(img => {
+      mapImage = img;
       mapLoaded = true;
       recalcMapScale();
       state = GameState.CHARACTER_SELECT;
-    };
-    mapImage.src = config.image;
+    });
   }
 
   fetch(jsonPath)
@@ -137,16 +191,20 @@ function switchMap(targetPath, targetHotspotId) {
       // Restore or default hotspot items for the new map
       hotspotItems = restoreOrDefaultHotspots(config, allMapSaves[targetPath] || {});
 
-      mapImage = new Image();
-      mapImage.onload = () => {
+      loadMapImage(config).then(img => {
+        mapImage = img;
         mapLoaded = true;
         recalcMapScale();
 
-        // Place player at the centre of the arrival hotspot (or playerStart)
+        // Place player at the arrival hotspot: its `arrive` point if it has
+        // one, else its centre (or the map's playerStart if there's no portal)
         const portal = targetHotspotId
           ? config.hotspots.find(h => h.id === targetHotspotId)
           : null;
-        if (portal) {
+        if (portal && portal.arrive) {
+          player.x = scaledMapW * portal.arrive.px;
+          player.y = scaledMapH * portal.arrive.py;
+        } else if (portal) {
           player.x = scaledMapW * (portal.px + portal.pw / 2);
           player.y = scaledMapH * (portal.py + portal.ph / 2);
         } else {
@@ -154,13 +212,570 @@ function switchMap(targetPath, targetHotspotId) {
           player.y = scaledMapH * config.playerStart.py;
         }
         nearbyObject = null;
+        nearbyNpc    = null;
+        speechBubbles = [];
         tapTarget    = null;
         backpackOpen = false;
         state = GameState.PLAYING;
         writeSave();  // persist new currentMap
-      };
-      mapImage.src = config.image;
+      });
     });
+}
+
+// ============================================================
+// SCENE ROOMS — maps drawn from JSON instead of an image file
+// ============================================================
+// A map JSON may have a `scene` object instead of an `image`. The scene is
+// built into a marker-style SVG (wobbly ink outlines, streaky marker fills,
+// emoji stickers), rasterised once, and then used exactly like a map image.
+// All prop boxes use the same 0–1 fractions as hotspots.
+
+// Resolves to something drawImage() accepts, with naturalWidth/naturalHeight.
+function loadMapImage(config) {
+  if (config.scene) return renderSceneImage(config.scene);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = config.image;
+  });
+}
+
+function renderSceneImage(scene) {
+  const W = scene.width || 2400;
+  const H = scene.height || 1700;
+  const svg = buildSceneSvg(scene, W, H);
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const img = new Image();
+    img.onload = () => {
+      // Rasterise once so the (filter-heavy) SVG isn't re-rendered every frame
+      const c = document.createElement('canvas');
+      c.width = W;
+      c.height = H;
+      c.getContext('2d').drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+      c.naturalWidth = W;
+      c.naturalHeight = H;
+      resolve(c);
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
+const SCENE_INK = '#221c1a';
+const SCENE_FONT = "'Marker Felt','Chalkboard SE','Comic Sans MS',cursive";
+const SCENE_EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+
+function svgEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function svgAttrs(o) {
+  return Object.entries(o)
+    .map(([k, v]) => `${k}="${typeof v === 'number' ? Math.round(v * 10) / 10 : svgEsc(v)}"`)
+    .join(' ');
+}
+
+// A "pen" collects SVG into three layers:
+//   fill — marker colour (slightly wobbled one way)
+//   ink  — black outlines + handwriting (wobbled a different way, so the
+//          colour sits a little off the lines, like real colouring-in)
+//   top  — crisp emoji stickers
+function scenePen(S) {
+  const fill = [], ink = [], top = [];
+  const SW = 7 * S;
+  function shape(tag, a, color, o = {}) {
+    if (color) fill.push(`<${tag} ${svgAttrs(a)} fill="${color}"${o.opacity ? ` opacity="${o.opacity}"` : ''}/>`);
+    if (o.ink !== false) {
+      ink.push(`<${tag} ${svgAttrs(a)} fill="none" stroke="${o.stroke || SCENE_INK}" ` +
+        `stroke-width="${(o.sw || 1) * SW}" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
+  }
+  const pen = {
+    S, fill, ink, top,
+    rect(x, y, w, h, color, o = {}) { shape('rect', { x, y, width: w, height: h, rx: o.r || 0 }, color, o); },
+    circle(cx, cy, r, color, o) { shape('circle', { cx, cy, r }, color, o); },
+    ellipse(cx, cy, rx, ry, color, o) { shape('ellipse', { cx, cy, rx, ry }, color, o); },
+    path(d, color, o) { shape('path', { d }, color, o); },
+    poly(points, color, o) {
+      shape('polygon', { points: points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ') }, color, o);
+    },
+    line(x1, y1, x2, y2, o = {}) {
+      (o.layer === 'fill' ? fill : ink).push(`<line ${svgAttrs({ x1, y1, x2, y2 })} stroke="${o.stroke || SCENE_INK}" ` +
+        `stroke-width="${(o.sw || 1) * SW}" stroke-linecap="round"${o.opacity ? ` opacity="${o.opacity}"` : ''}` +
+        `${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/>`);
+    },
+    star(cx, cy, r, color, o) {
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5;
+        const rr = i % 2 ? r * 0.45 : r;
+        pts.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]);
+      }
+      pen.poly(pts, color, o);
+    },
+    crescent(cx, cy, r, color, o) {
+      pen.path(`M ${cx} ${cy - r} A ${r} ${r} 0 1 0 ${cx} ${cy + r} A ${r * 0.7} ${r} 0 1 1 ${cx} ${cy - r} Z`, color, o);
+    },
+    text(x, y, str, o = {}) {
+      ink.push(`<text ${svgAttrs({ x, y })} font-family="${SCENE_FONT}" font-size="${o.size || 40 * S}" ` +
+        `font-weight="${o.weight || 'bold'}" fill="${o.color || SCENE_INK}" text-anchor="${o.anchor || 'middle'}" ` +
+        `dominant-baseline="central">${svgEsc(str)}</text>`);
+    },
+    // under:true puts the emoji in the fill layer so later shapes can hide part of it
+    emoji(x, y, ch, size, o = {}) {
+      const tf = [];
+      if (o.flip) tf.push(`translate(${x * 2} 0) scale(-1 1)`);
+      if (o.rotate) tf.push(`rotate(${o.rotate} ${x} ${y})`);
+      (o.under ? fill : top).push(`<text ${svgAttrs({ x, y })} font-family="${SCENE_EMOJI_FONT}" font-size="${size}" ` +
+        `text-anchor="middle" dominant-baseline="central"${o.opacity ? ` opacity="${o.opacity}"` : ''}` +
+        `${tf.length ? ` transform="${tf.join(' ')}"` : ''}>${svgEsc(ch)}</text>`);
+    },
+    group(transform, fn) {
+      for (const L of [fill, ink, top]) L.push(`<g transform="${transform}">`);
+      fn();
+      for (const L of [fill, ink, top]) L.push('</g>');
+    }
+  };
+  return pen;
+}
+
+// --- Room shell: ceiling, back wall, floor ---
+function drawSceneCeiling(p, W, h, c) {
+  const S = p.S;
+  p.rect(0, 0, W, h, c.color || '#7a4a2a', { ink: false });
+  // Diagonal roof stripes, like the striped roof in Louisa's drawing
+  for (let x = -h; x < W; x += 46 * S) p.line(x, h, x + h * 0.9, 0, { sw: 0.5, stroke: c.stripe || '#4a2a14' });
+  p.line(0, h, W, h, { sw: 1.2 });
+}
+
+function drawSceneWall(p, y0, W, h, c) {
+  const S = p.S;
+  const faint = { sw: 0.35, stroke: 'rgba(0,0,0,0.3)' };
+  p.rect(0, y0, W, h, c.color || '#e3ecb4', { ink: false });
+  const pattern = c.pattern || 'blocks';
+  if (pattern === 'blocks') {
+    const bh = 64 * S, bw = 150 * S;
+    for (let r = 0, y = y0; y < y0 + h; r++, y += bh) {
+      if (y > y0) p.line(0, y, W, y, faint);
+      for (let x = (r % 2) * bw / 2; x < W; x += bw) p.line(x, y, x, Math.min(y + bh, y0 + h), faint);
+    }
+  } else if (pattern === 'planks') {
+    for (let y = y0 + 70 * S; y < y0 + h; y += 70 * S) p.line(0, y, W, y, faint);
+  } else if (pattern === 'canvas') {
+    for (let x = 220 * S; x < W; x += 220 * S) {
+      p.path(`M ${x} ${y0} Q ${x + 18 * S} ${y0 + h / 2} ${x} ${y0 + h}`, null, faint);
+    }
+  }
+}
+
+function drawSceneFloor(p, y0, W, h, c) {
+  const S = p.S;
+  p.rect(0, y0, W, h, c.color || '#cbc5ba', { ink: false });
+  const pattern = c.pattern || 'concrete';
+  const faint = { sw: 0.4, stroke: 'rgba(0,0,0,0.25)' };
+  if (pattern === 'concrete') {
+    // expansion joints + a few cracks + speckles
+    for (let x = 400 * S; x < W; x += 400 * S) p.line(x, y0, x - 30 * S, y0 + h, faint);
+    p.line(0, y0 + h * 0.55, W, y0 + h * 0.55, faint);
+    const cracks = [[0.22, 0.30], [0.63, 0.82], [0.80, 0.25]];
+    for (const [fx, fy] of cracks) {
+      const x = fx * W, y = y0 + fy * h;
+      p.path(`M ${x} ${y} l ${30 * S} ${12 * S} l ${14 * S} ${26 * S} m ${-14 * S} ${-26 * S} l ${36 * S} ${-6 * S}`, null, { sw: 0.4 });
+    }
+    let seed = 7;
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < 120; i++) p.circle(rand() * W, y0 + rand() * h, (2 + rand() * 3) * S, 'rgba(0,0,0,0.18)', { ink: false });
+  } else if (pattern === 'tiles') {
+    const t = 110 * S;
+    for (let y = y0 + t; y < y0 + h; y += t) p.line(0, y, W, y, faint);
+    for (let x = t; x < W; x += t) p.line(x, y0, x, y0 + h, faint);
+  } else if (pattern === 'planks') {
+    for (let y = y0 + 60 * S, r = 0; y < y0 + h; y += 60 * S, r++) {
+      p.line(0, y, W, y, faint);
+      for (let x = (r % 3) * 180 * S; x < W; x += 540 * S) p.line(x, y - 60 * S, x, y, faint);
+    }
+  }
+  // skirting board where wall meets floor
+  p.rect(0, y0 - 10 * S, W, 20 * S, c.skirting || '#8b5a2b');
+}
+
+// --- Prop library. Each gets (pen, box in px, prop JSON). ---
+const SCENE_PROPS = {
+  emoji(p, b, o) {
+    p.emoji(b.x + b.w / 2, b.y + b.h / 2, o.emoji, b.h, o);
+  },
+
+  sign(p, b, o) {
+    const S = p.S;
+    const lines = String(o.text || '').split('\n');
+    const maxLen = Math.max(...lines.map(l => l.length), 1);
+    const size = Math.min(b.h / (lines.length * 1.3), b.w / (maxLen * 0.72));
+    const draw = () => {
+      p.rect(b.x, b.y, b.w, b.h, o.color || '#fff8dc', { r: 8 * S, sw: 0.8 });
+      if (o.tape !== false) {
+        p.rect(b.x - 8 * S, b.y - 8 * S, 46 * S, 18 * S, 'rgba(230,210,150,0.85)', { ink: false });
+        p.rect(b.x + b.w - 38 * S, b.y - 8 * S, 46 * S, 18 * S, 'rgba(230,210,150,0.85)', { ink: false });
+      }
+      lines.forEach((l, i) => p.text(b.x + b.w / 2, b.y + b.h / 2 + (i - (lines.length - 1) / 2) * size * 1.2, l,
+        { size, color: o.textColor }));
+    };
+    o.rotate ? p.group(`rotate(${o.rotate} ${b.x + b.w / 2} ${b.y + b.h / 2})`, draw) : draw();
+  },
+
+  // Screen door with the night outside showing through the mesh
+  door(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.color || '#8b5a2b', { r: 4 * S });
+    const m = w * 0.13;
+    for (const [py, ph] of [[y + m, h * 0.42 - m], [y + h * 0.5, h * 0.5 - m]]) {
+      p.rect(x + m, py, w - 2 * m, ph, o.outside || '#2f4a6d', { sw: 0.6 });
+      p.rect(x + m, py, w - 2 * m, ph, 'url(#mesh)', { ink: false });
+    }
+    p.star(x + w * 0.36, y + h * 0.15, w * 0.08, '#f6a623', { stroke: '#6a3fb5', sw: 0.5 });
+    p.star(x + w * 0.66, y + h * 0.30, w * 0.06, '#f6a623', { stroke: '#6a3fb5', sw: 0.5 });
+    p.circle(x + w * 0.6, y + h * 0.8, w * 0.03, '#fff59d', { ink: false });   // firefly
+    p.circle(x + w * 0.4, y + h * 0.68, w * 0.025, '#fff59d', { ink: false });
+    // hinges, handle, long door spring
+    for (const hy of [0.12, 0.85]) p.rect(x - 4 * S, y + h * hy, w * 0.1, h * 0.05, '#9e9e9e', { sw: 0.5 });
+    p.circle(x + w - m * 0.5, y + h * 0.46, w * 0.05, '#d9d9d9', { sw: 0.6 });
+    let d = `M ${x + m * 0.5} ${y + h * 0.46}`;
+    const n = 14;
+    for (let i = 1; i <= n; i++) d += ` L ${x + m * 0.5 + (w - m * 1.4) * i / n} ${y + h * 0.46 + (i % 2 ? -1 : 1) * 7 * S}`;
+    p.path(d, null, { sw: 0.4, stroke: '#555' });
+  },
+
+  mat(p, b, o) {
+    p.rect(b.x, b.y, b.w, b.h, o.color || '#c0392b', { r: 10 * p.S, sw: 0.7 });
+    for (let i = 1; i < 6; i++) p.line(b.x + b.w * i / 6, b.y + 6 * p.S, b.x + b.w * i / 6, b.y + b.h - 6 * p.S,
+      { sw: 0.3, stroke: 'rgba(0,0,0,0.35)' });
+    if (o.text) p.text(b.x + b.w / 2, b.y + b.h / 2, o.text, { size: b.h * 0.5, color: '#fff3c4' });
+  },
+
+  window(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x - 10 * S, y - 10 * S, w + 20 * S, h + 20 * S, o.color || '#8b5a2b', { r: 6 * S });
+    p.rect(x, y, w, h, o.sky || '#253a6b', { sw: 0.6 });
+    p.crescent(x + w * 0.72, y + h * 0.3, h * 0.17, '#ffe082', { sw: 0.6 });
+    p.star(x + w * 0.25, y + h * 0.28, h * 0.11, '#f6a623', { stroke: '#7e57c2', sw: 0.6 });
+    p.star(x + w * 0.42, y + h * 0.72, h * 0.08, '#f6a623', { stroke: '#7e57c2', sw: 0.6 });
+    p.line(x + w / 2, y, x + w / 2, y + h, { sw: 0.8 });
+    p.line(x, y + h / 2, x + w, y + h / 2, { sw: 0.8 });
+    p.rect(x - 18 * S, y + h + 8 * S, w + 36 * S, 16 * S, o.color || '#8b5a2b');
+  },
+
+  // Bare bulb hanging from the ceiling, with a warm glow
+  bulb(p, b, o) {
+    const { x, y, w, h } = b, cx = x + w / 2, S = p.S;
+    p.circle(cx, y + h * 0.8, w * 3, 'url(#glow)', { ink: false });
+    p.line(cx, y, cx, y + h * 0.55, { sw: 0.5 });
+    p.rect(cx - w * 0.18, y + h * 0.5, w * 0.36, h * 0.14, '#9e9e9e', { sw: 0.6 });
+    p.circle(cx, y + h * 0.8, w * 0.3, o.color || '#ffe066', { sw: 0.8 });
+    for (const a of [-40, 0, 40, 140, 180, 220]) {
+      const r = (a * Math.PI) / 180, r1 = w * 0.45, r2 = w * 0.65;
+      p.line(cx + Math.cos(r) * r1, y + h * 0.8 + Math.sin(r) * r1, cx + Math.cos(r) * r2, y + h * 0.8 + Math.sin(r) * r2,
+        { sw: 0.45, stroke: '#e0a800' });
+    }
+  },
+
+  cobweb(p, b, o) {
+    const S = p.S;
+    const draw = () => {
+      const { x, y, w, h } = b;
+      const grey = { sw: 0.3, stroke: '#666' };
+      const spokes = 5, rings = 4;
+      const pts = [];
+      for (let i = 0; i < spokes; i++) {
+        const a = (Math.PI / 2) * i / (spokes - 1);
+        p.line(x, y, x + Math.cos(a) * w, y + Math.sin(a) * h, grey);
+        pts.push(a);
+      }
+      for (let k = 1; k <= rings; k++) {
+        const f = k / rings;
+        let d = '';
+        for (let i = 0; i < spokes; i++) {
+          const px = x + Math.cos(pts[i]) * w * f, py = y + Math.sin(pts[i]) * h * f;
+          if (i === 0) d = `M ${px} ${py}`;
+          else {
+            const mid = (pts[i] + pts[i - 1]) / 2;
+            d += ` Q ${x + Math.cos(mid) * w * f * 0.8} ${y + Math.sin(mid) * h * f * 0.8} ${px} ${py}`;
+          }
+        }
+        p.path(d, null, grey);
+      }
+      if (o.spider) {
+        const sx = x + w * 0.45, sy = y + h * 1.25;
+        p.line(sx, y + h * 0.4, sx, sy - h * 0.12, grey);
+        p.emoji(sx, sy, '🕷️', h * 0.38);
+      }
+    };
+    o.corner === 'tr' ? p.group(`translate(${2 * b.x} 0) scale(-1 1)`, draw) : draw();
+  },
+
+  mirror(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.frame || '#9e9e9e', { r: 10 * S });
+    p.rect(x + 14 * S, y + 14 * S, w - 28 * S, h - 28 * S, o.color || '#cdeefa', { r: 6 * S, sw: 0.6 });
+    p.line(x + w * 0.12, y + h * 0.75, x + w * 0.3, y + h * 0.22, { layer: 'fill', stroke: '#fff', sw: 2.2, opacity: 0.85 });
+    p.line(x + w * 0.2, y + h * 0.78, x + w * 0.36, y + h * 0.36, { layer: 'fill', stroke: '#fff', sw: 1.2, opacity: 0.85 });
+  },
+
+  // A counter of wall-mounted sinks with exposed pipes
+  sinks(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const n = o.count || 2;
+    const topH = h * 0.16;
+    for (let i = 0; i < n; i++) {
+      const cx = x + w * (i + 0.5) / n;
+      const bw = w / n * 0.34;
+      p.rect(cx - 8 * S, y + topH, 16 * S, h - topH, '#a6a6a6', { sw: 0.6 });                // drain pipe
+      p.path(`M ${cx - bw} ${y + topH} Q ${cx - bw} ${y + topH + h * 0.26} ${cx} ${y + topH + h * 0.26} ` +
+        `Q ${cx + bw} ${y + topH + h * 0.26} ${cx + bw} ${y + topH} Z`, '#f4f4f4');           // basin
+    }
+    p.poly([[x, y + topH], [x + w * 0.06, y + topH], [x, y + topH + h * 0.25]], '#8b5a2b', { sw: 0.7 });
+    p.poly([[x + w, y + topH], [x + w * 0.94, y + topH], [x + w, y + topH + h * 0.25]], '#8b5a2b', { sw: 0.7 });
+    p.rect(x, y, w, topH, o.color || '#e6dcc6', { r: 6 * S });
+    for (let i = 0; i < n; i++) {
+      const cx = x + w * (i + 0.5) / n;
+      const bw = w / n * 0.34;
+      p.ellipse(cx, y + topH * 0.55, bw * 0.85, topH * 0.3, '#9fd3e6', { sw: 0.6 });
+      p.rect(cx - 7 * S, y - h * 0.16, 14 * S, h * 0.18, '#bdbdbd', { sw: 0.6 });             // faucet
+      p.rect(cx - 7 * S, y - h * 0.18, bw * 0.55, 14 * S, '#bdbdbd', { r: 6 * S, sw: 0.6 });
+      p.circle(cx - bw * 0.55, y - h * 0.04, 13 * S, '#e53935', { sw: 0.6 });                // hot
+      p.circle(cx + bw * 0.55, y - h * 0.04, 13 * S, '#1e88e5', { sw: 0.6 });                // cold
+      if (i === 0) p.path(`M ${cx + bw * 0.5} ${y - h * 0.11} q ${-8 * S} ${14 * S} 0 ${18 * S} q ${8 * S} ${-4 * S} 0 ${-18 * S} Z`,
+        '#4fc3f7', { sw: 0.4, stroke: '#1976d2' });                                          // drip
+    }
+  },
+
+  dryer(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h * 0.75, o.color || '#e0e0e0', { r: 14 * S });
+    p.rect(x + w * 0.35, y + h * 0.75, w * 0.3, h * 0.13, '#bdbdbd', { r: 4 * S, sw: 0.7 });
+    p.circle(x + w / 2, y + h * 0.42, w * 0.17, '#e53935', { sw: 0.7 });
+    p.text(x + w / 2, y + h * 0.15, 'PUSH', { size: h * 0.13 });
+    for (const dx of [-0.2, 0, 0.2]) {
+      p.path(`M ${x + w * (0.5 + dx)} ${y + h * 0.92} q ${6 * S} ${10 * S} 0 ${20 * S} q ${-6 * S} ${10 * S} 0 ${20 * S}`,
+        null, { sw: 0.35, stroke: '#78909c' });
+    }
+  },
+
+  // A bank of toilet stalls. doors: [{ label, color, sign, occupied, feet }]
+  stalls(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const doors = o.doors || [{}, {}, {}];
+    const n = doors.length;
+    const postW = w * 0.022;
+    const slotW = (w - postW * (n + 1)) / n;
+    const doorTop = y + h * 0.07, doorBot = y + h * 0.84;
+    p.rect(x, y, w, h * 0.04, '#9e9e9e', { sw: 0.7 });                                         // top rail
+    doors.forEach((d, i) => {
+      const sx = x + postW + i * (slotW + postW);
+      p.rect(sx, doorBot, slotW, y + h - doorBot, '#8a857c', { sw: 0.4 });                    // gap under door
+      p.rect(sx, doorTop, slotW, doorBot - doorTop, d.color || o.color || '#8dbb2a', { sw: 0.9 });
+      // round window with a crescent moon, like the doors in the drawing
+      p.circle(sx + slotW / 2, doorTop + h * 0.16, slotW * 0.2, '#3fb6d9', { sw: 0.8 });
+      p.crescent(sx + slotW / 2 - slotW * 0.02, doorTop + h * 0.16, slotW * 0.12, '#fff59d', { sw: 0.4 });
+      if (d.label) p.text(sx + slotW / 2, doorTop + h * 0.045, d.label, { size: h * 0.05 });
+      p.rect(sx + slotW * 0.8, doorTop + h * 0.38, slotW * 0.1, h * 0.05,
+        d.occupied ? '#e53935' : '#43a047', { r: 4 * S, sw: 0.5 });                         // lock indicator
+      for (const hy of [0.1, 0.85]) p.rect(sx - 3 * S, doorTop + (doorBot - doorTop) * hy, slotW * 0.08, h * 0.03, '#bdbdbd', { sw: 0.4 });
+      if (d.sign) {
+        SCENE_PROPS.sign(p, { x: sx + slotW * 0.1, y: doorTop + h * 0.5, w: slotW * 0.8, h: h * 0.13 },
+          { text: d.sign, rotate: d.signRotate ?? -5, color: '#fffdf5', textColor: '#d32f2f' });
+      }
+      if (d.feet) {
+        const fy = doorBot + (y + h - doorBot) * 0.6;
+        p.emoji(sx + slotW * 0.3, fy, '👟', (y + h - doorBot) * 0.6);
+        p.emoji(sx + slotW * 0.7, fy, '👟', (y + h - doorBot) * 0.6);
+      }
+    });
+    for (let i = 0; i <= n; i++) p.rect(x + i * (slotW + postW), y, postW, h, o.post || '#b0a99a', { sw: 0.7 });
+  },
+
+  shower(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const faint = { sw: 0.3, stroke: 'rgba(0,0,0,0.25)' };
+    p.rect(x, y, w, h, o.tile || '#cfe8ef', { sw: 0.9 });
+    const t = 56 * S;
+    for (let ty = y + t; ty < y + h * 0.88; ty += t) p.line(x, ty, x + w, ty, faint);
+    for (let tx = x + t; tx < x + w; tx += t) p.line(tx, y, tx, y + h * 0.88, faint);
+    p.rect(x, y + h * 0.88, w, h * 0.12, '#b5cfd6', { sw: 0.6 });                              // shower tray
+    p.ellipse(x + w * 0.65, y + h * 0.94, w * 0.06, h * 0.022, '#7d8a8e', { sw: 0.5 });
+    // pipe + head + water
+    const hx = x + w * 0.7;
+    p.rect(hx - 7 * S, y, 14 * S, h * 0.15, '#bdbdbd', { sw: 0.5 });
+    p.path(`M ${hx - w * 0.1} ${y + h * 0.2} L ${hx - 10 * S} ${y + h * 0.14} L ${hx + 10 * S} ${y + h * 0.14} L ${hx + w * 0.1} ${y + h * 0.2} Z`,
+      '#9e9e9e', { sw: 0.6 });
+    for (let i = -3; i <= 3; i++) {
+      p.line(hx + i * w * 0.028, y + h * 0.23, hx + i * w * 0.05, y + h * 0.84,
+        { layer: 'fill', stroke: '#4fc3f7', sw: 0.8, dash: `${30 * S} ${22 * S}` });
+    }
+    // little shelf of shampoo
+    p.rect(x + w * 0.08, y + h * 0.42, w * 0.24, h * 0.025, '#bdbdbd', { sw: 0.5 });
+    p.emoji(x + w * 0.14, y + h * 0.385, '🧴', h * 0.065);
+    p.emoji(x + w * 0.25, y + h * 0.385, '🧴', h * 0.055, { rotate: 8 });
+    // curtain rod + curtain (purple with orange stars, Louisa's favourite colours)
+    p.line(x - 10 * S, y + h * 0.06, x + w + 10 * S, y + h * 0.06, { sw: 1.2, stroke: '#757575' });
+    const cw = w * (o.curtainOpen ?? 0.45);
+    let d = `M ${x} ${y + h * 0.06} L ${x + cw} ${y + h * 0.06} L ${x + cw + w * 0.04} ${y + h * 0.86}`;
+    const waves = 4;
+    for (let i = 1; i <= waves; i++) {
+      const wx = x + cw + w * 0.04 - (cw + w * 0.04) * i / waves;
+      d += ` Q ${wx + (cw / waves) * 0.5} ${y + h * (i % 2 ? 0.9 : 0.83)} ${wx} ${y + h * 0.86}`;
+    }
+    d += ' Z';
+    p.path(d, o.curtain || '#7e57c2', { sw: 0.9 });
+    for (let i = 1; i < 4; i++) p.line(x + cw * i / 4, y + h * 0.08, x + cw * i / 4 + 6 * S, y + h * 0.84, { sw: 0.35 });
+    for (const [fx, fy] of [[0.1, 0.25], [0.3, 0.45], [0.12, 0.66], [0.33, 0.78]]) {
+      p.star(x + w * fx, y + h * fy, w * 0.05, '#f6a623', { stroke: '#4a148c', sw: 0.4 });
+    }
+    for (let i = 0; i <= 6; i++) p.circle(x + cw * i / 6, y + h * 0.06, 9 * S, '#bdbdbd', { sw: 0.4 });
+  },
+
+  bench(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const wood = o.color || '#a0673a';
+    for (const lx of [0.08, 0.86]) p.rect(x + w * lx, y + h * 0.3, w * 0.06, h * 0.7, '#7a4a2a', { sw: 0.7 });
+    p.rect(x, y, w, h * 0.32, wood, { r: 6 * S });
+    p.line(x + 10 * S, y + h * 0.16, x + w - 10 * S, y + h * 0.16, { sw: 0.35 });
+    if (o.towel) {
+      const tx = x + w * 0.58, tw = w * 0.2;
+      p.path(`M ${tx} ${y - 6 * S} L ${tx + tw} ${y - 6 * S} L ${tx + tw + 6 * S} ${y + h * 0.78} L ${tx - 4 * S} ${y + h * 0.74} Z`,
+        o.towel, { sw: 0.7 });
+      for (const f of [0.25, 0.5, 0.75]) {
+        p.line(tx + tw * f - 2 * S, y + h * 0.05, tx + tw * f, y + h * 0.7, { layer: 'fill', stroke: '#fff', sw: 1.2, opacity: 0.8 });
+      }
+    }
+  },
+
+  // Open cardboard box; `peek` emojis poke out of the top
+  box(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const top = y + h * 0.3;
+    p.poly([[x, top], [x + w * 0.12, top - h * 0.1], [x + w * 0.88, top - h * 0.1], [x + w, top]], '#7a4f27', { sw: 0.6 });
+    (o.peek || []).forEach((e, i, arr) => {
+      p.emoji(x + w * (i + 0.5) / arr.length, top - h * 0.06, e, h * 0.36, { under: true, rotate: (i % 2 ? 12 : -10) });
+    });
+    p.poly([[x, top], [x - w * 0.16, top - h * 0.2], [x + w * 0.06, top - h * 0.22], [x + w * 0.12, top - h * 0.1]], '#d9a66b', { sw: 0.6 });
+    p.poly([[x + w, top], [x + w * 1.14, top - h * 0.24], [x + w * 0.96, top - h * 0.26], [x + w * 0.88, top - h * 0.1]], '#d9a66b', { sw: 0.6 });
+    p.rect(x, top, w, y + h - top, o.color || '#c8955a', { sw: 0.8 });
+    p.rect(x + w * 0.42, top, w * 0.16, (y + h - top) * 0.35, 'rgba(230,210,150,0.85)', { ink: false });
+    const lines = String(o.label || '').split('\n').filter(Boolean);
+    lines.forEach((l, i) => p.text(x + w / 2, top + (y + h - top) * (0.5 + (i - (lines.length - 1) / 2) * 0.28), l,
+      { size: (y + h - top) * 0.22 }));
+  },
+
+  // Campground trash can; `peek` emoji lifts the lid
+  trashCan(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const top = y + h * 0.28;
+    if (o.peek) p.emoji(x + w * 0.55, top - h * 0.13, o.peek, h * 0.34, { under: true });
+    p.path(`M ${x} ${top} L ${x + w} ${top} L ${x + w * 0.92} ${y + h} L ${x + w * 0.08} ${y + h} Z`, o.color || '#5d7f5a', { sw: 0.9 });
+    for (const f of [0.25, 0.5, 0.75]) p.line(x + w * f, top + h * 0.08, x + w * (0.5 + (f - 0.5) * 0.9), y + h - h * 0.06, { sw: 0.35 });
+    if (o.label) {
+      p.rect(x + w * 0.12, top + h * 0.22, w * 0.76, h * 0.17, '#fff8dc', { r: 4 * S, sw: 0.5 });
+      p.text(x + w / 2, top + h * 0.305, o.label, { size: h * 0.075 });
+    }
+    p.group(`rotate(${o.peek ? -40 : 0} ${x} ${top})`, () => {
+      p.rect(x - w * 0.06, top - h * 0.07, w * 1.12, h * 0.07, o.color || '#5d7f5a', { r: 6 * S });
+      p.rect(x + w * 0.4, top - h * 0.11, w * 0.2, h * 0.04, '#424242', { r: 4 * S, sw: 0.5 });
+    });
+  },
+
+  mopBucket(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.group(`rotate(-12 ${x + w * 0.5} ${y + h * 0.6})`, () => {
+      p.rect(x + w * 0.46, y, w * 0.08, h * 0.62, '#a0673a', { sw: 0.5 });
+    });
+    for (let i = 0; i < 7; i++) p.line(x + w * 0.3 + i * w * 0.07, y + h * 0.5, x + w * 0.25 + i * w * 0.09, y + h * 0.66, { sw: 0.5, stroke: '#9e9e9e' });
+    p.path(`M ${x} ${y + h * 0.55} L ${x + w} ${y + h * 0.55} L ${x + w * 0.9} ${y + h} L ${x + w * 0.1} ${y + h} Z`,
+      o.color || '#fdd835', { sw: 0.8 });
+    p.ellipse(x + w / 2, y + h * 0.55, w * 0.5, h * 0.04, '#90caf9', { sw: 0.6 });
+  },
+
+  drain(p, b) {
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    p.ellipse(cx, cy, b.w / 2, b.h / 2, '#8d8d8d', { sw: 0.6 });
+    for (const f of [-0.5, 0, 0.5]) p.line(cx + f * b.w * 0.6, cy - b.h * 0.3, cx + f * b.w * 0.6, cy + b.h * 0.3, { sw: 0.4 });
+  },
+
+  puddle(p, b, o) {
+    const { x, y, w, h } = b;
+    p.path(`M ${x + w * 0.1} ${y + h * 0.5} Q ${x} ${y} ${x + w * 0.4} ${y + h * 0.1} Q ${x + w * 0.7} ${y - h * 0.1} ` +
+      `${x + w * 0.9} ${y + h * 0.3} Q ${x + w * 1.05} ${y + h * 0.8} ${x + w * 0.6} ${y + h * 0.9} ` +
+      `Q ${x + w * 0.2} ${y + h * 1.05} ${x + w * 0.1} ${y + h * 0.5} Z`,
+      o.color || 'rgba(120,200,240,0.6)', { sw: 0.4, stroke: '#4a9fd0' });
+  },
+
+  // Wet footprints walking from the box's top-right corner to its bottom-left
+  footprints(p, b, o) {
+    const S = p.S;
+    const steps = o.steps || 6;
+    const x1 = b.x + b.w, y1 = b.y, x2 = b.x, y2 = b.y + b.h;
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const deg = (ang * 180) / Math.PI + 90;
+    for (let i = 0; i < steps; i++) {
+      const f = (i + 0.5) / steps;
+      const side = i % 2 ? 1 : -1;
+      const fx = x1 + (x2 - x1) * f + Math.cos(ang + Math.PI / 2) * side * 16 * S;
+      const fy = y1 + (y2 - y1) * f + Math.sin(ang + Math.PI / 2) * side * 16 * S;
+      // local -y is the walking direction after this rotation, so toes go at -y
+      p.group(`rotate(${deg} ${fx} ${fy})`, () => {
+        const wet = 'rgba(70,130,170,0.35)';
+        p.ellipse(fx, fy, 11 * S, 19 * S, wet, { ink: false });
+        for (let t = -2; t <= 2; t++) p.circle(fx + t * 5.5 * S, fy - 25 * S + Math.abs(t) * 3 * S, (t === 0 ? 4.5 : 3.5) * S, wet, { ink: false });
+      });
+    }
+  }
+};
+
+function buildSceneSvg(scene, W, H) {
+  const S = W / 2400;
+  const p = scenePen(S);
+  const ceilH = scene.ceiling ? (scene.ceiling.height ?? 0.05) * H : 0;
+  const floorY = (scene.floor && scene.floor.from != null ? scene.floor.from : 0.45) * H;
+
+  drawSceneWall(p, ceilH, W, floorY - ceilH, scene.wall || {});
+  drawSceneFloor(p, floorY, W, H - floorY, scene.floor || {});
+  if (scene.ceiling) drawSceneCeiling(p, W, ceilH, scene.ceiling);
+
+  for (const prop of scene.props || []) {
+    const draw = SCENE_PROPS[prop.kind];
+    if (!draw) { console.warn('Unknown scene prop kind:', prop.kind); continue; }
+    draw(p, { x: prop.px * W, y: prop.py * H, w: (prop.pw || 0) * W, h: (prop.ph || 0) * H }, prop);
+  }
+
+  const defs = `<defs>
+    <filter id="wobFill" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence type="fractalNoise" baseFrequency="${0.011 / S}" numOctaves="2" seed="4"/>
+      <feDisplacementMap in="SourceGraphic" scale="${10 * S}" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="wobInk" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence type="fractalNoise" baseFrequency="${0.018 / S}" numOctaves="2" seed="19"/>
+      <feDisplacementMap in="SourceGraphic" scale="${6 * S}" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <pattern id="streaks" width="${18 * S}" height="${18 * S}" patternUnits="userSpaceOnUse" patternTransform="rotate(32)">
+      <rect width="${7 * S}" height="${18 * S}" fill="#fff" opacity="0.14"/>
+    </pattern>
+    <pattern id="mesh" width="${9 * S}" height="${9 * S}" patternUnits="userSpaceOnUse">
+      <path d="M0 0H${9 * S}M0 0V${9 * S}" stroke="#000" stroke-opacity="0.35" stroke-width="${1.6 * S}"/>
+    </pattern>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#fff59d" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#fff59d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${defs}` +
+    `<rect width="${W}" height="${H}" fill="#fbfaf4"/>` +
+    `<g filter="url(#wobFill)">${p.fill.join('')}</g>` +
+    `<rect width="${W}" height="${H}" fill="url(#streaks)"/>` +
+    `<g filter="url(#wobInk)">${p.ink.join('')}</g>` +
+    `<g>${p.top.join('')}</g>` +
+    `<rect x="${4 * S}" y="${4 * S}" width="${W - 8 * S}" height="${H - 8 * S}" fill="none" stroke="${SCENE_INK}" stroke-width="${10 * S}"/>` +
+    `</svg>`;
 }
 
 loadMap('assets/game_design.json');
@@ -340,6 +955,8 @@ function applySave(save) {
 // --- Input ---
 const keys = {};
 window.addEventListener('keydown', (e) => {
+  // Typing in the talk bar must not drive the game (its own listener handles Esc)
+  if (e.target === talkInput) return;
   keys[e.key] = true;
   if (e.key === ' ') {
     e.preventDefault();
@@ -383,6 +1000,8 @@ window.addEventListener('keydown', (e) => {
     }
   } else if (state === GameState.ITEM_ACTION) {
     handleItemActionKey(e);
+  } else if (state === GameState.TALKING) {
+    if (e.key === 'Escape') endConversation();
   } else if (state === GameState.USING_ITEM) {
     if (e.key === 'Escape' || e.key === ' ') {
       closeItemUse();
@@ -409,8 +1028,15 @@ window.addEventListener('keydown', (e) => {
       handleBackpackKey(e);
       return;
     }
+    if ((e.key === 't' || e.key === 'T') && nearbyNpc) {
+      e.preventDefault();  // don't type the "t" into the talk box we're about to focus
+      startConversation(nearbyNpc);
+      return;
+    }
     if (e.key === ' ') {
-      handleInteract();
+      // Space talks to a nearby friend when there's no hotspot to use here
+      if (!nearbyObject && nearbyNpc) startConversation(nearbyNpc);
+      else handleInteract();
     }
     if (e.key === 'Escape') {
       state = GameState.CONFIRM_DIALOG;
@@ -545,6 +1171,9 @@ let pendingResumeSave = null;
 
 function selectCharacter(index) {
   player.character = characters[index];
+  // Friends don't remember chats with a different character
+  for (const k of Object.keys(conversations)) delete conversations[k];
+  speechBubbles = [];
   // Starting position comes from the map's JSON config
   const start = mapConfig.playerStart;
   player.x = scaledMapW * start.px;
@@ -608,9 +1237,7 @@ function copyHotspotsToClipboard() {
   // Build full map JSON — preserves all fields (items, uses, etc.)
   // and rounds fractional bounds to 4 decimal places.
   const fullConfig = {
-    name: mapConfig.name,
-    image: mapConfig.image,
-    playerStart: mapConfig.playerStart,
+    ...mapConfig,   // keeps npcs and any other top-level fields
     hotspots: mapConfig.hotspots.map(h => {
       const out = { ...h };
       out.px = parseFloat(h.px.toFixed(4));
@@ -941,6 +1568,13 @@ function handleCanvasTap(screenX, screenY) {
       }
     }
 
+    // Tapping a nearby friend starts a conversation (tapping a far one walks there)
+    const tappedNpc = npcAtScreenPoint(screenX, screenY);
+    if (tappedNpc && tappedNpc === nearbyNpc) {
+      startConversation(tappedNpc);
+      return;
+    }
+
     // Tapping the character sprite triggers interaction; tapping elsewhere walks there
     const spriteScreenX = player.x - camera.x;
     const spriteScreenY = player.y - player.height - camera.y;
@@ -1193,6 +1827,545 @@ function handleItemActionKey(e) {
   }
 }
 
+// ============================================================
+// --- NPC friends & conversations ---
+// ============================================================
+// Each map JSON may list `npcs`: [{ id, character, px, py, personality }].
+// `character` names an entry in `characters` (the player's own character is
+// hidden); px/py are the NPC's FEET position as fractions of the image.
+// The player types a line, it pops out of their mouth as a speech bubble,
+// then the NPC answers. Replies come from Claude via POST /api/npc-reply
+// (server.js); if that's unavailable we fall back to localNpcReply().
+const talkBar   = document.getElementById('talkBar');
+const talkInput = document.getElementById('talkInput');
+const talkSay   = document.getElementById('talkSay');
+const talkBye   = document.getElementById('talkBye');
+const talkTo    = document.getElementById('talkTo');
+
+const SPRITE_SCALE   = 3.6;
+const NPC_TALK_RANGE = 170;          // map px between feet to be able to chat
+const conversations  = {};           // character name → [{ speaker:'player'|'npc', text }]
+let nearbyNpc   = null;              // npc def the player can talk to right now
+let talkingTo   = null;              // npc def in the active conversation
+let talkPhase   = 'input';           // 'input' | 'playerSpeaking' | 'npcSpeaking'
+let talkToken   = 0;                 // bumped per conversation so stale replies are dropped
+let pendingReply = null;             // { npc, text } — reply received, not shown yet
+let npcThinking  = null;             // { npc, since } — "..." cloud while waiting
+let speechBubbles = [];              // see makeBubble()
+const npcFacing = {};                // npc id → 'left' | 'right'
+
+function characterByName(name) {
+  return characters.find(c => c.name === name);
+}
+
+function currentNpcs() {
+  if (!mapConfig || !Array.isArray(mapConfig.npcs)) return [];
+  return mapConfig.npcs.filter(n =>
+    characterByName(n.character) &&
+    (!player.character || n.character !== player.character.name));
+}
+
+function npcPos(npc) {
+  return { x: npc.px * scaledMapW, y: npc.py * scaledMapH };
+}
+
+// Map-space feet / head / mouth for 'player' or an npc def.
+function speakerFeet(owner) {
+  return owner === 'player' ? { x: player.x, y: player.y } : npcPos(owner);
+}
+function speakerHead(owner) {
+  const f = speakerFeet(owner);
+  const spriteX = f.x - player.width / 2;
+  const spriteY = f.y - player.height;
+  return {
+    x: spriteX + 15 * SPRITE_SCALE,          // head centre (see drawCharacterSprite)
+    top: spriteY,
+    mouthY: spriteY + 13 * SPRITE_SCALE
+  };
+}
+
+function npcAtScreenPoint(sx, sy) {
+  for (const npc of currentNpcs()) {
+    const h = speakerHead(npc);
+    const f = npcPos(npc);
+    const cy = (h.top + f.y) / 2;
+    if (Math.hypot(sx - (h.x - camera.x), sy - (cy - camera.y)) < 80) return npc;
+  }
+  return null;
+}
+
+// --- Starting / ending a conversation ---
+function startConversation(npc) {
+  if (state !== GameState.PLAYING || !npc) return;
+  backpackOpen = false;
+  journalOpen = false;
+  tapTarget = null;
+  player.walking = false;
+  player.frame = 0;
+  state = GameState.TALKING;
+  talkingTo = npc;
+  talkToken++;
+  talkPhase = 'input';
+  pendingReply = null;
+  npcThinking = null;
+  speechBubbles = [];
+  const p = npcPos(npc);
+  player.facing = p.x < player.x ? 'left' : 'right';
+  npcFacing[npc.id] = p.x < player.x ? 'right' : 'left';
+  talkTo.textContent = `💬 Talking with ${npc.character}`;
+  talkInput.value = '';
+  talkBar.hidden = false;
+  setTalkEnabled(true);
+}
+
+function endConversation() {
+  if (state !== GameState.TALKING) return;
+  state = GameState.PLAYING;
+  talkingTo = null;
+  talkToken++;
+  talkPhase = 'input';
+  pendingReply = null;
+  npcThinking = null;
+  talkBar.hidden = true;
+  talkInput.blur();
+  // Let the last words linger for a moment, then fade away
+  const fadeAt = performance.now() + 1500;
+  for (const b of speechBubbles) if (!b.fadeStart) b.fadeStart = fadeAt;
+}
+
+function setTalkEnabled(on) {
+  talkInput.disabled = !on;
+  talkSay.disabled = !on;
+  if (on) talkInput.focus();
+}
+
+talkBar.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = talkInput.value.replace(/\s+/g, ' ').trim();
+  if (!text || !talkingTo || talkPhase !== 'input') return;
+  talkInput.value = '';
+  setTalkEnabled(false);
+
+  const npc = talkingTo;
+  const token = talkToken;
+  const history = conversations[npc.character] || (conversations[npc.character] = []);
+  history.push({ speaker: 'player', text });
+  say('player', text, npc);
+  talkPhase = 'playerSpeaking';
+
+  // Ask for the reply right away; it's revealed once the player finishes talking
+  fetchNpcReply(npc, history.slice()).then(reply => {
+    if (token === talkToken) pendingReply = { npc, text: reply };
+  });
+});
+talkBye.addEventListener('click', endConversation);
+talkInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    endConversation();
+  }
+});
+
+// Called every frame: advances the player-talks → NPC-answers sequence.
+function updateConversation() {
+  const now = performance.now();
+  speechBubbles = speechBubbles.filter(b => !b.fadeStart || now - b.fadeStart < 600);
+  if (state !== GameState.TALKING || !talkingTo) return;
+
+  if (talkPhase === 'playerSpeaking') {
+    const pb = speechBubbles.find(b => b.owner === 'player');
+    const playerDone = !pb || now - pb.start > pb.duration + 400;
+    if (!playerDone) return;
+    if (pendingReply) {
+      const { npc, text } = pendingReply;
+      pendingReply = null;
+      npcThinking = null;
+      conversations[npc.character].push({ speaker: 'npc', text });
+      say(npc, text, 'player');
+      talkPhase = 'npcSpeaking';
+    } else if (!npcThinking) {
+      npcThinking = { npc: talkingTo, since: now };
+    }
+  } else if (talkPhase === 'npcSpeaking') {
+    const nb = speechBubbles.find(b => b.owner === talkingTo);
+    if (!nb || now - nb.start > nb.duration + 150) {
+      talkPhase = 'input';
+      setTalkEnabled(true);
+    }
+  }
+}
+
+// --- Getting the NPC's words ---
+async function fetchNpcReply(npc, history) {
+  const ch = characterByName(npc.character);
+  try {
+    const res = await fetch('/api/npc-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        npc: { name: npc.character, desc: ch ? ch.desc : '', personality: npc.personality || '' },
+        playerName: player.character ? player.character.name : 'a friend',
+        mapName: mapConfig ? mapConfig.name : 'The Camp',
+        places: mapConfig ? mapConfig.hotspots.filter(h => !h.targetMap).map(h => h.name) : [],
+        backpack: backpack.map(i => i.name),
+        history
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.reply) return data.reply;
+    }
+  } catch (_) { /* offline / static hosting — fall through */ }
+  // No server-side brain available: make something up locally after a little "think"
+  await new Promise(r => setTimeout(r, 500 + Math.random() * 700));
+  return localNpcReply(npc, history);
+}
+
+// Simple built-in reply maker used when Claude isn't reachable
+// (e.g. on GitHub Pages, or no API key on the dev server).
+function localNpcReply(npc, history) {
+  const said = (history[history.length - 1] || { text: '' }).text.toLowerCase();
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const name = player.character ? player.character.name : 'friend';
+  const places = mapConfig ? mapConfig.hotspots.filter(h => !h.targetMap).map(h => h.name) : [];
+  const place = places.length ? pick(places) : 'camp';
+  const mentioned = places.find(p =>
+    p.toLowerCase().split(' ').some(w => w.length > 3 && said.includes(w)));
+  const has = re => re.test(said);
+
+  if (has(/\b(hi|hello|hey|howdy|hiya)\b/)) return pick([
+    `Hi ${name}! 👋 Want to go explore the ${place} with me?`,
+    `Hey ${name}! I was just thinking about the ${place}.`,
+    `Hello hello! Isn't today a perfect camp day? ☀️`
+  ]);
+  if (has(/\b(bye|goodbye|see ya|see you|later)\b/)) return pick([
+    `Bye ${name}! Come find me again soon! 👋`,
+    `See you later, alligator! 🐊`,
+    `Okay, bye! Have fun exploring!`
+  ]);
+  if (mentioned) return pick([
+    `Ooh, the ${mentioned}! That's one of my favorite spots.`,
+    `I was at the ${mentioned} earlier. It was SO fun!`,
+    `Race you to the ${mentioned}! 🏃`
+  ]);
+  if (has(/\b(sad|scared|tired|lonely|mad|upset)\b/)) return pick([
+    `Aww, want a hug? 🤗 We can go to the ${place} together.`,
+    `It's okay. I'm right here with you, ${name}.`,
+    `Let's do something cozy. Maybe the ${place}?`
+  ]);
+  if (has(/\b(love|like|fun|yay|cool|awesome|best)\b/)) return pick([
+    `Me too! That's the best! 🎉`,
+    `Yay! You always have the best ideas, ${name}.`,
+    `Ooh, I like that too! High five! ✋`
+  ]);
+  if (said.includes('?')) return pick([
+    `Hmm... I think yes! But let's ask the Moon to be sure. 🌙`,
+    `Great question! What do YOU think?`,
+    `I'm not sure... maybe we can find out at the ${place}!`
+  ]);
+  return pick([
+    `Wow, really? Tell me more!`,
+    `Ha ha! You're so funny, ${name}! 😄`,
+    `That reminds me, have you seen the ${place} today?`,
+    `Cool! I love hanging out with you at camp.`
+  ]);
+}
+
+// --- Speech bubbles ---
+const BUBBLE_FONT   = 'bold 18px "Comic Sans MS", "Chalkboard SE", cursive';
+const BUBBLE_LINE_H = 24;
+const BUBBLE_PAD_X  = 16;
+const BUBBLE_PAD_Y  = 12;
+const BUBBLE_MAX_W  = 260;
+const BUBBLE_POP_MS = 320;
+const WORD_POP_MS   = 170;
+
+// Lay out the words up front (so the bubble has its final size), and give each
+// word a time to pop in — roughly at speaking pace.
+function makeBubble(owner, text, partner) {
+  ctx.save();
+  ctx.font = BUBBLE_FONT;
+  const spaceW = ctx.measureText(' ').width;
+  const lines = [];
+  let line = [];
+  let lineW = 0;
+  let t = BUBBLE_POP_MS * 0.6;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const w = ctx.measureText(word).width;
+    if (line.length && lineW + spaceW + w > BUBBLE_MAX_W) {
+      lines.push({ words: line, width: lineW });
+      line = [];
+      lineW = 0;
+    }
+    const x = line.length ? lineW + spaceW : 0;
+    line.push({ text: word, x, w, appearAt: t });
+    lineW = x + w;
+    t += 110 + word.length * 22;
+  }
+  if (line.length) lines.push({ words: line, width: lineW });
+  ctx.restore();
+  const contentW = Math.max(40, ...lines.map(l => l.width));
+  return {
+    owner, partner, lines, contentW,
+    width: contentW + BUBBLE_PAD_X * 2,
+    height: Math.max(1, lines.length) * BUBBLE_LINE_H + BUBBLE_PAD_Y * 2,
+    start: performance.now(),
+    duration: t,               // when the last word has started popping in
+    dimmed: false,
+    fadeStart: null
+  };
+}
+
+function say(owner, text, partner) {
+  // A speaker only has one bubble at a time; older lines from others go faint
+  speechBubbles = speechBubbles.filter(b => b.owner !== owner);
+  for (const b of speechBubbles) b.dimmed = true;
+  speechBubbles.push(makeBubble(owner, text, partner));
+}
+
+// 0 = smiling, 0–1 = mouth open amount while their words are still appearing
+function mouthOpenFor(owner) {
+  const b = speechBubbles.find(b => b.owner === owner);
+  if (!b) return 0;
+  const age = performance.now() - b.start;
+  if (age > b.duration + WORD_POP_MS) return 0;
+  return 0.25 + 0.75 * Math.abs(Math.sin(age / 85));
+}
+
+function easeOutBack(p) {
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function speakerColor(owner) {
+  if (owner === 'player') return player.character ? player.character.color : '#333';
+  const ch = characterByName(owner.character);
+  return ch ? ch.color : '#333';
+}
+
+// Where a bubble rests: above the speaker's head, nudged away from whoever
+// they're talking to so the two bubbles don't overlap.
+function bubbleLayout(owner, partner, w, h) {
+  const head = speakerHead(owner);
+  const sx = head.x - camera.x;
+  const topY = head.top - camera.y;
+  let dir = owner === 'player' ? -1 : 1;
+  if (partner) {
+    const a = speakerFeet(owner).x, b = speakerFeet(partner).x;
+    if (a !== b) dir = a > b ? 1 : -1;
+  }
+  const x = clamp(sx + dir * (w / 2 - 40) - w / 2, 8, canvas.width - w - 8);
+  const y = Math.max(8, topY - 30 - h);
+  return {
+    x, y,
+    tipX: sx,
+    tipY: topY - 6,
+    mouthX: sx,
+    mouthY: head.mouthY - camera.y
+  };
+}
+
+function bubblePath(x, y, w, h, r, tipX, tipY) {
+  const tw = 11;
+  const baseX = clamp(tipX, x + r + tw, x + w - r - tw);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(baseX + tw, y + h);
+  ctx.lineTo(tipX, tipY);
+  ctx.lineTo(baseX - tw, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawBubble(b, now) {
+  const age = now - b.start;
+  const L = bubbleLayout(b.owner, b.partner, b.width, b.height);
+
+  let alpha = b.dimmed ? 0.55 : 1;
+  if (b.fadeStart && now > b.fadeStart) alpha *= Math.max(0, 1 - (now - b.fadeStart) / 600);
+  if (alpha <= 0) return;
+
+  // Pop out of the mouth: start tiny at the mouth, spring up to the resting spot
+  const p = clamp(age / BUBBLE_POP_MS, 0, 1);
+  const scale = Math.max(0.01, easeOutBack(p));
+  const rise = 1 - (1 - Math.pow(1 - p, 3));      // 1 → 0
+  const ox = (L.mouthX - L.tipX) * rise;
+  const oy = (L.mouthY - L.tipY) * rise;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(L.tipX + ox, L.tipY + oy);
+  ctx.scale(scale, scale);
+  ctx.translate(-L.tipX, -L.tipY);
+
+  bubblePath(L.x, L.y, b.width, b.height, 16, L.tipX, L.tipY);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = speakerColor(b.owner);
+  ctx.stroke();
+
+  // Words pop in one at a time
+  ctx.font = BUBBLE_FONT;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#333';
+  b.lines.forEach((line, i) => {
+    const lineX = L.x + BUBBLE_PAD_X + (b.contentW - line.width) / 2;
+    const lineY = L.y + BUBBLE_PAD_Y + i * BUBBLE_LINE_H + BUBBLE_LINE_H / 2;
+    for (const word of line.words) {
+      const wAge = age - word.appearAt;
+      if (wAge < 0) break;
+      const wp = clamp(wAge / WORD_POP_MS, 0, 1);
+      const ws = 0.3 + 0.7 * easeOutBack(wp);
+      const cx = lineX + word.x + word.w / 2;
+      const cy = lineY + (1 - wp) * 8;
+      ctx.save();
+      ctx.globalAlpha = alpha * wp;
+      ctx.translate(cx, cy);
+      ctx.scale(ws, ws);
+      ctx.fillText(word.text, 0, 0);
+      ctx.restore();
+    }
+  });
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
+// "..." thought cloud while the NPC is coming up with an answer
+function drawThinkingBubble(npc, now) {
+  const age = now - npcThinking.since;
+  const w = 78, h = 44;
+  const L = bubbleLayout(npc, 'player', w, h);
+  const p = clamp(age / 250, 0, 1);
+  ctx.save();
+  ctx.globalAlpha = p;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = speakerColor(npc);
+  ctx.lineWidth = 3;
+  // Little trail of thought puffs from the head up to the cloud
+  const puffs = [[0.25, 5], [0.6, 8]];
+  for (const [f, r] of puffs) {
+    const px = L.tipX + (L.x + w / 2 - L.tipX) * f;
+    const py = L.tipY + (L.y + h - L.tipY) * f;
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  roundRect(L.x, L.y, w, h, 20);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#666';
+  for (let i = 0; i < 3; i++) {
+    const bounce = Math.max(0, Math.sin(age / 160 - i * 0.7)) * 6;
+    ctx.beginPath();
+    ctx.arc(L.x + w / 2 + (i - 1) * 16, L.y + h / 2 + 2 - bounce, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSpeechBubbles() {
+  const now = performance.now();
+  // Draw faded (older) bubbles first so the newest line is on top
+  const ordered = [...speechBubbles].sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? -1 : 1));
+  for (const b of ordered) drawBubble(b, now);
+  if (npcThinking) drawThinkingBubble(npcThinking.npc, now);
+}
+
+// --- Drawing people on the map (player + NPCs, sorted so lower = in front) ---
+function drawPlayerSprite() {
+  const mouth = mouthOpenFor('player');
+  const draw = () => drawCharacterSprite(
+    player.x - player.width / 2,
+    player.y - player.height,
+    player.character,
+    player.frame,
+    player.facing,
+    SPRITE_SCALE,
+    mouth
+  );
+  if (player.rotation !== 0) {
+    const cx = player.x;
+    const cy = player.y - player.height / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(player.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+    draw();
+    ctx.restore();
+  } else {
+    draw();
+  }
+  // Player shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y + 2, 42, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawNpcSprite(npc) {
+  const p = npcPos(npc);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(p.x + 9, p.y + 2, 42, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  drawCharacterSprite(
+    p.x - player.width / 2,
+    p.y - player.height,
+    characterByName(npc.character),
+    0,
+    npcFacing[npc.id] || 'right',
+    SPRITE_SCALE,
+    mouthOpenFor(npc)
+  );
+}
+
+function drawNpcTalkHint(npc) {
+  const head = speakerHead(npc);
+  const x = head.x;
+  const y = head.top - 16;
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 13px "Comic Sans MS", cursive';
+  const label = npc.character;
+  const lw = ctx.measureText(label).width + 16;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  roundRect(x - lw / 2, y - 14, lw, 22, 6);
+  ctx.fill();
+  ctx.fillStyle = speakerColor(npc);
+  ctx.fillText(label, x, y + 2);
+
+  const hint = isTouchDevice() ? '💬 [ TAP ME ]' : '💬 [ T ] Talk';
+  ctx.font = '11px "Comic Sans MS", cursive';
+  const hw = ctx.measureText(hint).width + 12;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  roundRect(x - hw / 2, y - 38, hw, 18, 4);
+  ctx.fill();
+  ctx.fillStyle = '#FFF9C4';
+  ctx.fillText(hint, x, y - 25);
+}
+
+function drawPeople() {
+  const people = currentNpcs().map(npc => ({ y: npcPos(npc).y, draw: () => drawNpcSprite(npc) }));
+  people.push({ y: player.y, draw: drawPlayerSprite });
+  people.sort((a, b) => a.y - b.y);
+  for (const p of people) p.draw();
+  if (state === GameState.PLAYING && nearbyNpc) drawNpcTalkHint(nearbyNpc);
+}
+
 // --- Game Logic ---
 function update() {
   if (state !== GameState.PLAYING) return;
@@ -1271,6 +2444,19 @@ function update() {
     }
   }
 
+  // Nearby friends: they turn to look at you, and the closest one can be talked to
+  nearbyNpc = null;
+  let npcBest = NPC_TALK_RANGE;
+  for (const npc of currentNpcs()) {
+    const p = npcPos(npc);
+    const d = Math.hypot(px - p.x, py - p.y);
+    if (d < 450) npcFacing[npc.id] = px < p.x ? 'left' : 'right';
+    if (d < npcBest) {
+      npcBest = d;
+      nearbyNpc = npc;
+    }
+  }
+
   // Update camera to follow player
   updateCamera();
 }
@@ -1296,7 +2482,8 @@ function updateCamera() {
 }
 
 // --- Drawing ---
-function drawCharacterSprite(x, y, char, frame, facing, scale) {
+// mouth: 0 = smile, (0, 1] = open mouth (used to animate talking)
+function drawCharacterSprite(x, y, char, frame, facing, scale, mouth) {
   const s = scale || 1;
   const w = 30 * s;
   const h = 48 * s;
@@ -1352,12 +2539,20 @@ function drawCharacterSprite(x, y, char, frame, facing, scale) {
   ctx.fillRect(x + 11 * s, y + 8 * s, 3 * s, 3 * s);
   ctx.fillRect(x + 18 * s, y + 8 * s, 3 * s, 3 * s);
 
-  // Smile
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1.5 * s;
-  ctx.beginPath();
-  ctx.arc(x + 15 * s, y + 12 * s, 4 * s, 0.1, Math.PI - 0.1);
-  ctx.stroke();
+  if (mouth > 0) {
+    // Talking: open mouth
+    ctx.fillStyle = '#6D2E2E';
+    ctx.beginPath();
+    ctx.ellipse(x + 15 * s, y + 14.5 * s, 3 * s, (0.6 + mouth * 2) * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Smile
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5 * s;
+    ctx.beginPath();
+    ctx.arc(x + 15 * s, y + 12 * s, 4 * s, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
@@ -1496,7 +2691,7 @@ function drawGame() {
 
   // Draw interaction highlights
   for (const obj of interactiveObjects) {
-    if (obj === nearbyObject) {
+    if (obj === nearbyObject && state !== GameState.TALKING) {
       // Glowing outline for nearby object
       const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
       ctx.strokeStyle = `rgba(255, 235, 59, ${pulse})`;
@@ -1511,7 +2706,8 @@ function drawGame() {
       ctx.font = 'bold 13px "Comic Sans MS", cursive';
       ctx.textAlign = 'center';
       const labelX = obj.x + obj.width / 2;
-      const labelY = obj.y - 12;
+      // Keep the label (and the hint above it) on screen for tall/top hotspots
+      const labelY = Math.max(obj.y - 12, camera.y + 46);
       const labelW = ctx.measureText(obj.name).width + 16;
       roundRect(labelX - labelW / 2, labelY - 14, labelW, 22, 6);
       ctx.fill();
@@ -1538,41 +2734,13 @@ function drawGame() {
     }
   }
 
-  // Draw player
-  if (player.rotation !== 0) {
-    const cx = player.x;
-    const cy = player.y - player.height / 2;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(player.rotation * Math.PI / 180);
-    ctx.translate(-cx, -cy);
-    drawCharacterSprite(
-      player.x - player.width / 2,
-      player.y - player.height,
-      player.character,
-      player.frame,
-      player.facing,
-      3.6
-    );
-    ctx.restore();
-  } else {
-    drawCharacterSprite(
-      player.x - player.width / 2,
-      player.y - player.height,
-      player.character,
-      player.frame,
-      player.facing,
-      3.6
-    );
-  }
-
-  // Player shadow
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  ctx.beginPath();
-  ctx.ellipse(player.x, player.y + 2, 42, 15, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Draw player and NPC friends (depth-sorted)
+  drawPeople();
 
   ctx.restore();
+
+  // Speech bubbles (screen space so they can be kept on-screen)
+  drawSpeechBubbles();
 
   // Tap ripple visual
   if (tapRipple) {
@@ -1969,7 +3137,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
   const instrText = isTouchDevice()
     ? 'Tap to move  •  Tap zone to interact'
-    : '↑←↓→ Move  •  Space Interact  •  Esc Menu';
+    : '↑←↓→ Move  •  Space Interact  •  T Talk  •  Esc Menu';
   ctx.font = '12px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
   const instrW = ctx.measureText(instrText).width + 20;
@@ -2669,6 +3837,7 @@ function drawConfirmDialog() {
 // --- Main Game Loop ---
 function gameLoop() {
   update();
+  updateConversation();
 
   switch (state) {
     case GameState.LOADING:
@@ -2681,6 +3850,7 @@ function gameLoop() {
       drawResumePrompt();
       break;
     case GameState.PLAYING:
+    case GameState.TALKING:
       drawGame();
       break;
     case GameState.INTERACTING:

@@ -4,5 +4,8 @@
   "description": "Louisa's Camp exploration game",
   "scripts": {
     "dev": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0"
   }
 }
