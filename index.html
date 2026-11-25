@@ -215,7 +215,8 @@ const GameState = {
   ITEM_ACTION: 'itemAction',
   USING_ITEM: 'usingItem',
   CONFIRM_DIALOG: 'confirmDialog',
-  TALKING: 'talking'
+  TALKING: 'talking',
+  FIGHTING: 'fighting'
 };
 
 let state = GameState.LOADING;
@@ -1479,6 +1480,8 @@ window.addEventListener('keydown', (e) => {
     handleItemActionKey(e);
   } else if (state === GameState.TALKING) {
     if (e.key === 'Escape') endConversation();
+  } else if (state === GameState.FIGHTING) {
+    handleFightKey(e);
   } else if (state === GameState.USING_ITEM) {
     if (e.key === 'Escape' || e.key === ' ') {
       closeItemUse();
@@ -1511,8 +1514,10 @@ window.addEventListener('keydown', (e) => {
       return;
     }
     if (e.key === ' ') {
-      // Space talks to a nearby friend when there's no hotspot to use here
-      if (!nearbyObject && nearbyNpc) startConversation(nearbyNpc);
+      // Space next to the Blob picks a fight; next to a friend (with no
+      // hotspot to use here) it starts a chat
+      if (nearBoss) engageBoss();
+      else if (!nearbyObject && nearbyNpc) startConversation(nearbyNpc);
       else handleInteract();
     }
     if (e.key === 'Escape') {
@@ -1580,6 +1585,10 @@ canvas.addEventListener('dblclick', (e) => {
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
+  if (state === GameState.FIGHTING && !devMode) {
+    handleFightTouches(e, true);
+    return;
+  }
   const touch = e.touches[0];
   const sx = touch.clientX - rect.left;
   const sy = touch.clientY - rect.top;
@@ -1600,6 +1609,7 @@ canvas.addEventListener('touchstart', (e) => {
 }, { passive: false });
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
+  if (state === GameState.FIGHTING) { handleFightTouches(e, false); return; }
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
   if (devMode && devDrag) {
@@ -1611,6 +1621,7 @@ canvas.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 canvas.addEventListener('touchend', (e) => {
+  if (state === GameState.FIGHTING) handleFightTouches(e, false);
   devDrag = null;
   journalTouchStartY = null;
 });
@@ -1653,6 +1664,7 @@ function selectCharacter(index) {
   }
   player.character = characters[index];
   heldItem = null;
+  resetMapBoss();
   // Friends don't remember chats with a different character
   for (const k of Object.keys(conversations)) delete conversations[k];
   speechBubbles = [];
@@ -1966,6 +1978,11 @@ function handleCanvasTap(screenX, screenY) {
     return;
   }
 
+  if (state === GameState.FIGHTING) {
+    if (fight && fight.phase === 'result') endFight();
+    return;
+  }
+
   if (state === GameState.CHARACTER_SELECT) {
     const b = charSelectBackRect();
     if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
@@ -2056,6 +2073,16 @@ function handleCanvasTap(screenX, screenY) {
       }
     }
 
+    // Tapping the Blob when it's close picks a fight
+    if (nearBoss) {
+      const bp = mapBossPos();
+      const bh = mapBossHeight();
+      if (Math.hypot(screenX - (bp.x - camera.x), screenY - (bp.y - bh / 2 - camera.y)) < bh * 0.7) {
+        engageBoss();
+        return;
+      }
+    }
+
     // Tapping a nearby friend starts a conversation (tapping a far one walks there)
     const tappedNpc = npcAtScreenPoint(screenX, screenY);
     if (tappedNpc && tappedNpc === nearbyNpc) {
@@ -2105,6 +2132,14 @@ function handleInteract() {
     // Kitchen station: Space picks up / puts down / cooks — no dialog
     if (nearbyObject.station && mapConfig.kitchen) {
       doStation(nearbyObject);
+      return;
+    }
+    // The boss's cave: knock and the Blob comes out to fight
+    if (isBossCave(nearbyObject)) {
+      if (mp.active && mapBoss.busyWith && mapBoss.busyWith !== mp.myId) {
+        kitchenToast(`The Blob is busy fighting ${mpBossFighterName()}! 👀`);
+      } else if (mapBoss.where === 'home') engageBoss();
+      else kitchenToast('The cave is empty... the Blob is out roaming! 👀');
       return;
     }
     state = GameState.INTERACTING;
@@ -2961,11 +2996,15 @@ function drawPeople() {
   const friends = mpPlayersHere();
   for (const rp of friends) people.push({ y: rp.y, draw: () => drawRemotePlayer(rp) });
   people.push({ y: player.y, draw: drawPlayerSprite });
+  if (mapBossVisible()) people.push({ y: mapBossPos().y, draw: drawMapBoss });
   people.sort((a, b) => a.y - b.y);
   for (const p of people) p.draw();
-  const hinting = state === GameState.PLAYING ? nearbyNpc : null;
+  // Hint over whoever you're next to: the Blob first, else a friend / NPC
+  const showBossHint = state === GameState.PLAYING && nearBoss && !bossEngage;
+  const hinting = state === GameState.PLAYING && !showBossHint ? nearbyNpc : null;
   for (const rp of friends) if (rp !== hinting) drawNameTag(rp);
-  if (hinting) drawNpcTalkHint(hinting);
+  if (showBossHint) drawMapBossHint();
+  else if (hinting) drawNpcTalkHint(hinting);
 }
 
 // --- Game Logic ---
@@ -2980,6 +3019,12 @@ function update() {
       doorOpening = null;
       switchMap(o.targetMap, o.targetHotspot);
     }
+    return;
+  }
+
+  // Hold still while the Blob shouts at you, then off to the fight view
+  if (bossEngage) {
+    if (performance.now() - bossEngage.start >= BOSS_ENGAGE_MS) startFight();
     return;
   }
 
@@ -3069,6 +3114,9 @@ function update() {
     }
   }
 
+  // The Blob comes and goes from its cave as it likes (and may ambush you)
+  updateMapBoss();
+
   // Update camera to follow player
   updateCamera();
 }
@@ -3096,7 +3144,8 @@ function updateCamera() {
 // --- Drawing ---
 // mouth: 0 = smile, (0, 1] = open mouth (used to animate talking)
 // `held`: emoji the character is carrying in both hands (kitchen food)
-function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held) {
+// `swordArm`: skip the front arm — the fight view draws it holding a sword
+function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held, swordArm) {
   const s = scale || 1;
   const w = 30 * s;
   const h = 48 * s;
@@ -3147,12 +3196,12 @@ function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held) {
     const armSwing = Math.sin(frame * Math.PI / 2) * 3 * s;
     ctx.fillStyle = char.shirtColor;
     ctx.fillRect(x, y + 17 * s + armSwing, 6 * s, 14 * s);
-    ctx.fillRect(x + 24 * s, y + 17 * s - armSwing, 6 * s, 14 * s);
+    if (!swordArm) ctx.fillRect(x + 24 * s, y + 17 * s - armSwing, 6 * s, 14 * s);
 
     // Hands
     ctx.fillStyle = '#FFCC80';
     ctx.fillRect(x, y + 29 * s + armSwing, 6 * s, 4 * s);
-    ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
+    if (!swordArm) ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
   }
 
   // Head
@@ -3756,6 +3805,7 @@ function drawGame() {
 
   // Draw map at scaled size
   ctx.drawImage(mapImage, 0, 0, scaledMapW, scaledMapH);
+  drawBossCave();
   drawStations();
   if (doorOpening) drawDoorOpening();
 
@@ -3793,6 +3843,8 @@ function drawGame() {
         hintText = isTouchDevice() ? '🚪 [ TAP ]' : '🚪 [ ENTER ]';
       } else if (obj.station) {
         hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} ${stationHint(obj)}`;
+      } else if (isBossCave(obj)) {
+        hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} ${mapBoss.where === 'home' ? '⚔️ Knock knock...' : 'Peek inside'}`;
       } else {
         hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
       }
@@ -3813,6 +3865,7 @@ function drawGame() {
 
   // Speech bubbles (screen space so they can be kept on-screen)
   drawSpeechBubbles();
+  drawMapBossShout();
   drawKitchenHud();
 
   // Tap ripple visual
@@ -5208,6 +5261,9 @@ function mpLeave() {
   }
   if (talkingTo && talkingTo.remote) endConversation();
   speechBubbles = speechBubbles.filter(b => !(b.owner && b.owner.remote) && !(b.partner && b.partner.remote));
+  mapBoss.busyWith = null;
+  mapBoss.tfx = mapBoss.tfy = null;
+  mpBossKeeperWas = false;
   Object.assign(mp, {
     active: false, code: null, channel: null, pubnub: null,
     connected: false, wasDisconnected: false, synced: false,
@@ -5350,7 +5406,7 @@ function mpSend(message, byPost) {
 function mpInWorld() {
   return !!player.character && [
     GameState.PLAYING, GameState.TALKING, GameState.INTERACTING, GameState.ITEM_ACTION,
-    GameState.USING_ITEM, GameState.CONFIRM_DIALOG
+    GameState.USING_ITEM, GameState.CONFIRM_DIALOG, GameState.FIGHTING
   ].includes(state);
 }
 
@@ -5366,9 +5422,10 @@ function mpSendPos(force) {
     f: player.facing,
     w: player.walking ? 1 : 0,
     r: player.rotation,
-    h: heldItem ? heldItem.emoji : null
+    h: heldItem ? heldItem.emoji : null,
+    fi: state === GameState.FIGHTING || bossEngage ? 1 : 0
   };
-  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h].join('|');
+  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h, msg.fi].join('|');
   const due = force ||
     (key !== mp.lastPosKey && now - mp.lastPosAt >= MP_POS_EVERY_MS) ||
     now - mp.lastPosAt >= MP_HEARTBEAT_MS;
@@ -5486,6 +5543,12 @@ function mpOnMessage(ev) {
       break;
     case 'bye':
       if (from !== mp.myId) mpRemovePlayer(from, 'left');
+      break;
+    case 'boss':
+      if (from !== mp.myId) mpOnBossState(m, from);
+      break;
+    case 'bossfight':
+      if (from !== mp.myId) mpOnBossFight(m, from);
       break;
   }
 }
@@ -5647,10 +5710,16 @@ function mpOnPos(m, from) {
     walking: !!m.w,
     rotation: [0, 90, 180, 270].includes(m.r) ? m.r : 0,
     held: typeof m.h === 'string' ? m.h.slice(0, 12) : null,
+    fighting: !!m.fi,
     lastSeen: performance.now()
   });
   rp.x = rp.fx * scaledMapW;
   rp.y = rp.fy * scaledMapH;
+  if (rp.fighting && !mapBoss.busyWith && m.map === mpBossMap()) {
+    mpOnBossFight({ on: true, map: m.map }, from);   // we joined while they were fighting
+  } else if (!rp.fighting && mapBoss.busyWith === from && performance.now() - mapBoss.busySince > 2000) {
+    mpBossGoHome();                                  // missed their "fight over"
+  }
   if (isNew && mpInWorld()) mpToast(`👋 ${ch.name} joined the world!`);
 }
 
@@ -5661,6 +5730,7 @@ function mpRemovePlayer(id, why) {
   speechBubbles = speechBubbles.filter(b => b.owner !== rp && b.partner !== rp);
   if (talkingTo === rp) endConversation();
   if (nearbyNpc === rp) nearbyNpc = null;
+  if (mapBoss.busyWith === id) mpBossGoHome();   // they left mid-fight
   if (mpInWorld()) mpToast(why === 'left' ? `${rp.name} went home. 🏠` : `${rp.name} lost connection.`);
 }
 
@@ -5706,6 +5776,7 @@ function mpOnSay(m, from) {
 function mpTick() {
   if (!mp.active) return;
   mpSendPos(false);
+  mpTickBoss();
   for (const rp of mp.players.values()) {
     rp.fx += (rp.tx - rp.fx) * 0.2;
     rp.fy += (rp.ty - rp.fy) * 0.2;
@@ -5728,6 +5799,145 @@ function mpTick() {
       mpToast(`${rp.name} walked away.`);
     }
   }
+}
+
+// --- The Blob in a shared world ---
+// One player, the "keeper" (lowest player id on the Blob's map, so every
+// computer agrees), runs the Blob's brain: it roams and chases whichever
+// camper is closest. The keeper sends `boss` messages; everyone else draws it
+// where the keeper says. Each camper's own computer notices when it catches
+// THEM, and that camper sends `bossfight` on/off so the Blob leaves the map
+// for everyone while the duel is on, then goes home to its cave.
+let mpBossKeeperWas = false;
+let mpBossLastSent = 0;
+let mpBossLastKey = '';
+
+function mpBossMap() {
+  for (const [path, cfg] of Object.entries(mp.mapConfigs)) if (cfg.boss) return path;
+  return null;
+}
+function mpBossKeeper() {
+  const bm = mpBossMap();
+  if (!bm) return null;
+  let best = mpInWorld() && currentMapPath === bm ? mp.myId : null;
+  for (const rp of mp.players.values()) {
+    if (rp.map === bm && rp.char && (best === null || rp.id < best)) best = rp.id;
+  }
+  return best;
+}
+function mpRunsBoss() {
+  return mp.active && !mapBoss.busyWith && mpBossKeeper() === mp.myId;
+}
+function mpBossFighterName() {
+  const rp = mp.players.get(mapBoss.busyWith);
+  return rp ? rp.name : 'someone';
+}
+
+function mpTickBoss() {
+  const keeper = mpRunsBoss();
+  const now = performance.now();
+  if (keeper && !mpBossKeeperWas) {
+    // Just took over (first one here, or the old keeper left): carry on from here
+    mapBoss.lastT = now;
+    if (mapBoss.map !== currentMapPath) resetMapBoss(randBetween(8000, 20000));
+    mapBoss.homeUntil = Math.min(mapBoss.homeUntil, now + randBetween(5000, 15000));
+    mapBoss.outUntil = now + randBetween(10000, 25000);
+    mpBossLastKey = '';
+  }
+  mpBossKeeperWas = keeper;
+  if (keeper) {
+    if (state !== GameState.PLAYING) updateMapBoss();   // update() only runs while PLAYING
+    mpSendBoss(now);
+    return;
+  }
+  // Glide toward where the keeper last said it is
+  if (mapBoss.tfx != null && (mapBoss.where === 'out' || mapBoss.where === 'returning')) {
+    mapBoss.fx += (mapBoss.tfx - mapBoss.fx) * 0.2;
+    mapBoss.fy += (mapBoss.tfy - mapBoss.fy) * 0.2;
+    if (mapBoss.moving) mapBoss.walk += 1 / 60;
+  }
+  if (mapBoss.shout && now - mapBoss.shout.start > mapBoss.shout.dur) mapBoss.shout = null;
+}
+
+function mpSendBoss(now) {
+  if (!mp.connected || mapBoss.map !== currentMapPath) return;
+  if (!mp.players.size) { mpBossLastKey = ''; return; }   // nobody to tell
+  const sh = mapBoss.shout;
+  const msg = {
+    t: 'boss', map: mapBoss.map, w: mapBoss.where,
+    x: +mapBoss.fx.toFixed(4), y: +mapBoss.fy.toFixed(4),
+    f: mapBoss.facing, mv: mapBoss.moving ? 1 : 0,
+    s: sh ? sh.text : null, sid: sh ? sh.id : null, sd: sh ? sh.dur : 0
+  };
+  const key = [msg.map, msg.w, msg.x, msg.y, msg.f, msg.mv, msg.sid].join('|');
+  const every = msg.w === 'home' ? 0 : 150;
+  const due = (key !== mpBossLastKey && now - mpBossLastSent >= every) || now - mpBossLastSent >= 3000;
+  if (!due) return;
+  mpBossLastKey = key;
+  mpBossLastSent = now;
+  mpSend(msg);
+}
+
+function mpOnBossState(m, from) {
+  if (mapBoss.busyWith) return;
+  if (mpRunsBoss() && from > mp.myId) return;   // we're the keeper; they'll notice soon
+  if (typeof m.map !== 'string' || !['home', 'out', 'returning'].includes(m.w)) return;
+  const x = clamp(Number(m.x) || 0, 0, 1);
+  const y = clamp(Number(m.y) || 0, 0, 1);
+  const appeared = mapBoss.tfx == null || mapBoss.map !== m.map ||
+    mapBoss.where === 'home' || mapBoss.where === 'fighting';
+  mapBoss.map = m.map;
+  mapBoss.where = m.w;
+  mapBoss.tfx = x;
+  mapBoss.tfy = y;
+  if (appeared) { mapBoss.fx = x; mapBoss.fy = y; }
+  mapBoss.facing = m.f === 'right' ? 'right' : 'left';
+  mapBoss.moving = !!m.mv;
+  if (m.sid && m.sid !== mapBoss.lastSid && typeof m.s === 'string') {
+    mapBoss.lastSid = m.sid;
+    bossShout(m.s.slice(0, 60), clamp(Number(m.sd) || 1600, 300, 4000));
+  }
+}
+
+// Not the keeper: did the Blob (where the keeper says it is) just catch me?
+function mpBossCatchCheck() {
+  if (!bossCave() || !player.character || mapBoss.map !== currentMapPath) return;
+  if (mapBoss.where !== 'out' && mapBoss.where !== 'returning') return;
+  const k = bossK();
+  const pos = mapBossPos();
+  const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
+  nearBoss = dist < 190 * k;
+  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss();
+}
+
+// I'm starting (on) or finished (off) a fight with the Blob
+function mpBossFight(on, won) {
+  if (!mp.active) return;
+  mapBoss.busyWith = on ? mp.myId : null;
+  mapBoss.tfx = mapBoss.tfy = null;
+  mpSend({ t: 'bossfight', map: currentMapPath, on: !!on, won: !!won });
+}
+
+function mpOnBossFight(m, from) {
+  if (m.on) {
+    mapBoss.busyWith = from;
+    mapBoss.busySince = performance.now();
+    mapBoss.where = 'fighting';
+    if (typeof m.map === 'string') mapBoss.map = m.map;
+    mapBoss.shout = null;
+    mapBoss.tfx = mapBoss.tfy = null;
+    nearBoss = false;
+  } else if (mapBoss.busyWith === from) {
+    mpBossGoHome();
+  }
+}
+
+function mpBossGoHome() {
+  mapBoss.busyWith = null;
+  mapBoss.where = 'home';
+  mapBoss.shout = null;
+  mapBoss.tfx = mapBoss.tfy = null;
+  mapBoss.homeUntil = performance.now() + randBetween(30000, 50000);
 }
 
 // Runs even when the tab is in the background (rAF pauses there)
@@ -5779,7 +5989,7 @@ function drawNameTag(rp) {
   const head = speakerHead(rp);
   ctx.font = 'bold 12px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
-  const label = `⭐ ${rp.name}`;
+  const label = rp.fighting ? `⚔️ ${rp.name} is fighting the Blob!` : `⭐ ${rp.name}`;
   const w = ctx.measureText(label).width + 14;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
   roundRect(head.x - w / 2, head.top - 30, w, 20, 6);
@@ -5827,6 +6037,1623 @@ function drawWorldCodeBanner() {
   ctx.fillText(sub, canvas.width / 2, y + 50);
 }
 
+// ============================================================
+// BOSS — Glug Glub Blob (a.k.a. the I Eat You Blob)
+// ============================================================
+// A map JSON may have a `boss` ({ name, aka, cave, phrases, hitPhrases,
+// hurtPhrases, pointsToWin, reward }). The boss lives in the `cave` hotspot
+// (drawn over the map as a rocky hill with a dark mouth) and comes out
+// whenever it likes to roam the map. Knock on the cave, press Space next to
+// it, or let it catch you: it shouts something (never in proper English) and
+// the fight view opens — a side-on sword duel, Street Fighter style.
+// Unblocked hits score a point; first to `pointsToWin` wins.
+// Win → the `reward` coin goes in your backpack. Lose (or run away) → the
+// Blob takes every coin in your backpack.
+
+const BOSS_ENGAGE_MS = 1100;   // map freezes while the Blob shouts, then the fight opens
+const BOSS_DEFAULT_PHRASES = ['EAT!', 'nom nom you!', 'gobble up yous!'];
+const DEFAULT_BOSS_REWARD = { id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 };
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+function pickOne(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function isCoin(item) { return !!(item && (item.coin || /coin/i.test(item.id || ''))); }
+
+function bossDef() { return (fight && fight.def) || (mapConfig && mapConfig.boss) || null; }
+function isBossCave(obj) {
+  const b = mapConfig && mapConfig.boss;
+  return !!(b && obj && obj.id === b.cave);
+}
+function bossCave() {
+  const b = mapConfig && mapConfig.boss;
+  return b ? interactiveObjects.find(o => o.id === b.cave) || null : null;
+}
+function bossName() { const b = bossDef(); return (b && b.name) || 'Glug Glub Blob'; }
+function bossSays(kind) {
+  const b = bossDef() || {};
+  return pickOne(b[kind] && b[kind].length ? b[kind] : BOSS_DEFAULT_PHRASES);
+}
+
+// ---------- The Blob on the map ----------
+const mapBoss = {
+  map: null,          // which map it was set up on
+  where: 'home',      // 'home' (in the cave) | 'out' (roaming) | 'returning'
+  fx: 0, fy: 0,       // FEET position, fractions of the map
+  facing: 'left',
+  walk: 0,            // walk-cycle clock (s)
+  moving: false,
+  target: null,       // { fx, fy } wander target
+  homeUntil: 0,       // when it next comes out
+  outUntil: 0,        // when it heads back home
+  shout: null,        // { text, start, dur }
+  nextShoutAt: 0,
+  lastT: 0,
+  // Multiplayer: one player (the "keeper") runs the Blob and broadcasts it
+  busyWith: null,     // player id it's fighting ('fighting' hides it from the map)
+  tfx: null, tfy: null,   // latest broadcast position (non-keepers glide to it)
+  lastSid: null       // id of the last broadcast shout we showed
+};
+let bossEngage = null;  // { start } — the Blob is shouting; the fight view opens next
+let nearBoss = false;   // close enough to pick a fight
+
+function resetMapBoss(delayMs) {
+  mapBoss.map = currentMapPath;
+  mapBoss.where = 'home';
+  mapBoss.homeUntil = performance.now() + (delayMs != null ? delayMs : randBetween(15000, 30000));
+  mapBoss.shout = null;
+  mapBoss.target = null;
+  mapBoss.moving = false;
+  bossEngage = null;
+  nearBoss = false;
+}
+
+function bossK() { return SPRITE_SCALE / BASE_SPRITE_SCALE; }
+function mapBossHeight() { return 135 * bossK(); }
+function mapBossPos() { return { x: mapBoss.fx * scaledMapW, y: mapBoss.fy * scaledMapH }; }
+function caveMouth() {
+  const c = bossCave();
+  return { x: c.x + c.width * 0.5, y: c.y + c.height * 0.97 };
+}
+function mapBossVisible() {
+  return !!(bossCave() && mapBoss.map === currentMapPath &&
+    mapBoss.where !== 'home' && mapBoss.where !== 'fighting');
+}
+function bossShout(text, dur) {
+  mapBoss.shout = { text, start: performance.now(), dur: dur || 1600, id: Math.random().toString(36).slice(2, 8) };
+}
+// Mouth flapping while a shout is still being yelled
+function shoutMouth(sh, now) {
+  if (!sh) return 0;
+  const age = now - sh.start;
+  if (age > sh.dur * 0.75) return 0;
+  return 0.3 + 0.7 * Math.abs(Math.sin(age / 80));
+}
+
+function updateMapBoss() {
+  nearBoss = false;
+  if (mp.active && !mpRunsBoss()) { mpBossCatchCheck(); return; }
+  if (!bossCave() || !player.character) return;
+  const now = performance.now();
+  if (mapBoss.map !== currentMapPath) resetMapBoss();
+  const dt = Math.min(50, now - (mapBoss.lastT || now));
+  mapBoss.lastT = now;
+  if (mapBoss.shout && now - mapBoss.shout.start > mapBoss.shout.dur) mapBoss.shout = null;
+  mapBoss.moving = false;
+
+  if (mapBoss.where === 'home') {
+    if (now < mapBoss.homeUntil) return;
+    // Out it comes, whenever it feels like it
+    const m = caveMouth();
+    mapBoss.fx = m.x / scaledMapW;
+    mapBoss.fy = m.y / scaledMapH;
+    mapBoss.where = 'out';
+    mapBoss.outUntil = now + randBetween(25000, 45000);
+    mapBoss.target = null;
+    bossShout('GLUG GLUB!');
+    mapBoss.nextShoutAt = now + randBetween(2500, 4000);
+    return;
+  }
+
+  const k = bossK();
+  const pos = mapBossPos();
+  const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
+  // In a multiplayer world it chases whichever camper is closest
+  const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING ? dist : Infinity };
+  for (const rp of mpPlayersHere()) {
+    const d = Math.hypot(rp.x - pos.x, rp.y - pos.y);
+    if (!rp.fighting && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
+  }
+  if (mapBoss.where === 'out' && now > mapBoss.outUntil) mapBoss.where = 'returning';
+
+  let tx, ty, speed;   // speed: map px per 60fps frame (the player walks at 4)
+  if (mapBoss.where === 'returning') {
+    const m = caveMouth();
+    tx = m.x; ty = m.y; speed = 2.6 * k;
+    if (Math.hypot(tx - pos.x, ty - pos.y) < 6 * k) {
+      mapBoss.where = 'home';
+      mapBoss.homeUntil = now + randBetween(15000, 40000);
+      mapBoss.shout = null;
+      return;
+    }
+  } else if (chase.dist < 480 * k) {
+    // Smells a camper! Chase them, shouting
+    tx = chase.x; ty = chase.y; speed = 2.7 * k;
+    if (now >= mapBoss.nextShoutAt) {
+      bossShout(bossSays('phrases'));
+      mapBoss.nextShoutAt = now + randBetween(2200, 3600);
+    }
+  } else {
+    const t = mapBoss.target;
+    if (!t || Math.hypot(t.fx * scaledMapW - pos.x, t.fy * scaledMapH - pos.y) < 10) {
+      mapBoss.target = { fx: randBetween(0.08, 0.92), fy: randBetween(0.22, 0.95) };
+    }
+    tx = mapBoss.target.fx * scaledMapW; ty = mapBoss.target.fy * scaledMapH; speed = 1.6 * k;
+  }
+  const dx = tx - pos.x, dy = ty - pos.y;
+  const d = Math.hypot(dx, dy);
+  if (d > 0.5) {
+    const step = Math.min(d, speed * dt * 0.06);
+    mapBoss.fx = (pos.x + dx / d * step) / scaledMapW;
+    mapBoss.fy = (pos.y + dy / d * step) / scaledMapH;
+    if (Math.abs(dx) > 2) mapBoss.facing = dx < 0 ? 'left' : 'right';
+    mapBoss.walk += dt / 1000;
+    mapBoss.moving = true;
+  }
+
+  nearBoss = dist < 190 * k;
+  // Caught you! (Not while it's heading home for a rest.)
+  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss();
+}
+
+// The Blob yells something, then the fight view opens (see update())
+function engageBoss() {
+  if (state !== GameState.PLAYING || bossEngage || doorOpening || !bossCave()) return;
+  if (mp.active && mapBoss.busyWith && mapBoss.busyWith !== mp.myId) {
+    kitchenToast(`The Blob is busy fighting ${mpBossFighterName()}! 👀`);
+    return;
+  }
+  mpBossFight(true);
+  if (mapBoss.where === 'home') {
+    const m = caveMouth();
+    mapBoss.fx = m.x / scaledMapW;
+    mapBoss.fy = m.y / scaledMapH;
+  }
+  mapBoss.where = 'out';
+  const pos = mapBossPos();
+  mapBoss.facing = player.x < pos.x ? 'left' : 'right';
+  player.facing = player.x < pos.x ? 'right' : 'left';
+  player.walking = false;
+  player.frame = 0;
+  tapTarget = null;
+  backpackOpen = false;
+  journalOpen = false;
+  bossShout(bossSays('phrases'), BOSS_ENGAGE_MS + 200);
+  bossEngage = { start: performance.now() };
+}
+
+function drawMapBoss() {
+  const p = mapBossPos();
+  const now = performance.now();
+  const tail = bossEngage
+    ? { ...BLOB_POSES.windup, a: BLOB_POSES.windup.a + Math.sin(now / 30) * 0.06 }
+    : { ...BLOB_POSES.idle, a: BLOB_POSES.idle.a + Math.sin(now / 400) * 0.12 };
+  drawBlob(p.x, p.y, mapBossHeight(), mapBoss.facing, {
+    tail, moving: mapBoss.moving, walk: mapBoss.walk,
+    mouth: shoutMouth(mapBoss.shout, now), t: now
+  });
+}
+
+function drawMapBossHint() {
+  const p = mapBossPos();
+  const x = p.x;
+  const y = p.y - mapBossHeight() - 12;
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 13px "Comic Sans MS", cursive';
+  const label = bossName();
+  const lw = ctx.measureText(label).width + 16;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  roundRect(x - lw / 2, y - 14, lw, 22, 6);
+  ctx.fill();
+  ctx.fillStyle = '#FF9E5E';
+  ctx.fillText(label, x, y + 2);
+  const hint = isTouchDevice() ? '⚔️ [ TAP ME ] Fight!' : '⚔️ [ SPACE ] Fight!';
+  ctx.font = '11px "Comic Sans MS", cursive';
+  const hw = ctx.measureText(hint).width + 12;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  roundRect(x - hw / 2, y - 38, hw, 18, 4);
+  ctx.fill();
+  ctx.fillStyle = '#FFF9C4';
+  ctx.fillText(hint, x, y - 25);
+}
+
+// Screen space, after the map is drawn
+function drawMapBossShout() {
+  if (!mapBossVisible() || !mapBoss.shout) return;
+  const p = mapBossPos();
+  const H = mapBossHeight();
+  const dir = mapBoss.facing === 'left' ? -1 : 1;
+  const age = performance.now() - mapBoss.shout.start;
+  drawShout(p.x - camera.x + dir * 0.4 * H, p.y - 0.85 * H - camera.y, mapBoss.shout.text, age, 20);
+}
+
+// The cave: a rocky hill with a dark mouth, drawn over the map in the
+// cave hotspot's box. Glowing eyes blink inside while the Blob is home.
+function drawBossCave() {
+  const c = bossCave();
+  if (!c) return;
+  const { x, y, width: w, height: h } = c;
+  const now = performance.now();
+  const ink = '#2b2320';
+  const hill = [[0, 1], [0.04, 0.62], [0.16, 0.38], [0.27, 0.42], [0.4, 0.12], [0.52, 0.2],
+                [0.62, 0.02], [0.76, 0.26], [0.86, 0.22], [0.97, 0.5], [1, 1]];
+  const hillPath = () => {
+    ctx.beginPath();
+    hill.forEach(([px, py], i) => i ? ctx.lineTo(x + px * w, y + py * h) : ctx.moveTo(x + px * w, y + py * h));
+    ctx.closePath();
+  };
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  hillPath();
+  ctx.fillStyle = '#8d8a94';
+  ctx.fill();
+  // marker streaks + a few lighter rocks
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(70, 64, 80, 0.35)';
+  ctx.lineWidth = Math.max(3, w * 0.025);
+  for (let i = 0; i < 14; i++) {
+    const sx = x + (i / 14) * w * 1.1 - w * 0.05;
+    ctx.beginPath();
+    ctx.moveTo(sx, y + h);
+    ctx.lineTo(sx + w * 0.18, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#aaa7b1';
+  for (const [rx, ry, rr] of [[0.2, 0.72, 0.07], [0.8, 0.64, 0.06], [0.55, 0.32, 0.05], [0.32, 0.52, 0.04], [0.9, 0.86, 0.05]]) {
+    ctx.beginPath();
+    ctx.ellipse(x + rx * w, y + ry * h, rr * w, rr * w * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  hillPath();
+  ctx.lineWidth = Math.max(3, w * 0.022);
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+
+  // the dark mouth (an arch)
+  const mw = w * 0.46, mh = h * 0.6;
+  const mcx = x + w * 0.5, mBottom = y + h;
+  const archY = mBottom - mh + mw / 2;
+  ctx.beginPath();
+  ctx.moveTo(mcx - mw / 2, mBottom);
+  ctx.lineTo(mcx - mw / 2, archY);
+  ctx.arc(mcx, archY, mw / 2, Math.PI, 0);
+  ctx.lineTo(mcx + mw / 2, mBottom);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, mBottom - mh, 0, mBottom);
+  g.addColorStop(0, '#0d0810');
+  g.addColorStop(1, '#2a1c26');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.stroke();
+  // little rock teeth around the mouth
+  ctx.fillStyle = '#d9d4cc';
+  for (const f of [-0.6, -0.2, 0.2, 0.6]) {
+    const tx = mcx + f * mw * 0.45;
+    const ty = archY - Math.sqrt(Math.max(0, 1 - f * f * 0.2)) * mw * 0.5 + 2;
+    ctx.beginPath();
+    ctx.moveTo(tx - mw * 0.05, ty);
+    ctx.lineTo(tx + mw * 0.05, ty);
+    ctx.lineTo(tx, ty + mw * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  // glowing eyes when the Blob is home (blinking now and then)
+  if (mapBoss.map === currentMapPath && mapBoss.where === 'home') {
+    const blink = (now % 3200) < 160;
+    const ey = mBottom - mh * 0.45;
+    const look = Math.sin(now / 900) * mw * 0.05;
+    ctx.save();
+    ctx.shadowColor = '#FFEB3B';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#FFEB3B';
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(mcx + side * mw * 0.14 + look, ey, mw * 0.065, blink ? 1.5 : mw * 0.085, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    if (!blink) {
+      ctx.fillStyle = '#3a1d0a';
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(mcx + side * mw * 0.14 + look * 1.4, ey + mw * 0.02, mw * 0.03, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  // "BEWARE OF BLOB" sign on the left
+  const sw = w * 0.28, sh = h * 0.2;
+  const sx = x + w * 0.02, sy = y + h * 0.62;
+  ctx.fillStyle = '#7b4a26';
+  ctx.fillRect(sx + sw / 2 - w * 0.012, sy + sh * 0.5, w * 0.024, h * 0.36);
+  ctx.save();
+  ctx.translate(sx + sw / 2, sy + sh / 2);
+  ctx.rotate(-0.08);
+  ctx.fillStyle = '#c98b4f';
+  ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = ink;
+  ctx.strokeRect(-sw / 2, -sh / 2, sw, sh);
+  ctx.fillStyle = '#b71c1c';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${Math.max(7, sh * 0.34)}px "Comic Sans MS", cursive`;
+  ctx.fillText('BEWARE', 0, -sh * 0.2);
+  ctx.fillText('OF BLOB!', 0, sh * 0.22);
+  ctx.restore();
+  // bones by the door
+  ctx.font = `${Math.round(w * 0.1)}px ${SCENE_EMOJI_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';
+  ctx.fillText('🦴', x + w * 0.84, y + h * 0.93);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+// ---------- Drawing the Blob (human head, fox body, sword in its tail) ----------
+// Tail tip + sword angle per pose, in the Blob's own units (100 = its height),
+// facing right: angle 0 points forward, -π/2 straight up.
+const BLOB_POSES = {
+  idle:   { tx: -50, ty: -84,  a: -1.9 },
+  windup: { tx: -22, ty: -118, a: -2.7 },
+  strike: { tx: 38,  ty: -96,  a: 0.55 },
+  block:  { tx: 62,  ty: -46,  a: -1.45 },
+  hit:    { tx: -62, ty: -70,  a: -2.4 }
+};
+function lerpPose(p, q, t) {
+  return { tx: lerp(p.tx, q.tx, t), ty: lerp(p.ty, q.ty, t), a: lerp(p.a, q.a, t) };
+}
+
+// A sword along +x from the current origin (the hand / tail tip)
+function drawSword(len, w) {
+  const ink = '#2b2320';
+  ctx.lineJoin = 'round';
+  ctx.fillStyle = '#6d4c41';                      // grip
+  ctx.fillRect(-len * 0.2, -w * 0.6, len * 0.2, w * 1.2);
+  ctx.beginPath();                                // pommel
+  ctx.arc(-len * 0.2, 0, w * 0.9, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFC107';
+  ctx.fill();
+  ctx.beginPath();                                // blade
+  ctx.moveTo(0, -w);
+  ctx.lineTo(len * 0.86, -w);
+  ctx.lineTo(len, 0);
+  ctx.lineTo(len * 0.86, w);
+  ctx.lineTo(0, w);
+  ctx.closePath();
+  ctx.fillStyle = '#E3E9F0';
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, w * 0.45);
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+  ctx.beginPath();                                // shine
+  ctx.moveTo(len * 0.08, -w * 0.35);
+  ctx.lineTo(len * 0.78, -w * 0.35);
+  ctx.lineWidth = Math.max(1, w * 0.35);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.stroke();
+  ctx.fillStyle = '#FFC107';                      // cross-guard
+  ctx.fillRect(-w * 0.7, -w * 2.6, w * 1.4, w * 5.2);
+  ctx.lineWidth = Math.max(1, w * 0.4);
+  ctx.strokeStyle = ink;
+  ctx.strokeRect(-w * 0.7, -w * 2.6, w * 1.4, w * 5.2);
+}
+
+// x, feetY: screen/map px of the feet. H: height in px.
+// o: { tail, moving, walk, mouth, t, dizzy, swoosh }
+function drawBlob(x, feetY, H, facing, o) {
+  const s = H / 100;
+  const t = o.t || performance.now();
+  const tail = o.tail || BLOB_POSES.idle;
+  const stride = o.moving ? Math.sin(o.walk * 11) : 0;
+  const bob = o.moving ? Math.abs(Math.sin(o.walk * 11)) * 2 : Math.sin(t / 380) * 1.2;
+  const by = -bob;
+  const ink = '#3a1d0a';
+  const fur = '#E8762A';
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(x, feetY, 46 * s, 7 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(x, feetY);
+  ctx.scale(facing === 'left' ? -s : s, s);
+  if (o.dizzy) ctx.translate(Math.sin(t / 25) * 2, 0);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // Fox legs: orange on top, black socks
+  const leg = (lx, ph, far) => {
+    const swing = stride * 7 * ph;
+    const knee = { x: lx + swing * 0.4, y: -14 + by * 0.5 };
+    const paw = { x: lx + swing, y: -2 };
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(lx, -28 + by);
+    ctx.lineTo(knee.x, knee.y);
+    ctx.lineTo(paw.x, paw.y);
+    ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = far ? '#c25e1c' : fur;
+    ctx.beginPath();
+    ctx.moveTo(lx, -28 + by);
+    ctx.lineTo(knee.x, knee.y);
+    ctx.stroke();
+    ctx.strokeStyle = far ? '#1a110b' : '#2b1d15';
+    ctx.beginPath();
+    ctx.moveTo(knee.x, knee.y);
+    ctx.lineTo(paw.x, paw.y);
+    ctx.stroke();
+    ctx.fillStyle = '#1a110b';
+    ctx.beginPath();
+    ctx.ellipse(paw.x + 2, paw.y, 5, 2.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  leg(-30, 1, true);
+  leg(14, -1, true);
+
+  // Big bushy tail, curling up from the rump to where it holds the sword
+  const tail0 = { x: -42, y: -40 + by };
+  const tip = { x: tail.tx, y: tail.ty + by };
+  const cp = { x: (tail0.x + tip.x) / 2 - 24, y: Math.min(tail0.y, tip.y) - 20 };
+  ctx.beginPath();
+  ctx.moveTo(tail0.x, tail0.y);
+  ctx.quadraticCurveTo(cp.x, cp.y, tip.x, tip.y);
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 22;
+  ctx.stroke();
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 17;
+  ctx.stroke();
+
+  // Body + creamy belly + marker streaks
+  ctx.beginPath();
+  ctx.ellipse(-6, -38 + by, 40, 17, 0, 0, Math.PI * 2);
+  ctx.fillStyle = fur;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = '#FFF3E0';
+  ctx.beginPath();
+  ctx.ellipse(2, -25 + by, 30, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(160, 70, 10, 0.35)';
+  ctx.lineWidth = 2.5;
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-40 + i * 13, -52 + by);
+    ctx.lineTo(-32 + i * 13, -36 + by);
+    ctx.stroke();
+  }
+  ctx.restore();
+  leg(-22, -1, false);
+  leg(22, 1, false);
+
+  // Furry neck up to the (human!) head
+  ctx.beginPath();
+  ctx.moveTo(18, -42 + by);
+  ctx.quadraticCurveTo(34, -46 + by, 38, -60 + by);
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 19;
+  ctx.stroke();
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 15;
+  ctx.stroke();
+  ctx.fillStyle = '#FFF3E0';
+  ctx.beginPath();
+  ctx.ellipse(32, -44 + by, 7, 5, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.save();
+  ctx.translate(40, -66 + by);
+  if (o.dizzy) ctx.rotate(-0.22 + Math.sin(t / 120) * 0.08);
+  ctx.beginPath();                                   // face
+  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.fillStyle = '#F6C9A0';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+  ctx.beginPath();                                   // ears
+  ctx.arc(-16, 2, 3.5, 0, Math.PI * 2);
+  ctx.arc(16, 2, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#EDB98C';
+  ctx.fill();
+  ctx.beginPath();                                   // messy spiky hair
+  ctx.moveTo(-17, 0);
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI + (i / 10) * Math.PI;
+    const r = i % 2 ? 25 : 17;
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r - 3);
+  }
+  ctx.lineTo(17, 0);
+  ctx.quadraticCurveTo(0, -12, -17, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#5b3418';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(244, 143, 177, 0.6)';        // rosy cheeks
+  ctx.beginPath();
+  ctx.arc(-9, 6, 3.5, 0, Math.PI * 2);
+  ctx.arc(13, 6, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  if (o.dizzy) {                                     // X X eyes
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 2.2;
+    for (const ex of [-3, 9]) {
+      ctx.beginPath();
+      ctx.moveTo(ex - 3.5, -5); ctx.lineTo(ex + 3.5, 2);
+      ctx.moveTo(ex + 3.5, -5); ctx.lineTo(ex - 3.5, 2);
+      ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = '#fff';                          // big googly eyes
+    ctx.beginPath();
+    ctx.ellipse(-3, -2, 5, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(9, -2, 5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#1a110b';
+    ctx.beginPath();
+    ctx.arc(-1.2, -1, 2.4, 0, Math.PI * 2);
+    ctx.arc(10.8, -1, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = ink;                           // grumpy eyebrows
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, -11); ctx.lineTo(1, -7.5);
+    ctx.moveTo(14, -11); ctx.lineTo(5, -7.5);
+    ctx.stroke();
+  }
+  const mouth = o.mouth || 0;
+  if (mouth > 0) {                                   // CHOMP
+    const mh = 2 + mouth * 6;
+    ctx.beginPath();
+    ctx.ellipse(4, 9, 9, mh, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#7a1f1f';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = ink;
+    ctx.stroke();
+    ctx.fillStyle = '#F48FB1';
+    ctx.beginPath();
+    ctx.ellipse(4, 9 + mh * 0.5, 5, mh * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 4; i++) {
+      const tx = -2.5 + i * 4.2;
+      ctx.beginPath();
+      ctx.moveTo(tx - 1.8, 9 - mh * 0.85);
+      ctx.lineTo(tx + 1.8, 9 - mh * 0.85);
+      ctx.lineTo(tx, 9 - mh * 0.85 + 3.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else {                                           // toothy grin + fangs
+    ctx.beginPath();
+    ctx.arc(4, 4, 9, 0.2, Math.PI - 0.2);
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = ink;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    for (const fx of [-1, 9]) {
+      ctx.beginPath();
+      ctx.moveTo(fx - 1.8, 12);
+      ctx.lineTo(fx + 1.8, 12);
+      ctx.lineTo(fx, 15.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // a drip of drool
+    const drip = (t / 900) % 1;
+    ctx.fillStyle = 'rgba(179, 229, 252, 0.9)';
+    ctx.beginPath();
+    ctx.ellipse(12, 13 + drip * 6, 1.6, 1.6 + drip * 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Sword in the tail tip (in front of everything)
+  if (o.swoosh) {
+    ctx.save();
+    ctx.globalAlpha = o.swoosh;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, 62, tail.a - 1.7, tail.a);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.translate(tip.x, tip.y);
+  ctx.rotate(tail.a);
+  drawSword(66, 2.6);
+  ctx.restore();
+  ctx.beginPath();                                   // fluffy white tail tip wraps the hilt
+  ctx.arc(tip.x, tip.y, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFF8EC';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+
+  if (o.dizzy) drawDizzyStars(40, -98, 18, t);
+  ctx.restore();
+}
+
+function drawDizzyStars(cx, cy, r, t) {
+  ctx.save();
+  ctx.fillStyle = '#FFEB3B';
+  ctx.strokeStyle = '#5a3d00';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    const a = t / 220 + i * (Math.PI * 2 / 3);
+    drawStar(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.35, r * 0.32);
+  }
+  ctx.restore();
+}
+
+// Spiky "shout" bubble. (x, y) is where the spike points (the Blob's mouth).
+function drawShout(x, y, text, age, fontPx) {
+  const fs = fontPx || 22;
+  const pop = Math.min(1, age / 220);
+  const sc = Math.max(0.01, easeOutBack(pop));
+  ctx.save();
+  ctx.font = `bold ${fs}px "Comic Sans MS", cursive`;
+  const tw = ctx.measureText(text).width;
+  const rx = tw / 2 + fs * 1.0, ry = fs * 1.25;
+  const cx = clamp(x, rx * 1.22 + 8, canvas.width - rx * 1.22 - 8);
+  const cy = Math.max(ry * 1.22 + 8, y - ry - fs * 1.4);
+  const wob = Math.sin(age / 35) * 1.5;                 // it's SHOUTING, it trembles
+  ctx.translate(x, y);
+  ctx.scale(sc, sc);
+  ctx.translate(-x, -y);
+  ctx.lineJoin = 'round';
+  ctx.fillStyle = '#FFF59D';
+  ctx.strokeStyle = '#5a2d0c';
+  ctx.lineWidth = 3;
+  ctx.beginPath();                                      // spike toward the mouth
+  ctx.moveTo(cx - fs * 0.5, cy + ry * 0.7);
+  ctx.lineTo(x, y);
+  ctx.lineTo(cx + fs * 0.5, cy + ry * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();                                      // starburst
+  const N = 22;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const r = i % 2 ? 1 : 1.22;
+    const px = cx + Math.cos(a) * rx * r + wob;
+    const py = cy + Math.sin(a) * ry * r;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#fff';
+  ctx.strokeText(text, cx + wob, cy + 1);
+  ctx.fillStyle = '#C62828';
+  ctx.fillText(text, cx + wob, cy + 1);
+  ctx.restore();
+}
+
+// ---------- The fight view ----------
+// Arena units: 1000 wide, height measured up from the ground (y = 0).
+const FIGHT_MIN_GAP = 200;     // bodies can't get closer than this (centre to centre)
+const P_REACH = 300;           // player's sword hits if the Blob is this close
+const B_REACH = 330;           // Blob's tail-sword reach (it also lunges forward)
+const P_STARTUP = 110, P_ACTIVE = 110, P_RECOVER = 200;   // player swing (ms)
+const B_ACTIVE = 160, B_RECOVER = 380;                    // Blob swing after its wind-up
+const HIT_STUN = 340, BLOCK_STUN = 220, BOSS_BLOCK_MS = 500;
+const ARENA_MIN_X = 110, ARENA_MAX_X = 890;
+const JUMP_V = 950, GRAVITY = 2600;
+
+let fight = null;
+let fightTouch = { left: false, right: false, block: false };
+
+function newFighter(x, facing) {
+  return { x, y: 0, vy: 0, facing, act: 'idle', actStart: 0, walk: 0, pushV: 0, score: 0, hitChecked: false, ai: 'wait' };
+}
+
+function startFight() {
+  const now = performance.now();
+  const def = mapConfig.boss;
+  bossEngage = null;
+  mapBoss.shout = null;
+  backpackOpen = false;
+  journalOpen = false;
+  tapTarget = null;
+  speechBubbles = [];
+  fightTouch = { left: false, right: false, block: false };
+  fight = {
+    def,
+    toWin: def.pointsToWin || 10,
+    phase: 'intro',            // intro → fight → ko → result
+    phaseStart: now,
+    lastT: now,
+    p: newFighter(320, 'right'),
+    b: newFighter(680, 'left'),
+    bossThinkAt: now + 2600,
+    shout: null,               // { text, start, dur } — the Blob yelling
+    pops: [],                  // floating words: { text, x, y, color, size, start }
+    sparks: [],                // { x, y, color, start }
+    shake: 0,
+    pPulse: 0, bPulse: 0,      // when each score last went up
+    winner: null,
+    result: null
+  };
+  state = GameState.FIGHTING;
+}
+
+function fightBusy(a) { return a.act === 'attack' || a.act === 'hit' || a.act === 'blockstun' || a.act === 'ko'; }
+
+function fightAttack() {
+  const f = fight;
+  if (!f || f.phase !== 'fight') return;
+  const p = f.p, b = f.b, now = performance.now();
+  if (fightBusy(p)) return;
+  p.mashing = !!(p.lastAttack && now - p.lastAttack < 560);   // swinging again the instant it can
+  p.act = 'attack';
+  p.actStart = now;
+  p.lastAttack = now;
+  p.hitChecked = false;
+  // Sometimes the Blob sees it coming and puts its sword up
+  b.rolledBlock = Math.abs(p.x - b.x) < P_REACH + 60 && bossMaybeBlock(f, now);
+}
+
+// More likely right after it's been bonked, and a lot more against mashing
+function bossMaybeBlock(f, now) {
+  const b = f.b, p = f.p;
+  if (b.act !== 'idle' && b.act !== 'walk') return false;
+  const wary = b.lastHit && now - b.lastHit < 1500 ? 0.2 : 0;
+  const chance = Math.min(0.8, 0.22 + 0.02 * p.score + wary + (p.mashing ? 0.35 : 0));
+  if (Math.random() < chance) {
+    b.act = 'block';
+    b.actStart = now;
+  }
+  return true;    // it had its chance
+}
+
+function fightJump() {
+  const f = fight;
+  if (!f || f.phase !== 'fight') return;
+  const p = f.p;
+  if (p.y > 0 || fightBusy(p) || p.act === 'block') return;
+  p.vy = JUMP_V;
+  p.act = 'jump';
+}
+
+function fightPop(f, text, x, y, color, size) {
+  f.pops.push({ text, x, y, color, size: size || 1, start: performance.now() });
+}
+
+function fightSay(f, text, dur) {
+  f.shout = { text, start: performance.now(), dur: dur || 1100 };
+}
+
+// One swing lands (or doesn't) on `def`
+function resolveHit(f, att, def, who) {
+  const now = performance.now();
+  const dist = Math.abs(att.x - def.x);
+  const reach = who === 'player' ? P_REACH : B_REACH;
+  const away = def.x > att.x ? 1 : -1;
+  const midX = (att.x + def.x) / 2;
+  if (dist > reach) return;                                  // whiff
+  // Back on its feet just in time? It might get its sword up
+  if (who === 'player' && !def.rolledBlock) bossMaybeBlock(f, now);
+  def.rolledBlock = false;
+  if (who === 'boss' && def.y > 70) {                        // jumped right over it
+    fightPop(f, 'MISSED!', def.x, def.y + 230, '#B3E5FC', 0.8);
+    return;
+  }
+  if (def.act === 'windup' && def.armor) {               // counter-attacks can't be stopped
+    f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
+    fightPop(f, 'CLANG!', def.x - away * 40, 230, '#90CAF9', 0.9);
+    f.shake = 4;
+    return;
+  }
+  if (def.act === 'block' && def.y === 0) {
+    def.act = 'blockstun';
+    def.actStart = now;
+    if (who === 'player') def.counter = true;     // the Blob hits right back!
+    def.pushV = 260 * away;
+    f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
+    fightPop(f, pickOne(['BLOCKED!', 'CLANG!', 'TINK!']), def.x - away * 40, 230, '#90CAF9', 0.9);
+    f.shake = 4;
+    return;
+  }
+  // HIT! One point.
+  att.score++;
+  if (who === 'player') f.pPulse = now; else f.bPulse = now;
+  def.act = 'hit';
+  def.actStart = now;
+  def.pushV = 950 * away;         // knocked back out of reach: step in again
+  def.lastHit = now;
+  f.sparks.push({ x: midX + away * 50, y: 130 + def.y, color: '#FFEB3B', start: now });
+  fightPop(f, pickOne(['POW!', 'BONK!', 'SMACK!', 'WHACK!', 'THWACK!', 'BOOF!']), def.x, 250 + def.y, '#FFEB3B', 1.1);
+  fightPop(f, '+1', att.x, 260, who === 'player' ? player.character.color : '#FF9E5E', 0.8);
+  f.shake = 10;
+  if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
+  else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
+  else f.shout = null;
+  if (att.score >= f.toWin) {
+    f.phase = 'ko';
+    f.phaseStart = now;
+    f.winner = who;
+    def.act = 'ko';
+  }
+}
+
+function fightPhysics(f, dt) {
+  for (const a of [f.p, f.b]) {
+    if (a.y > 0 || a.vy > 0) {
+      a.y += a.vy * dt;
+      a.vy -= GRAVITY * dt;
+      if (a.y <= 0) { a.y = 0; a.vy = 0; }
+    }
+    if (a.pushV) {
+      a.x += a.pushV * dt;
+      a.pushV *= Math.exp(-9 * dt);
+      if (Math.abs(a.pushV) < 5) a.pushV = 0;
+    }
+    a.x = clamp(a.x, ARENA_MIN_X, ARENA_MAX_X);
+  }
+  // Bodies don't pass through each other
+  const p = f.p, b = f.b;
+  const dir = b.x >= p.x ? 1 : -1;
+  const need = FIGHT_MIN_GAP - Math.abs(b.x - p.x);
+  if (need > 0) {
+    p.x = clamp(p.x - dir * need / 2, ARENA_MIN_X, ARENA_MAX_X);
+    b.x = clamp(b.x + dir * need / 2, ARENA_MIN_X, ARENA_MAX_X);
+    if (Math.abs(b.x - p.x) < FIGHT_MIN_GAP) {
+      if (p.x <= ARENA_MIN_X || p.x >= ARENA_MAX_X) b.x = p.x + dir * FIGHT_MIN_GAP;
+      else p.x = b.x - dir * FIGHT_MIN_GAP;
+    }
+  }
+}
+
+// `quick`: a fast counter-attack after blocking (still shouts first)
+function startBossWindup(f, now, quick) {
+  const b = f.b;
+  b.act = 'windup';
+  b.actStart = now;
+  b.armor = !!quick;
+  // Gets a bit quicker as the fight goes on
+  b.windup = quick
+    ? randBetween(380, 480)
+    : clamp(1000 - 25 * b.score - 12 * f.p.score, 620, 1000) + randBetween(0, 250);
+  fightSay(f, bossSays('phrases'), b.windup + 250);   // always says something before it attacks
+}
+
+function bossAI(f, now, dt) {
+  const b = f.b, p = f.p;
+  const dist = Math.abs(p.x - b.x);
+  const toward = p.x > b.x ? 1 : -1;
+  const t = now - b.actStart;
+  switch (b.act) {
+    case 'hit':
+      if (t > HIT_STUN) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450); }
+      return;
+    case 'blockstun':
+      if (t > BLOCK_STUN) {
+        b.act = 'idle';
+        f.bossThinkAt = now + randBetween(100, 300);
+        if (b.counter) { b.counter = false; startBossWindup(f, now, true); }
+      }
+      return;
+    case 'block':
+      if (t > BOSS_BLOCK_MS) b.act = 'idle';
+      return;
+    case 'windup':
+      if (t > b.windup) { b.act = 'attack'; b.actStart = now; b.hitChecked = false; }
+      else b.x += toward * 50 * dt;                  // creeps in while yelling
+      return;
+    case 'attack':
+      if (t < B_ACTIVE) b.x += toward * 380 * dt;    // lunge!
+      if (!b.hitChecked && t >= B_ACTIVE * 0.7) { b.hitChecked = true; resolveHit(f, b, p, 'boss'); }
+      if (t >= B_ACTIVE + B_RECOVER && b.act === 'attack') { b.act = 'idle'; f.bossThinkAt = now + randBetween(250, 700); }
+      return;
+  }
+  // Free to choose what to do next
+  if (now >= f.bossThinkAt) {
+    const r = Math.random();
+    // You're swinging nonstop up close: put the sword up or back off
+    if (p.mashing && now - p.lastAttack < 600 && dist <= P_REACH + 40 && r < 0.6) {
+      if (r < 0.4) { b.act = 'block'; b.actStart = now; }
+      else b.ai = 'retreat';
+      f.bossThinkAt = now + randBetween(300, 600);
+      return;
+    }
+    if (dist <= B_REACH + 40 && r < 0.6) { startBossWindup(f, now); return; }
+    if (dist > B_REACH - 30 && r < 0.85) b.ai = 'approach';
+    else if (r < 0.93 && dist < 520) b.ai = 'retreat';
+    else b.ai = 'wait';
+    f.bossThinkAt = now + randBetween(300, 800);
+  }
+  if (b.ai === 'approach' && dist > FIGHT_MIN_GAP + 30) {
+    b.x += toward * 190 * dt;
+    b.walk += dt;
+    b.act = 'walk';
+  } else if (b.ai === 'retreat') {
+    b.x -= toward * 150 * dt;
+    b.walk += dt;
+    b.act = 'walk';
+  } else {
+    b.act = 'idle';
+  }
+}
+
+function updateFight() {
+  const f = fight;
+  if (!f) return;
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - f.lastT) / 1000);
+  f.lastT = now;
+  f.shake = Math.max(0, f.shake - dt * 40);
+  f.pops = f.pops.filter(pp => now - pp.start < 900);
+  f.sparks = f.sparks.filter(sp => now - sp.start < 350);
+  if (f.shout && now - f.shout.start > f.shout.dur) f.shout = null;
+
+  if (f.phase === 'intro') {
+    if (now - f.phaseStart > 2100) { f.phase = 'fight'; f.phaseStart = now; f.bossThinkAt = now + 500; }
+    fightPhysics(f, dt);
+    return;
+  }
+  if (f.phase === 'ko') {
+    for (const a of [f.p, f.b]) {
+      if (a.act === 'attack' && now - a.actStart > 700) a.act = 'idle';
+      if ((a.act === 'hit' || a.act === 'blockstun' || a.act === 'windup') && now - a.actStart > HIT_STUN) a.act = 'idle';
+    }
+    if (now - f.phaseStart > 2000) finishFight(false);
+    fightPhysics(f, dt * 0.35);                      // slow-mo K.O.
+    return;
+  }
+  if (f.phase !== 'fight') return;
+
+  const p = f.p, b = f.b;
+  p.facing = b.x >= p.x ? 'right' : 'left';
+  b.facing = p.x >= b.x ? 'right' : 'left';
+
+  const left = keys['ArrowLeft'] || keys['a'] || fightTouch.left;
+  const right = keys['ArrowRight'] || keys['d'] || fightTouch.right;
+  const blockHeld = keys['b'] || keys['B'] || fightTouch.block;
+
+  // Player timers
+  const pt = now - p.actStart;
+  if (p.act === 'attack') {
+    if (!p.hitChecked && pt >= P_STARTUP) { p.hitChecked = true; resolveHit(f, p, b, 'player'); }
+    if (p.act === 'attack' && pt >= P_STARTUP + P_ACTIVE + P_RECOVER) p.act = 'idle';
+  } else if (p.act === 'hit' && pt > HIT_STUN) p.act = 'idle';
+  else if (p.act === 'blockstun' && pt > BLOCK_STUN) p.act = 'block';
+
+  if (f.phase === 'fight' && !fightBusy(p)) {
+    if (blockHeld && p.y === 0) {
+      p.act = 'block';
+    } else {
+      const dir = (right ? 1 : 0) - (left ? 1 : 0);
+      if (dir) {
+        const forward = (dir > 0) === (p.facing === 'right');
+        p.x += dir * (forward ? 280 : 230) * dt;
+        p.walk += dt;
+      }
+      p.act = p.y > 0 ? 'jump' : (dir ? 'walk' : 'idle');
+    }
+  }
+
+  if (f.phase === 'fight') bossAI(f, now, dt);
+  fightPhysics(f, dt);
+}
+
+function finishFight(fled) {
+  const f = fight;
+  const won = !fled && f.winner === 'player';
+  const reward = (f.def && f.def.reward) || DEFAULT_BOSS_REWARD;
+  const res = { won, fled, lines: [] };
+  if (won) {
+    if (backpack.length < BACKPACK_CAPACITY) {
+      backpack.push({ ...reward });
+      res.lines.push(`You got a special ${reward.emoji} ${reward.name}!`);
+      res.lines.push('It\'s in your backpack. 🎒');
+    } else {
+      const caveId = f.def.cave;
+      const there = hotspotItems[caveId] || (hotspotItems[caveId] = []);
+      if (there.length + mpPendingDropsAt(caveId) < HOTSPOT_CAPACITY) {
+        // In a multiplayer world the cave's items are shared, so it goes via PubNub
+        if (mp.active) mpRequestDrop(caveId, { ...reward });
+        else there.push({ ...reward });
+        res.lines.push(`You won a special ${reward.emoji} ${reward.name}!`);
+        res.lines.push('Your backpack is full, so it\'s waiting at the cave.');
+      } else {
+        res.lines.push(`You won a ${reward.emoji} ${reward.name}...`);
+        res.lines.push('...but there was no room for it anywhere! 😢');
+      }
+    }
+  } else {
+    const lost = backpack.filter(isCoin);
+    backpack = backpack.filter(it => !isCoin(it));
+    const total = lost.reduce((sum, it) => sum + (it.value || 0), 0);
+    if (lost.length) {
+      res.lines.push(`The Blob gobbled up your ${lost.length === 1 ? 'coin' : lost.length + ' coins'}${total ? ` ($${total})` : ''}! 😱`);
+      res.lines.push(lost.map(it => it.emoji || '🪙').join(' ') + '  →  👄');
+    } else {
+      res.lines.push('You had no coins, so the Blob got nothing.');
+      res.lines.push('Phew! 😅');
+    }
+  }
+  writeSave();
+  f.phase = 'result';
+  f.phaseStart = performance.now();
+  f.result = res;
+  f.shout = null;
+  if (fled) f.p.act = 'idle';
+  if (!won) res.lines.push(`"${pickOne(fled ? ['hehe! me keep shinies!', 'run run little snack!'] : ['nom nom nom!', 'BURP! yummy!', 'me tummy full!'])}" says the Blob`);
+}
+
+function endFight() {
+  if (!fight) return;
+  const won = fight.result && fight.result.won;
+  fight = null;
+  fightTouch = { left: false, right: false, block: false };
+  resetMapBoss(randBetween(30000, 50000));
+  mpBossFight(false, won);
+  state = GameState.PLAYING;
+  kitchenToast(won ? 'The Blob runs home to its cave, sniffling. 🏆' : 'The Blob waddles home to its cave, full and happy. 😋');
+}
+
+function handleFightKey(e) {
+  const f = fight;
+  if (!f) return;
+  if (f.phase === 'result') {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') endFight();
+    return;
+  }
+  if (e.key === 'Escape' && f.phase !== 'ko') { finishFight(true); return; }   // run away!
+  if (e.repeat) return;
+  if (e.key === ' ') fightAttack();
+  else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') fightJump();
+}
+
+// Touch: on-screen buttons. Movement/block are held; attack/jump fire on press.
+function fightButtonSize() { return Math.round(Math.max(54, Math.min(76, canvas.width * 0.13))); }
+function fightButtonRects() {
+  const sz = fightButtonSize();
+  const m = 14, gap = 10, y = canvas.height - sz - m;
+  return [
+    { id: 'left',   x: m,                         y,                 w: sz, h: sz, label: '◀' },
+    { id: 'right',  x: m + sz + gap,              y,                 w: sz, h: sz, label: '▶' },
+    { id: 'jump',   x: m + (sz + gap) / 2,        y: y - sz - gap,   w: sz, h: sz, label: '▲' },
+    { id: 'block',  x: canvas.width - m - sz * 2 - gap, y,           w: sz, h: sz, label: '🛡️' },
+    { id: 'attack', x: canvas.width - m - sz,     y: y - sz * 0.5,   w: sz, h: sz, label: '⚔️' }
+  ];
+}
+function handleFightTouches(e, isStart) {
+  const f = fight;
+  if (!f) return;
+  if (isStart && f.phase === 'result') { endFight(); return; }
+  const rect = canvas.getBoundingClientRect();
+  const btns = fightButtonRects();
+  const hitBtn = (t) => {
+    const x = t.clientX - rect.left, y = t.clientY - rect.top;
+    return btns.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+  };
+  const held = { left: false, right: false, block: false };
+  for (const t of e.touches) {
+    const b = hitBtn(t);
+    if (b && b.id in held) held[b.id] = true;
+  }
+  fightTouch = held;
+  if (isStart) {
+    for (const t of e.changedTouches) {
+      const b = hitBtn(t);
+      if (b && b.id === 'attack') fightAttack();
+      if (b && b.id === 'jump') fightJump();
+    }
+  }
+}
+
+// --- Fight drawing ---
+// Where the score panel sits: the very bottom, or above the touch buttons
+const SCORE_PANEL_H = 78;
+function scorePanelY() {
+  return isTouchDevice()
+    ? canvas.height - fightButtonSize() * 2 - 44 - SCORE_PANEL_H
+    : canvas.height - SCORE_PANEL_H - 34;
+}
+function fightView() {
+  const scale = Math.min(canvas.width / 880, canvas.height / 620);
+  const groundY = Math.min(canvas.height - Math.max(130, canvas.height * 0.22), scorePanelY() - 18);
+  const ox = canvas.width / 2 - 500 * scale;
+  return { scale, groundY, sx: (x) => ox + x * scale, sy: (y) => groundY - y * scale };
+}
+
+function drawCaveArena(v, now) {
+  const W = canvas.width, Hc = canvas.height, g = v.groundY;
+  const k = Math.max(0.6, v.scale);
+  const sky = ctx.createLinearGradient(0, 0, 0, g);
+  sky.addColorStop(0, '#1b1224');
+  sky.addColorStop(1, '#43303c');
+  ctx.fillStyle = sky;
+  ctx.fillRect(-30, -30, W + 60, g + 30);
+  // big boulders along the back wall
+  for (let i = 0; i < 10; i++) {
+    const bx = (i / 9) * W + Math.sin(i * 3.1) * 30;
+    const r = (90 + (i * 37) % 70) * k;
+    ctx.fillStyle = i % 2 ? '#2e2233' : '#382a3b';
+    ctx.beginPath();
+    ctx.ellipse(bx, g, r * 1.4, r, 0, Math.PI, 0);
+    ctx.fill();
+  }
+  // torches
+  for (const tx of [90, 910]) {
+    const x = v.sx(tx), y = v.sy(330);
+    const flick = Math.sin(now / 70 + tx) * 0.15 + Math.sin(now / 37) * 0.1;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 220 * k);
+    glow.addColorStop(0, 'rgba(255, 170, 60, 0.35)');
+    glow.addColorStop(1, 'rgba(255, 170, 60, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 220 * k, y - 220 * k, 440 * k, 440 * k);
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(x - 6 * k, y, 12 * k, 70 * k);
+    ctx.fillStyle = '#FF7043';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 14 * k, 15 * k, (30 + flick * 20) * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FFEB3B';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 8 * k, 7 * k, (16 + flick * 10) * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // stalactites
+  ctx.fillStyle = '#2a1f2e';
+  ctx.strokeStyle = '#140d17';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 13; i++) {
+    const sx = ((i + 0.5) / 13) * W + Math.sin(i * 7) * 20;
+    const len = (50 + ((i * 53) % 80)) * k;
+    const hw = (16 + (i * 29) % 18) * k;
+    ctx.beginPath();
+    ctx.moveTo(sx - hw, -4);
+    ctx.lineTo(sx + hw, -4);
+    ctx.lineTo(sx, len);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  // floor
+  const floor = ctx.createLinearGradient(0, g, 0, Hc);
+  floor.addColorStop(0, '#5a3e2b');
+  floor.addColorStop(1, '#22160f');
+  ctx.fillStyle = floor;
+  ctx.fillRect(-30, g, W + 60, Hc - g + 30);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  for (let i = 0; i < 22; i++) {
+    const px = ((i * 137) % 1000) / 1000 * W;
+    const py = g + 10 + ((i * 71) % 100) / 100 * (Hc - g - 10);
+    ctx.beginPath();
+    ctx.ellipse(px, py, (8 + (i % 4) * 4) * k, (3 + (i % 3) * 2) * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = '#1a110b';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-30, g);
+  ctx.lineTo(W + 30, g);
+  ctx.stroke();
+  // the Blob's treasure: coins and bones
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#000';
+  ctx.font = `${Math.round(34 * k)}px ${SCENE_EMOJI_FONT}`;
+  for (const [ax, ay, e] of [[940, 4, '🪙'], [965, 4, '🪙'], [952, 26, '🪙'], [60, 2, '🦴'], [140, -10, '🦴'], [860, -14, '🦴']]) {
+    ctx.fillText(e, v.sx(ax), v.sy(ay));
+  }
+}
+
+function playerSwordPose(p, now) {
+  const rest = { hx: 29, hy: 28, a: -0.95 };
+  if (p.act === 'block' || p.act === 'blockstun') return { hx: 31, hy: 23, a: -1.5 };
+  if (p.act === 'hit' || p.act === 'ko') return { hx: 25, hy: 31, a: 0.4 };
+  if (p.act !== 'attack') {
+    const bob = p.act === 'walk' ? Math.sin(p.walk * 14) * 1.2 : 0;
+    return { hx: rest.hx, hy: rest.hy + bob, a: rest.a };
+  }
+  const t = now - p.actStart;
+  const up = { hx: 25, hy: 11, a: -2.3 };
+  const out = { hx: 35, hy: 24, a: 0.25 };
+  const mix = (A, B, u) => ({ hx: lerp(A.hx, B.hx, u), hy: lerp(A.hy, B.hy, u), a: lerp(A.a, B.a, u) });
+  if (t < P_STARTUP) return mix(rest, up, t / P_STARTUP);
+  if (t < P_STARTUP + P_ACTIVE) return mix(up, out, easeOutCubic((t - P_STARTUP) / P_ACTIVE));
+  return mix(out, rest, clamp((t - P_STARTUP - P_ACTIVE) / P_RECOVER, 0, 1));
+}
+
+function drawFightPlayer(v, p, now) {
+  const H = 200 * v.scale;
+  const s = H / 48;
+  const cx = v.sx(p.x);
+  const feet = v.sy(p.y);
+  const ch = player.character;
+  // shadow stays on the floor (smaller while jumping)
+  const sh = 1 - Math.min(0.6, p.y / 300);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(cx, v.groundY, 65 * v.scale * sh, 9 * v.scale * sh, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(cx, feet);
+  if (p.facing === 'left') ctx.scale(-1, 1);
+  if (p.act === 'hit') ctx.rotate(-0.18);
+  if (p.act === 'ko') ctx.rotate(-0.18 - Math.min(1, (now - p.actStart) / 600) * 0.7);
+  const x0 = -15 * s, y0 = -48 * s;
+  const frame = p.act === 'walk' ? Math.floor(p.walk * 9) % 4 : 0;
+  const mouth = p.act === 'attack' ? 0.8 : (p.act === 'hit' || p.act === 'ko' ? 1 : 0);
+  drawCharacterSprite(x0, y0, ch, frame, 'right', s, mouth, null, true);
+
+  const g = playerSwordPose(p, now);
+  const hand = { x: x0 + g.hx * s, y: y0 + g.hy * s };
+  // swoosh trail on the swing
+  if (p.act === 'attack') {
+    const t = now - p.actStart;
+    if (t > P_STARTUP && t < P_STARTUP + P_ACTIVE + 90) {
+      ctx.save();
+      ctx.globalAlpha = 1 - (t - P_STARTUP) / (P_ACTIVE + 90);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = 5 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(hand.x, hand.y, 26 * s, -2.1, g.a);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // the sword arm, from the shoulder to the hand
+  ctx.strokeStyle = ch.shirtColor;
+  ctx.lineWidth = 6 * s;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x0 + 27 * s, y0 + 19 * s);
+  ctx.lineTo(hand.x, hand.y);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(hand.x, hand.y);
+  ctx.rotate(g.a);
+  drawSword(28 * s, 1.5 * s);
+  ctx.restore();
+  ctx.fillStyle = '#FFCC80';
+  ctx.beginPath();
+  ctx.arc(hand.x, hand.y, 2.8 * s, 0, Math.PI * 2);
+  ctx.fill();
+  // blocking: a shimmery guard in front
+  if (p.act === 'block' || p.act === 'blockstun') {
+    ctx.strokeStyle = `rgba(144, 202, 249, ${0.45 + Math.sin(now / 90) * 0.15})`;
+    ctx.lineWidth = 3 * s;
+    ctx.beginPath();
+    ctx.arc(x0 + 26 * s, y0 + 26 * s, 20 * s, -1.2, 1.2);
+    ctx.stroke();
+  }
+  if (p.act === 'hit' || p.act === 'ko') drawDizzyStars(x0 + 15 * s, y0 - 4 * s, 10 * s, now);
+  ctx.restore();
+}
+
+function bossTail(b, now) {
+  const P = BLOB_POSES;
+  const t = now - b.actStart;
+  switch (b.act) {
+    case 'windup': {
+      const r = lerpPose(P.idle, P.windup, clamp(t / 250, 0, 1));
+      r.a += Math.sin(now / 30) * 0.06;            // quivering with excitement
+      return r;
+    }
+    case 'attack':
+      if (t < B_ACTIVE) return lerpPose(P.windup, P.strike, easeOutCubic(t / B_ACTIVE));
+      return lerpPose(P.strike, P.idle, clamp((t - B_ACTIVE) / B_RECOVER, 0, 1));
+    case 'block':
+    case 'blockstun':
+      return P.block;
+    case 'hit':
+    case 'ko':
+      return P.hit;
+    default:
+      return { ...P.idle, a: P.idle.a + Math.sin(now / 400) * 0.12 };
+  }
+}
+
+function drawFightBoss(v, f, now) {
+  const b = f.b;
+  const t = now - b.actStart;
+  let mouth = shoutMouth(f.shout, now);
+  if (b.act === 'attack' && t < B_ACTIVE + 120) mouth = 1;
+  drawBlob(v.sx(b.x), v.sy(b.y), 215 * v.scale, b.facing, {
+    tail: bossTail(b, now),
+    moving: b.act === 'walk',
+    walk: b.walk,
+    mouth,
+    t: now,
+    dizzy: b.act === 'hit' || b.act === 'ko',
+    swoosh: b.act === 'attack' && t < B_ACTIVE + 100 ? 1 - t / (B_ACTIVE + 100) : 0
+  });
+}
+
+function bigText(text, x, y, size, fill, stroke) {
+  ctx.font = `bold ${Math.round(size)}px "Comic Sans MS", cursive`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(3, size * 0.14);
+  ctx.strokeStyle = stroke || '#2b1300';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, x, y);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function drawFightFx(v, f, now) {
+  for (const sp of f.sparks) {
+    const u = (now - sp.start) / 350;
+    const x = v.sx(sp.x), y = v.sy(sp.y);
+    ctx.save();
+    ctx.globalAlpha = 1 - u;
+    ctx.strokeStyle = sp.color;
+    ctx.lineWidth = 5 * v.scale + 2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 10; i++) {
+      const a = i / 10 * Math.PI * 2 + 0.3;
+      const r0 = (10 + u * 40) * v.scale, r1 = (30 + u * 90) * v.scale;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0);
+      ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  for (const pp of f.pops) {
+    const u = (now - pp.start) / 900;
+    ctx.save();
+    ctx.globalAlpha = u < 0.65 ? 1 : 1 - (u - 0.65) / 0.35;
+    const size = Math.max(16, 48 * pp.size * v.scale) * (u < 0.15 ? 0.6 + u / 0.15 * 0.4 : 1);
+    bigText(pp.text, v.sx(pp.x), v.sy(pp.y + u * 70), size, pp.color);
+    ctx.restore();
+  }
+}
+
+function drawFightHud(v, f, now) {
+  const W = canvas.width;
+  const ch = player.character;
+  const def = f.def || {};
+  // Name plates across the top, Street Fighter style
+  const pad = 12;
+  const plateW = Math.min(320, (W - pad * 2 - 50) / 2);
+  const plateH = 50;
+  const fs = Math.min(20, plateW / 9);
+  const fitFont = (text, size, maxW) => {
+    ctx.font = `bold ${size}px "Comic Sans MS", cursive`;
+    const w = ctx.measureText(text).width;
+    return w > maxW ? size * maxW / w : size;
+  };
+  const plate = (x, name, color, sub, align) => {
+    ctx.fillStyle = 'rgba(20, 12, 6, 0.8)';
+    roundRect(x, pad, plateW, plateH, 10);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.textAlign = align;
+    const tx = align === 'left' ? x + 12 : x + plateW - 12;
+    const nfs = fitFont(name, fs, plateW - 24);
+    ctx.font = `bold ${nfs}px "Comic Sans MS", cursive`;
+    ctx.fillStyle = color;
+    ctx.fillText(name, tx, pad + (sub ? 24 : 32));
+    if (sub) {
+      ctx.font = `${Math.min(Math.max(9, fs * 0.6), fitFont(sub, 30, plateW - 24) * 0.9)}px "Comic Sans MS", cursive`;
+      ctx.fillStyle = '#FFE0B2';
+      ctx.fillText(sub, tx, pad + 42);
+    }
+  };
+  plate(pad, ch.name.toUpperCase(), ch.color, null, 'left');
+  plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', def.aka ? `a.k.a. the ${def.aka}` : null, 'right');
+  bigText('VS', W / 2, pad + plateH / 2, 26, '#FFD54F');
+
+  // Point counter along the bottom
+  const touch = isTouchDevice();
+  const pw = Math.min(560, W - 24), ph = SCORE_PANEL_H;
+  const px = W / 2 - pw / 2;
+  const py = scorePanelY();
+  ctx.fillStyle = 'rgba(20, 12, 6, 0.86)';
+  roundRect(px, py, pw, ph, 14);
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#FFD54F';
+  ctx.stroke();
+  const pulse = (at) => 1 + 0.6 * Math.max(0, 1 - (now - at) / 350);
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 15px "Comic Sans MS", cursive';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = ch.color;
+  ctx.fillText('YOU', px + 16, py + 24);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#FF9E5E';
+  ctx.fillText('BLOB', px + pw - 16, py + 24);
+  ctx.save();
+  ctx.translate(px + 78, py + 26);
+  ctx.scale(pulse(f.pPulse), pulse(f.pPulse));
+  bigText(String(f.p.score), 0, 0, 28, '#fff');
+  ctx.restore();
+  ctx.save();
+  ctx.translate(px + pw - 82, py + 26);
+  ctx.scale(pulse(f.bPulse), pulse(f.bPulse));
+  bigText(String(f.b.score), 0, 0, 28, '#fff');
+  ctx.restore();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '12px "Comic Sans MS", cursive';
+  ctx.fillStyle = '#FFE0B2';
+  ctx.fillText(`First to ${f.toWin}!`, W / 2, py + 26);
+  // pips: one per point
+  const pipR = Math.max(4, Math.min(8, pw / 72));
+  const step = pipR * 2.5;
+  const rowY = py + 56;
+  for (let i = 0; i < f.toWin; i++) {
+    for (const side of [-1, 1]) {
+      const filled = side < 0 ? i < f.p.score : i < f.b.score;
+      const cx = W / 2 + side * (14 + pipR + i * step);
+      ctx.beginPath();
+      ctx.arc(cx, rowY, pipR, 0, Math.PI * 2);
+      ctx.fillStyle = filled ? (side < 0 ? ch.color : '#FF9E5E') : 'rgba(255, 255, 255, 0.12)';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.stroke();
+    }
+  }
+  ctx.textBaseline = 'alphabetic';
+  if (!touch) {
+    ctx.font = '13px "Comic Sans MS", cursive';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.textAlign = 'center';
+    ctx.fillText('← → move   •   ↑ jump   •   SPACE attack   •   hold B block   •   Esc run away', W / 2, canvas.height - 12);
+  }
+}
+
+function drawFightButtons() {
+  for (const b of fightButtonRects()) {
+    const down = (b.id in fightTouch) && fightTouch[b.id];
+    ctx.fillStyle = down ? 'rgba(255, 213, 79, 0.55)' : 'rgba(20, 12, 6, 0.6)';
+    roundRect(b.x, b.y, b.w, b.h, b.w * 0.3);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#FFD54F';
+    ctx.stroke();
+    ctx.font = `${Math.round(b.w * 0.45)}px ${SCENE_EMOJI_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FFF9C4';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+}
+
+function drawFightOverlay(v, f, now) {
+  const W = canvas.width, Hc = canvas.height;
+  const t = now - f.phaseStart;
+  const big = Math.min(110, W * 0.16);
+  if (f.phase === 'intro') {
+    if (t < 350) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${1 - t / 350})`;
+      ctx.fillRect(0, 0, W, Hc);
+    }
+    if (t < 1200) {
+      const u = clamp(t / 300, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = u;
+      bigText(bossName().toUpperCase(), W / 2, Hc * 0.3, big * 0.55, '#FF9E5E');
+      if (f.def && f.def.aka) bigText(`a.k.a. the ${f.def.aka}`, W / 2, Hc * 0.3 + big * 0.5, big * 0.28, '#FFE0B2');
+      bigText('READY...', W / 2, Hc * 0.3 + big * 1.1, big * 0.5, '#fff');
+      ctx.restore();
+    } else {
+      const u = clamp((t - 1200) / 250, 0, 1);
+      ctx.save();
+      ctx.translate(W / 2, Hc * 0.36);
+      const sc = easeOutBack(u);
+      ctx.scale(sc, sc);
+      bigText('FIGHT!', 0, 0, big, '#FFEB3B', '#B71C1C');
+      ctx.restore();
+    }
+  } else if (f.phase === 'ko') {
+    ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.35, t / 1500)})`;
+    ctx.fillRect(0, 0, W, Hc);
+    const u = clamp(t / 300, 0, 1);
+    ctx.save();
+    ctx.translate(W / 2, Hc * 0.36);
+    const sc = easeOutBack(u) * (1 + Math.sin(t / 90) * 0.03);
+    ctx.scale(sc, sc);
+    bigText('K.O.!', 0, 0, big * 1.2, '#FF5252', '#fff');
+    ctx.restore();
+  } else if (f.phase === 'result') {
+    const r = f.result;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, W, Hc);
+    const pw = Math.min(520, W - 32), ph = 230;
+    const px = W / 2 - pw / 2, py = Hc * 0.42 - ph / 2;
+    const u = easeOutBack(clamp(t / 350, 0, 1));
+    ctx.save();
+    ctx.translate(W / 2, py + ph / 2);
+    ctx.scale(u, u);
+    ctx.translate(-W / 2, -(py + ph / 2));
+    ctx.fillStyle = r.won ? '#2E7D32' : '#5D1A1A';
+    roundRect(px, py, pw, ph, 18);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#FFD54F';
+    ctx.stroke();
+    const title = r.won ? 'YOU WIN! 🏆' : r.fled ? 'YOU RAN AWAY! 💨' : `${bossName().toUpperCase()} WINS!`;
+    bigText(title, W / 2, py + 46, Math.min(40, pw / 11), '#FFEB3B');
+    ctx.textAlign = 'center';
+    ctx.font = `${Math.min(19, pw / 26)}px "Comic Sans MS", cursive`;
+    ctx.fillStyle = '#fff';
+    r.lines.forEach((line, i) => {
+      ctx.fillStyle = i === 2 ? '#FFB74D' : '#fff';
+      ctx.fillText(line, W / 2, py + 100 + i * 32);
+    });
+    ctx.font = 'bold 14px "Comic Sans MS", cursive';
+    ctx.fillStyle = '#FFE0B2';
+    ctx.fillText(isTouchDevice() ? 'Tap to go back to camp' : 'Press SPACE to go back to camp', W / 2, py + ph - 22);
+    ctx.restore();
+  }
+}
+
+function drawFight() {
+  const f = fight;
+  if (!f) return;
+  const now = performance.now();
+  const v = fightView();
+  ctx.save();
+  if (f.shake > 0) ctx.translate((Math.random() - 0.5) * f.shake, (Math.random() - 0.5) * f.shake);
+  drawCaveArena(v, now);
+  drawFightBoss(v, f, now);
+  drawFightPlayer(v, f.p, now);
+  drawFightFx(v, f, now);
+  ctx.restore();
+  // the Blob's yelling, above its head
+  if (f.shout) {
+    const s = 215 * v.scale / 100;
+    const dir = f.b.facing === 'left' ? -1 : 1;
+    drawShout(v.sx(f.b.x) + dir * 40 * s, v.sy(f.b.y) - 92 * s, f.shout.text, now - f.shout.start,
+      Math.max(16, Math.min(30, 30 * v.scale)));
+  }
+  drawFightHud(v, f, now);
+  if (isTouchDevice() && f.phase === 'fight') drawFightButtons();
+  drawFightOverlay(v, f, now);
+}
+
 // --- Main Game Loop ---
 function gameLoop() {
   update();
@@ -5865,6 +7692,10 @@ function gameLoop() {
       break;
     case GameState.CONFIRM_DIALOG:
       drawConfirmDialog();
+      break;
+    case GameState.FIGHTING:
+      updateFight();
+      drawFight();
       break;
   }
 

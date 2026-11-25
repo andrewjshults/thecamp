@@ -78,7 +78,7 @@ Portal hotspot extras:
   "py": 0.0,         // top  edge as fraction of image height (0–1)
   "pw": 0.1,         // width  as fraction of image width
   "ph": 0.1,         // height as fraction of image height
-  "action":          "sleep|fly|cook|climb|stargaze|play|wash|eat|explore|shelter|bathroom",
+  "action":          "sleep|fly|cook|climb|stargaze|play|wash|eat|explore|shelter|bathroom|fight",
   "description":     "Short tooltip description",
   "interactionText": "Text shown when the player interacts with this hotspot.",
   "items": [         // 0–3 entries — default items present at this hotspot
@@ -141,6 +141,32 @@ object turns hotspots that have a `station` into cooking spots:
 - The recipe chalkboard is a `chalkboard` scene prop with hand-written
   `columns` — update it when recipes change.
 
+### Boss fight — Glug Glub Blob
+The main map has a `boss` object and a `cave` hotspot (top-right corner). The
+cave is drawn over the map in code (`drawBossCave`), and the Blob (human head,
+fox body, sword in its tail — `drawBlob`) lives there. It comes out at random
+to roam, chases you when you're close, and starts a fight if it catches you.
+You can also press Space at the cave or next to it (or tap it).
+```json
+"boss": {
+  "name": "Glug Glub Blob", "aka": "I Eat You Blob",
+  "cave": "cave",                  // hotspot id it lives in
+  "pointsToWin": 10,
+  "phrases":     ["EAT!", "nom nom you!", ...],   // shouted before every attack
+  "hitPhrases":  [...],            // when it lands a hit
+  "hurtPhrases": [...],            // when it gets hit
+  "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
+}
+```
+The fight view (`GameState.FIGHTING`) is a side-on duel: ← → move, ↑ jump,
+Space attack, hold B to block, Esc runs away (counts as a loss). Touch devices
+get on-screen buttons. Each unblocked hit scores 1 point. The Blob always
+shouts a phrase while it winds up, and that's your cue to block, back off or
+jump. It sometimes blocks, more often if you mash, and after blocking it
+counter-attacks with a wind-up you can't interrupt. Win → `reward` goes in the
+backpack (or at the cave if the backpack is full). Lose → every coin item
+(`coin: true` or an id containing "coin") is taken from the backpack.
+
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
 The player has a 10-slot backpack (`BACKPACK_CAPACITY`). The `items` array in
@@ -166,13 +192,15 @@ carry `from`, the sender's per-tab player id):
 
 | `t`     | fields | meaning |
 |---------|--------|---------|
-| `pos`   | `char, map, x, y, f, w, r, h` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji. ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
+| `pos`   | `char, map, x, y, f, w, r, h, fi` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji, `fi` = fighting the Blob. ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
 | `hello` | — | I just joined: others reply with `pos`, and one synced player replies with `snap` |
 | `snap`  | `to, at, items` | the whole world's items, `{ mapPath: { hotspotId: [item] } }`, as of op timetoken `at` |
 | `take`  | `map, hs, item` (item id) | take an item from a hotspot |
 | `drop`  | `map, hs, item` (`{id,name,emoji}`) | put an item at a hotspot |
 | `say`   | `map, to, text, npc?` | a speech bubble line; `to` is a player or NPC id; `npc` set when it's an NPC's reply |
 | `bye`   | — | I left |
+| `boss`  | `map, w, x, y, f, mv, s, sid, sd` | the Blob, from its keeper: where (`home`/`out`/`returning`), feet position, facing, moving, current shout (`sid` dedupes it). ~7/s while out, every 3s at home |
+| `bossfight` | `map, on, won` | I started (`on: true`) / finished a fight with the Blob |
 
 Item rules: nobody changes the world when they click. `take`/`drop` are
 applied by **every** computer in PubNub's delivery (timetoken) order, so all
@@ -180,6 +208,16 @@ agree who got an item first; the clicker learns the result when its own
 message comes back (backpack updated, or "Too slow!" / item bounced back).
 A joiner buffers ops until its `snap`, then replays the ones newer than `at`.
 On reconnect a player re-sends `hello` to resync.
+
+The Blob is shared too. Its **keeper** (lowest player id on the Blob's map,
+so every computer agrees) runs `updateMapBoss()` and sends `boss`. Everyone
+else draws it where the keeper says (`mpTickBoss`). The keeper's Blob chases
+whichever camper is closest. Each player's own computer checks whether the
+Blob caught *them* (`mpBossCatchCheck`). While someone is fighting, the Blob
+is off the map for everyone (`where: 'fighting'`, the fighter shows "⚔️ is
+fighting the Blob!"), nobody else can start a fight, and afterwards it goes
+home. If the keeper leaves, the next lowest id takes over. A won coin that
+doesn't fit in the backpack goes to the cave as a normal `drop`.
 
 Saves: the backpack/journal/dishes are saved per world + camper
 (`louisas-game:mp:<code>:<character>`); the world's items are cached in

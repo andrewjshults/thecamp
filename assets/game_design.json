@@ -362,8 +362,45 @@
         { "itemId": "binoculars",   "text": "You peer at the Moon through binoculars. You can see the craters clearly! 🌙🔭", "animation": "stargaze" },
         { "itemId": "lantern",      "text": "Your lantern has a long chat with the Moon about who glows brighter. The Moon wins... barely. 🏮🌙", "animation": "stargaze" }
       ]
+    },
+    {
+      "id": "cave",
+      "name": "Spooky Cave",
+      "px": 0.872,
+      "py": 0.0,
+      "pw": 0.124,
+      "ph": 0.155,
+      "action": "fight",
+      "description": "Somebody hungry lives in here...",
+      "interactionText": "GLUG GLUB! Something is in the cave!",
+      "items": [],
+      "uses": []
     }
   ],
+  "boss": {
+    "id": "glug_glub_blob",
+    "name": "Glug Glub Blob",
+    "aka": "I Eat You Blob",
+    "cave": "cave",
+    "pointsToWin": 10,
+    "phrases": [
+      "EAT!",
+      "nom nom you!",
+      "gobble up yous!",
+      "me eat yous now!",
+      "you is snack!",
+      "chompy chomp yous!",
+      "yum yum in me tummy!",
+      "GLUG GLUB!",
+      "me munchy yous!",
+      "you taste nuggets!",
+      "me so hungries!",
+      "crunch you bones!"
+    ],
+    "hitPhrases": ["hehe yummy!", "nom nom!", "me winning!", "tasty yous!", "glub glub hehe!"],
+    "hurtPhrases": ["OWIE!", "no fair yous!", "ouchy me!", "grrr glub!", "me tummy hurts!"],
+    "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
+  },
   "npcs": [
     {
       "id": "red_scout",
