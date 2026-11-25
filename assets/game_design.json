@@ -240,6 +240,22 @@
       ]
     },
     {
+      "id": "kitchen",
+      "name": "Camp Kitchen",
+      "px": 0.425,
+      "py": 0.585,
+      "pw": 0.09,
+      "ph": 0.1,
+      "action": "enter",
+      "description": "Go inside and cook something yummy!",
+      "interactionText": "You open the little pink door and step into the camp kitchen!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_kitchen.json",
+      "targetHotspot": "exit_door",
+      "door": { "px": 0.452, "py": 0.568, "pw": 0.03, "ph": 0.066, "color": "#a04c9a", "inside": "🍳" }
+    },
+    {
       "id": "ball_cart",
       "name": "Ball Cart",
       "px": 0.3595,

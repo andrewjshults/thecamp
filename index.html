@@ -179,6 +179,11 @@ function loadMap(jsonPath) {
 // Saves current state, loads the new map, positions player at targetHotspotId.
 // If targetHotspotId is null, uses the map's playerStart.
 function switchMap(targetPath, targetHotspotId) {
+  // Kitchen food can't leave the kitchen
+  if (heldItem) {
+    kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
+    heldItem = null;
+  }
   // Stash current map's hotspot items
   allMapSaves[currentMapPath] = { hotspots: hotspotItems };
   writeSave();
@@ -324,8 +329,9 @@ function scenePen(S) {
     crescent(cx, cy, r, color, o) {
       pen.path(`M ${cx} ${cy - r} A ${r} ${r} 0 1 0 ${cx} ${cy + r} A ${r * 0.7} ${r} 0 1 1 ${cx} ${cy - r} Z`, color, o);
     },
+    // layer:'top' keeps text crisp (no wobble) — needed when it contains emoji
     text(x, y, str, o = {}) {
-      ink.push(`<text ${svgAttrs({ x, y })} font-family="${SCENE_FONT}" font-size="${o.size || 40 * S}" ` +
+      (o.layer === 'top' ? top : ink).push(`<text ${svgAttrs({ x, y })} font-family="${SCENE_FONT}" font-size="${o.size || 40 * S}" ` +
         `font-weight="${o.weight || 'bold'}" fill="${o.color || SCENE_INK}" text-anchor="${o.anchor || 'middle'}" ` +
         `dominant-baseline="central">${svgEsc(str)}</text>`);
     },
@@ -849,6 +855,217 @@ const SCENE_PROPS = {
     const draw = () => lines.forEach((l, i) => p.text(b.x + b.w / 2,
       b.y + b.h / 2 + (i - (lines.length - 1) / 2) * size * 1.1, l, { size, color: o.color || '#6a3fb5' }));
     o.rotate ? p.group(`rotate(${o.rotate} ${b.x + b.w / 2} ${b.y + b.h / 2})`, draw) : draw();
+  },
+
+  // --- Kitchen ---
+
+  fridge(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.color || '#f2f0ea', { r: 22 * S });
+    p.line(x, y + h * 0.32, x + w, y + h * 0.32, { sw: 0.8 });
+    p.rect(x + w * 0.8, y + h * 0.08, w * 0.07, h * 0.16, '#bdbdbd', { r: 6 * S, sw: 0.6 });
+    p.rect(x + w * 0.8, y + h * 0.38, w * 0.07, h * 0.28, '#bdbdbd', { r: 6 * S, sw: 0.6 });
+    // a kid's drawing taped to the door: sun, house, grass
+    const dx = x + w * 0.12, dy = y + h * 0.42, dw = w * 0.56, dh = h * 0.2;
+    p.group(`rotate(-4 ${dx + dw / 2} ${dy + dh / 2})`, () => {
+      p.rect(dx, dy, dw, dh, '#ffffff', { sw: 0.5 });
+      p.circle(dx + dw * 0.78, dy + dh * 0.25, dw * 0.1, '#fdd835', { sw: 0.4 });
+      p.rect(dx + dw * 0.18, dy + dh * 0.45, dw * 0.3, dh * 0.35, '#e53935', { sw: 0.4 });
+      p.poly([[dx + dw * 0.13, dy + dh * 0.47], [dx + dw * 0.33, dy + dh * 0.22], [dx + dw * 0.53, dy + dh * 0.47]], '#8b5a2b', { sw: 0.4 });
+      p.rect(dx, dy + dh * 0.8, dw, dh * 0.2, '#66bb6a', { ink: false });
+      p.rect(dx + dw * 0.3, dy - 8 * S, dw * 0.4, 16 * S, 'rgba(230,210,150,0.85)', { ink: false });
+    });
+    (o.magnets || []).forEach((m, i) => p.emoji(x + w * (0.2 + 0.28 * i), y + h * (0.1 + (i % 2) * 0.08), m, w * 0.17));
+  },
+
+  // Long countertop with cabinet doors underneath (blue, like Louisa's kitchen)
+  counter(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const topH = h * 0.16;
+    p.rect(x, y + topH, w, h - topH, o.color || '#29b6f6', { sw: 0.9 });
+    const n = o.doors || Math.max(1, Math.round(w / (150 * S)));
+    const dw = w / n;
+    for (let i = 0; i < n; i++) {
+      p.rect(x + i * dw + 10 * S, y + topH + 12 * S, dw - 20 * S, h - topH - 40 * S, 'rgba(255,255,255,0.18)', { r: 6 * S, sw: 0.5 });
+      p.circle(x + i * dw + dw / 2, y + topH + 32 * S, 8 * S, '#eceff1', { sw: 0.5 });
+    }
+    p.rect(x + 8 * S, y + h - 16 * S, w - 16 * S, 16 * S, o.kick || '#0d6fa3', { ink: false });
+    p.rect(x - 10 * S, y, w + 20 * S, topH, o.top || '#e6dcc6', { r: 6 * S });
+  },
+
+  // Dark cooktop strip sitting on the counter
+  cooktop(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, '#3a3a3a', { r: 4 * S, sw: 0.7 });
+    for (const f of o.burners || [0.25, 0.72]) {
+      p.ellipse(x + w * f, y + h * 0.2, w * 0.17, h * 0.35, '#ff7043', { sw: 0.4, opacity: 0.9 });
+    }
+  },
+
+  pot(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const c = o.color || '#90a4ae';
+    p.rect(x - w * 0.06, y + h * 0.32, w * 0.14, h * 0.1, c, { r: 5 * S, sw: 0.6 });               // handles
+    p.rect(x + w * 0.92, y + h * 0.32, w * 0.14, h * 0.1, c, { r: 5 * S, sw: 0.6 });
+    p.rect(x + w * 0.04, y + h * 0.2, w * 0.92, h * 0.8, c, { r: 10 * S, sw: 0.9 });
+    p.rect(x, y + h * 0.14, w, h * 0.12, c, { r: 6 * S, sw: 0.8 });                                // rim
+    p.ellipse(x + w / 2, y + h * 0.17, w * 0.42, h * 0.05, '#4fc3f7', { sw: 0.4 });                 // water
+    p.line(x + w * 0.15, y + h * 0.45, x + w * 0.15, y + h * 0.85, { layer: 'fill', stroke: '#fff', sw: 1.2, opacity: 0.6 });
+  },
+
+  pan(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x + w * 0.66, y + h * 0.15, w * 0.34, h * 0.32, '#6d4c41', { r: 6 * S, sw: 0.7 });       // handle
+    p.path(`M ${x} ${y} L ${x + w * 0.7} ${y} L ${x + w * 0.62} ${y + h} L ${x + w * 0.08} ${y + h} Z`, o.color || '#37474f', { sw: 0.9 });
+  },
+
+  oven(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.color || '#f3e3c3', { r: 8 * S, sw: 0.9 });
+    p.rect(x, y, w, h * 0.2, '#d7c4a0', { r: 8 * S, sw: 0.6 });
+    for (let i = 0; i < 4; i++) p.circle(x + w * (0.2 + i * 0.2), y + h * 0.1, h * 0.055, '#424242', { sw: 0.4 });
+    p.rect(x + w * 0.15, y + h * 0.27, w * 0.7, h * 0.06, '#bdbdbd', { r: 6 * S, sw: 0.6 });         // handle
+    p.rect(x + w * 0.14, y + h * 0.38, w * 0.72, h * 0.5, '#4e342e', { r: 10 * S, sw: 0.7 });        // window
+    p.rect(x + w * 0.14, y + h * 0.38, w * 0.72, h * 0.5, 'url(#ovenGlow)', { r: 10 * S, ink: false });
+  },
+
+  hood(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x + w * 0.35, y - h * 0.6, w * 0.3, h * 0.62, o.color || '#b0bec5', { sw: 0.7 });
+    p.poly([[x + w * 0.2, y], [x + w * 0.8, y], [x + w, y + h], [x, y + h]], o.color || '#b0bec5', { sw: 0.9 });
+    p.rect(x - 6 * S, y + h - 6 * S, w + 12 * S, 16 * S, '#90a4ae', { r: 4 * S, sw: 0.6 });
+    for (const f of [0.3, 0.5, 0.7]) p.line(x + w * f, y + h * 0.3, x + w * f, y + h * 0.75, { sw: 0.35, stroke: 'rgba(0,0,0,0.3)' });
+  },
+
+  cuttingBoard(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.color || '#d7a86e', { r: 10 * S, sw: 0.8 });
+    p.circle(x + w * 0.9, y + h * 0.5, h * 0.18, '#e6dcc6', { sw: 0.4 });
+    // knife lying on the board
+    p.poly([[x + w * 0.5, y - h * 0.15], [x + w * 0.8, y - h * 0.15], [x + w * 0.8, y + h * 0.15], [x + w * 0.55, y + h * 0.1]], '#cfd8dc', { sw: 0.5 });
+    p.rect(x + w * 0.8, y - h * 0.2, w * 0.16, h * 0.4, '#5d4037', { r: 4 * S, sw: 0.5 });
+  },
+
+  plate(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x - w * 0.12, y + h * 0.15, w * 1.24, h * 1.0, o.mat || '#ffcc80', { r: 8 * S, sw: 0.5 });
+    p.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, '#ffffff', { sw: 0.8 });
+    p.ellipse(x + w / 2, y + h / 2, w * 0.34, h * 0.3, '#f3f3f3', { sw: 0.3 });
+  },
+
+  // Wooden crate (or style:"basket") heaped with `peek` emojis
+  crate(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const top = y + h * 0.35;
+    (o.peek || []).forEach((e, i, arr) => {
+      const fx = arr.length === 1 ? 0.5 : 0.18 + 0.64 * i / (arr.length - 1);
+      p.emoji(x + w * fx, top - h * (i % 2 ? 0.02 : 0.1), e, h * 0.42, { under: true, rotate: (i % 2 ? 14 : -10) });
+    });
+    if (o.style === 'basket') {
+      p.path(`M ${x} ${top} L ${x + w} ${top} Q ${x + w * 0.96} ${y + h} ${x + w / 2} ${y + h} Q ${x + w * 0.04} ${y + h} ${x} ${top} Z`,
+        o.color || '#b07a43', { sw: 0.8 });
+      for (let i = 1; i < 6; i++) p.line(x + w * i / 6, top, x + w * (i / 6 * 0.8 + 0.1), y + h * 0.95, { sw: 0.3, stroke: 'rgba(0,0,0,0.35)' });
+      p.line(x, top + (y + h - top) * 0.4, x + w, top + (y + h - top) * 0.4, { sw: 0.3, stroke: 'rgba(0,0,0,0.35)' });
+      p.path(`M ${x + w * 0.15} ${top} Q ${x + w / 2} ${y - h * 0.2} ${x + w * 0.85} ${top}`, null, { sw: 0.8, stroke: '#7a4a2a' });
+      return;
+    }
+    p.rect(x, top, w, y + h - top, o.color || '#c8955a', { sw: 0.9 });
+    for (const f of [0.33, 0.66]) p.line(x, top + (y + h - top) * f, x + w, top + (y + h - top) * f, { sw: 0.5 });
+    p.rect(x, top, w * 0.1, y + h - top, '#a0673a', { sw: 0.5 });
+    p.rect(x + w * 0.9, top, w * 0.1, y + h - top, '#a0673a', { sw: 0.5 });
+    if (o.label) p.text(x + w / 2, top + (y + h - top) * 0.5, o.label,
+      { size: Math.min((y + h - top) * 0.28, w * 0.8 / (o.label.length * 0.62)), color: '#4e342e' });
+  },
+
+  jar(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    for (const [fx, fy] of [[0.3, 0.75], [0.68, 0.72], [0.5, 0.48]]) p.emoji(x + w * fx, y + h * fy, o.emoji, w * 0.42, { under: true });
+    p.rect(x, y + h * 0.15, w, h * 0.85, 'rgba(210,235,245,0.45)', { r: 14 * S, sw: 0.8 });
+    p.rect(x + w * 0.08, y, w * 0.84, h * 0.17, o.lid || '#e53935', { r: 6 * S, sw: 0.7 });
+    p.line(x + w * 0.18, y + h * 0.3, x + w * 0.18, y + h * 0.8, { layer: 'fill', stroke: '#fff', sw: 1.1, opacity: 0.8 });
+  },
+
+  bowl(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    if (o.emoji) p.emoji(x + w / 2, y + h * 0.3, o.emoji, h * 0.62, { under: true });
+    p.path(`M ${x} ${y + h * 0.35} L ${x + w} ${y + h * 0.35} Q ${x + w} ${y + h} ${x + w / 2} ${y + h} Q ${x} ${y + h} ${x} ${y + h * 0.35} Z`,
+      o.color || '#ef9a9a', { sw: 0.9 });
+    p.line(x + w * 0.1, y + h * 0.55, x + w * 0.9, y + h * 0.55, { sw: 0.3, stroke: 'rgba(255,255,255,0.8)' });
+  },
+
+  // A labelled food box (e.g. PASTA), with a picture emoji
+  packet(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.rect(x, y, w, h, o.color || '#fdd835', { r: 6 * S, sw: 0.8 });
+    p.rect(x, y, w, h * 0.12, o.band || '#1e88e5', { r: 6 * S, sw: 0.5 });
+    if (o.label) p.text(x + w / 2, y + h * 0.28, o.label, { size: Math.min(h * 0.16, w / (o.label.length * 0.62)), color: '#c62828' });
+    if (o.emoji) p.emoji(x + w / 2, y + h * 0.66, o.emoji, w * 0.55);
+  },
+
+  shelf(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    for (const f of [0.12, 0.88]) p.poly([[x + w * f - 8 * S, y + h], [x + w * f + 8 * S, y + h], [x + w * f, y + h + 50 * S]], '#7a4a2a', { sw: 0.5 });
+    p.rect(x, y, w, h, o.color || '#a0673a', { r: 3 * S, sw: 0.7 });
+  },
+
+  // Recipe chalkboard. columns: [{ title, lines: ["🍞+🧀+🥬 = 🥪", ...] }]
+  chalkboard(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const pad = w * 0.04;
+    p.rect(x - 14 * S, y - 14 * S, w + 28 * S, h + 28 * S, '#8b5a2b', { r: 8 * S });
+    p.rect(x, y, w, h, '#2f4a3a', { sw: 0.6 });
+    for (const [fx, fy] of [[0.15, 0.8], [0.7, 0.3], [0.45, 0.65]]) {
+      p.line(x + w * fx, y + h * fy, x + w * (fx + 0.12), y + h * (fy - 0.05), { layer: 'fill', stroke: '#fff', sw: 3, opacity: 0.07 });
+    }
+    const chalk = '#f4f1e8';
+    if (o.title) p.text(x + w / 2, y + h * 0.1, o.title, { size: h * 0.1, color: '#ffe082' });
+    const cols = o.columns || [];
+    const top = y + h * (o.title ? 0.22 : 0.08);
+    const maxLines = Math.max(...cols.map(c => c.lines.length + (c.title ? 1 : 0)), 1);
+    const lineH = (y + h - pad - top) / maxLines;
+    cols.forEach((c, ci) => {
+      const cx = x + w * (ci + 0.5) / cols.length;
+      let ly = top + lineH / 2;
+      if (c.title) { p.text(cx, ly, c.title, { size: lineH * 0.6, color: '#90caf9' }); ly += lineH; }
+      for (const line of c.lines) { p.text(cx, ly, line, { size: lineH * 0.78, color: chalk, layer: 'top' }); ly += lineH; }
+      if (ci > 0) p.line(x + w * ci / cols.length, top, x + w * ci / cols.length, y + h - pad, { sw: 0.3, stroke: 'rgba(255,255,255,0.35)' });
+    });
+    p.rect(x + w * 0.1, y + h + 10 * S, w * 0.8, 10 * S, '#6d4c41', { ink: false });               // chalk tray
+    p.rect(x + w * 0.7, y + h + 2 * S, w * 0.05, 10 * S, '#ffffff', { r: 4 * S, ink: false });
+  },
+
+  // Picnic table with a red checked tablecloth and two benches
+  picnicTable(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const wood = '#8b5a2b';
+    p.rect(x - w * 0.05, y + h * 0.66, w * 1.1, h * 0.1, wood, { r: 4 * S, sw: 0.7 });              // back bench
+    for (const f of [0.15, 0.85]) {
+      p.poly([[x + w * f - w * 0.02, y + h * 0.2], [x + w * f + w * 0.02, y + h * 0.2], [x + w * f + w * 0.07, y + h], [x + w * f + w * 0.03, y + h]], wood, { sw: 0.6 });
+      p.poly([[x + w * f - w * 0.02, y + h * 0.2], [x + w * f + w * 0.02, y + h * 0.2], [x + w * f - w * 0.03, y + h], [x + w * f - w * 0.07, y + h]], wood, { sw: 0.6 });
+    }
+    p.rect(x, y, w, h * 0.12, wood, { r: 4 * S });                                                   // tabletop
+    let d = `M ${x - 8 * S} ${y} L ${x + w + 8 * S} ${y} L ${x + w + 8 * S} ${y + h * 0.3}`;
+    const n = 10;
+    for (let i = 1; i <= n; i++) d += ` L ${x + w + 8 * S - (w + 16 * S) * i / n} ${y + h * (i % 2 ? 0.36 : 0.3)}`;
+    p.path(d + ' Z', 'url(#checker)', { sw: 0.8 });                                                  // tablecloth
+    p.rect(x - w * 0.08, y + h * 0.84, w * 1.16, h * 0.1, wood, { r: 4 * S, sw: 0.8 });              // front bench
+  },
+
+  // Rail of hanging utensils: items: ["🥄", "🍴"]
+  rail(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    p.line(x, y, x + w, y, { sw: 1.2, stroke: '#757575' });
+    (o.items || []).forEach((e, i, arr) => {
+      const ex = x + w * (i + 0.5) / arr.length;
+      p.line(ex, y, ex, y + h * 0.2, { sw: 0.4, stroke: '#757575' });
+      p.emoji(ex, y + h * 0.55, e, h * 0.55, { rotate: i % 2 ? 8 : -8 });
+    });
+  },
+
+  mouseHole(p, b, o) {
+    const { x, y, w, h } = b;
+    p.path(`M ${x} ${y + h} L ${x} ${y + h * 0.5} Q ${x} ${y} ${x + w / 2} ${y} Q ${x + w} ${y} ${x + w} ${y + h * 0.5} L ${x + w} ${y + h} Z`, '#1b1b1b', { sw: 0.6 });
+    if (o.emoji) p.emoji(x + w / 2, y + h * 0.68, o.emoji, h * 0.6);
   }
 };
 
@@ -883,6 +1100,15 @@ function buildSceneSvg(scene, W, H) {
     <pattern id="mesh" width="${9 * S}" height="${9 * S}" patternUnits="userSpaceOnUse">
       <path d="M0 0H${9 * S}M0 0V${9 * S}" stroke="#000" stroke-opacity="0.35" stroke-width="${1.6 * S}"/>
     </pattern>
+    <pattern id="checker" width="${44 * S}" height="${44 * S}" patternUnits="userSpaceOnUse">
+      <rect width="${44 * S}" height="${44 * S}" fill="#ffffff"/>
+      <rect width="${22 * S}" height="${22 * S}" fill="#e53935"/>
+      <rect x="${22 * S}" y="${22 * S}" width="${22 * S}" height="${22 * S}" fill="#e53935"/>
+    </pattern>
+    <radialGradient id="ovenGlow" cx="0.5" cy="0.8" r="0.7">
+      <stop offset="0" stop-color="#ff9800" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#ff9800" stop-opacity="0"/>
+    </radialGradient>
     <radialGradient id="glow">
       <stop offset="0" stop-color="#fff59d" stop-opacity="0.75"/>
       <stop offset="1" stop-color="#fff59d" stop-opacity="0"/>
@@ -1021,6 +1247,7 @@ function writeSave() {
     currentMap: currentMapPath,
     backpack,
     completedUses,
+    dishesMade,
     maps: {
       ...allMapSaves,
       [currentMapPath]: { hotspots: hotspotItems }
@@ -1056,12 +1283,14 @@ function initFreshSave() {
   backpack = [];
   hotspotItems = defaultHotspotItems();
   completedUses = [];
+  dishesMade = [];
   allMapSaves = {};
   writeSave();
 }
 function applySave(save) {
   backpack      = Array.isArray(save.backpack)      ? save.backpack.map(it => ({ ...it }))    : [];
   completedUses = Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
+  dishesMade    = Array.isArray(save.dishesMade)    ? [...save.dishesMade]                      : [];
   // v2: maps object keyed by map path
   if (save.maps) {
     allMapSaves = {};
@@ -1295,6 +1524,7 @@ let pendingResumeSave = null;
 
 function selectCharacter(index) {
   player.character = characters[index];
+  heldItem = null;
   // Friends don't remember chats with a different character
   for (const k of Object.keys(conversations)) delete conversations[k];
   speechBubbles = [];
@@ -1736,6 +1966,11 @@ function handleInteract() {
       } else {
         switchMap(nearbyObject.targetMap, nearbyObject.targetHotspot);
       }
+      return;
+    }
+    // Kitchen station: Space picks up / puts down / cooks — no dialog
+    if (nearbyObject.station && mapConfig.kitchen) {
+      doStation(nearbyObject);
       return;
     }
     state = GameState.INTERACTING;
@@ -2464,7 +2699,8 @@ function drawPlayerSprite() {
     player.frame,
     player.facing,
     SPRITE_SCALE,
-    mouth
+    mouth,
+    heldItem ? heldItem.emoji : null
   );
   if (player.rotation !== 0) {
     const cx = player.x;
@@ -2689,7 +2925,8 @@ function updateCamera() {
 
 // --- Drawing ---
 // mouth: 0 = smile, (0, 1] = open mouth (used to animate talking)
-function drawCharacterSprite(x, y, char, frame, facing, scale, mouth) {
+// `held`: emoji the character is carrying in both hands (kitchen food)
+function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held) {
   const s = scale || 1;
   const w = 30 * s;
   const h = 48 * s;
@@ -2717,16 +2954,36 @@ function drawCharacterSprite(x, y, char, frame, facing, scale, mouth) {
   ctx.fillStyle = char.shirtColor;
   ctx.fillRect(x + 5 * s, y + 16 * s, 20 * s, 18 * s);
 
-  // Arms
-  const armSwing = Math.sin(frame * Math.PI / 2) * 3 * s;
-  ctx.fillStyle = char.shirtColor;
-  ctx.fillRect(x, y + 17 * s + armSwing, 6 * s, 14 * s);
-  ctx.fillRect(x + 24 * s, y + 17 * s - armSwing, 6 * s, 14 * s);
+  if (held) {
+    // Arms bend in to carry the food in front of the tummy
+    const bob = Math.abs(Math.sin(frame * Math.PI / 2)) * 1.2 * s;
+    ctx.fillStyle = char.shirtColor;
+    ctx.fillRect(x, y + 17 * s, 6 * s, 9 * s);
+    ctx.fillRect(x + 24 * s, y + 17 * s, 6 * s, 9 * s);
+    ctx.fillRect(x + 3 * s, y + 23 * s + bob, 7 * s, 5 * s);
+    ctx.fillRect(x + 20 * s, y + 23 * s + bob, 7 * s, 5 * s);
+    ctx.font = `${Math.round(15 * s)}px ${SCENE_EMOJI_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';                 // opaque, or Chrome fades colour emoji
+    ctx.fillText(held, x + 15 * s, y + 25 * s + bob);
+    ctx.textBaseline = 'alphabetic';
+    // hands gripping the sides
+    ctx.fillStyle = '#FFCC80';
+    ctx.fillRect(x + 6 * s, y + 24 * s + bob, 4 * s, 5 * s);
+    ctx.fillRect(x + 20 * s, y + 24 * s + bob, 4 * s, 5 * s);
+  } else {
+    // Arms
+    const armSwing = Math.sin(frame * Math.PI / 2) * 3 * s;
+    ctx.fillStyle = char.shirtColor;
+    ctx.fillRect(x, y + 17 * s + armSwing, 6 * s, 14 * s);
+    ctx.fillRect(x + 24 * s, y + 17 * s - armSwing, 6 * s, 14 * s);
 
-  // Hands
-  ctx.fillStyle = '#FFCC80';
-  ctx.fillRect(x, y + 29 * s + armSwing, 6 * s, 4 * s);
-  ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
+    // Hands
+    ctx.fillStyle = '#FFCC80';
+    ctx.fillRect(x, y + 29 * s + armSwing, 6 * s, 4 * s);
+    ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
+  }
 
   // Head
   ctx.fillStyle = '#FFCC80';
@@ -2883,6 +3140,315 @@ function drawStar(x, y, size) {
   ctx.restore();
 }
 
+// ============================================================
+// KITCHEN — cooking stations + the ONE food in your hands
+// ============================================================
+// A map with a `kitchen` ({ foods, recipes }) turns hotspots that have a
+// `station` into cooking spots. Space at a station picks up / puts down /
+// cooks. The player holds one food at a time (drawn in their hands); it never
+// goes in the backpack and is left behind when they walk out of the kitchen.
+// Station types:
+//   source — { item }                                   grab an ingredient (never runs out)
+//   cook   — { verb, doing, makes: { in: out }, seconds, fx }   Chop / Boil / Fry / Bake...
+//   plate  — combine foods; when they match a kitchen.recipes[].needs it becomes `makes`
+//   serve  — eat a finished dish (a food with "dish": true)
+//   trash  — throw away whatever you're holding
+let heldItem = null;          // { id, name, emoji } — only ever exists inside a kitchen
+let dishesMade = [];          // dish ids eaten at least once (saved)
+const stationStates = {};     // `${mapPath}#${hotspotId}` → state (kept while the game runs)
+
+function kitchenFood(id) {
+  const f = mapConfig && mapConfig.kitchen && mapConfig.kitchen.foods[id];
+  return f ? { id, ...f } : { id, name: id, emoji: '❓' };
+}
+function foodLabel(id) {
+  const f = kitchenFood(id);
+  return `${f.emoji} ${f.name}`;
+}
+function kitchenDishes() {
+  const foods = (mapConfig && mapConfig.kitchen && mapConfig.kitchen.foods) || {};
+  return Object.keys(foods).filter(id => foods[id].dish);
+}
+function stationState(obj) {
+  const key = `${currentMapPath}#${obj.id}`;
+  return stationStates[key] || (stationStates[key] = { item: null, plate: [] });
+}
+function kitchenToast(text) {
+  useToast = { text, age: 0, low: true };
+}
+
+// Multiset check: can every food in `have` be found in `needs`?
+function bagFits(have, needs) {
+  const left = [...needs];
+  for (const id of have) {
+    const i = left.indexOf(id);
+    if (i < 0) return false;
+    left.splice(i, 1);
+  }
+  return true;
+}
+function plateAccepts(plate, id) {
+  return mapConfig.kitchen.recipes.some(r => bagFits([...plate, id], r.needs));
+}
+function plateRecipe(plate) {
+  return mapConfig.kitchen.recipes.find(r => r.needs.length === plate.length && bagFits(plate, r.needs));
+}
+
+// Cooking finishes on a timer (checked every frame while drawing)
+function tickStations(now) {
+  for (const obj of interactiveObjects) {
+    if (!obj.station || obj.station.type !== 'cook') continue;
+    const S = stationState(obj);
+    if (S.cookEnd && now >= S.cookEnd) {
+      S.item = S.out;
+      S.cooking = S.out = S.cookEnd = null;
+      S.doneAt = now;
+      kitchenToast(`Ding! The ${foodLabel(S.item)} is ready!`);
+    }
+  }
+}
+
+// Space at a station
+function doStation(obj) {
+  const st = obj.station, S = stationState(obj), now = performance.now();
+  const held = heldItem;
+  const handsFull = () => kitchenToast(`Your hands are full! Put down the ${foodLabel(held.id)} first.`);
+  switch (st.type) {
+    case 'source':
+      if (!held) {
+        heldItem = kitchenFood(st.item);
+        kitchenToast(`You grab the ${foodLabel(st.item)}.`);
+      } else if (held.id === st.item) {
+        heldItem = null;
+        kitchenToast(`You put the ${foodLabel(held.id)} back.`);
+      } else handsFull();
+      break;
+
+    case 'cook': {
+      const verb = (st.verb || 'Cook').toLowerCase();
+      if (S.cookEnd) { kitchenToast(`${st.doing || 'Cooking'}... wait for the ding!`); break; }
+      if (S.item) {
+        if (held) { handsFull(); break; }
+        heldItem = kitchenFood(S.item);
+        S.item = null;
+        kitchenToast(`You take the ${foodLabel(heldItem.id)}.`);
+        break;
+      }
+      const inputs = Object.keys(st.makes).map(id => kitchenFood(id).emoji).join(' or ');
+      if (!held) { kitchenToast(`You can ${verb} ${inputs} here.`); break; }
+      const out = st.makes[held.id];
+      if (!out) { kitchenToast(`You can't ${verb} ${foodLabel(held.id)}! Try ${inputs}.`); break; }
+      S.cooking = held.id;
+      S.out = out;
+      S.cookStart = now;
+      S.cookEnd = now + (st.seconds || 3) * 1000;
+      heldItem = null;
+      kitchenToast(`${st.doing || 'Cooking'} the ${foodLabel(held.id)}...`);
+      break;
+    }
+
+    case 'plate': {
+      if (held) {
+        if (!plateAccepts(S.plate, held.id)) {
+          const f = kitchenFood(held.id);
+          if (!S.plate.length && f.dish) kitchenToast(`The ${foodLabel(f.id)} is ready to eat! Take it to the table.`);
+          else if (S.plate.length) kitchenToast(`${f.emoji} doesn't go with ${S.plate.map(id => kitchenFood(id).emoji).join(' ')}! Check the recipe board.`);
+          else kitchenToast(`${foodLabel(f.id)} isn't in a recipe yet. Try cooking it first!`);
+          break;
+        }
+        S.plate.push(held.id);
+        heldItem = null;
+        const r = plateRecipe(S.plate);
+        if (r) {
+          S.plate = [r.makes];
+          S.madeAt = now;
+          kitchenToast(`✨ You made ${foodLabel(r.makes)}! Take it to the table to eat it.`);
+        } else {
+          kitchenToast(`You put the ${foodLabel(held.id)} on the plate.`);
+        }
+      } else if (S.plate.length) {
+        heldItem = kitchenFood(S.plate.pop());
+        kitchenToast(`You pick up the ${foodLabel(heldItem.id)}.`);
+      } else {
+        kitchenToast('Put food on the plate to make a recipe! Check the recipe board.');
+      }
+      break;
+    }
+
+    case 'serve': {
+      if (!held) { kitchenToast('Make some food and bring it here to eat! 🍽️'); break; }
+      const f = kitchenFood(held.id);
+      if (!f.dish) { kitchenToast(`Raw ${f.name.toLowerCase()}? Yuck! Cook it or make a recipe first.`); break; }
+      heldItem = null;
+      S.eating = { emoji: f.emoji, start: now };
+      const dishes = kitchenDishes();
+      if (!dishesMade.includes(f.id)) {
+        dishesMade.push(f.id);
+        writeSave();
+        const n = dishes.filter(id => dishesMade.includes(id)).length;
+        kitchenToast(n === dishes.length
+          ? `🎉 Yum! You've cooked EVERY recipe! Master Chef! 👩‍🍳`
+          : `Yum! ${f.emoji} New recipe! You've made ${n} of ${dishes.length}.`);
+      } else {
+        kitchenToast(`Yum yum! You eat the ${foodLabel(f.id)}. 😋`);
+      }
+      break;
+    }
+
+    case 'trash':
+      if (held) {
+        heldItem = null;
+        kitchenToast(`Into the compost goes the ${foodLabel(held.id)}! ♻️`);
+      } else kitchenToast('Nothing to throw away!');
+      break;
+  }
+}
+
+// Short action text shown under the station's name ("[ SPACE ] Boil 🍅")
+function stationHint(obj) {
+  const st = obj.station, S = stationState(obj), held = heldItem;
+  const e = id => kitchenFood(id).emoji;
+  switch (st.type) {
+    case 'source':
+      if (!held) return `Take ${e(st.item)}`;
+      return held.id === st.item ? `Put back ${held.emoji}` : 'Hands full';
+    case 'cook':
+      if (S.cookEnd) return `${st.doing || 'Cooking'}...`;
+      if (S.item) return held ? 'Hands full' : `Take ${e(S.item)}`;
+      if (!held) return `${st.verb || 'Cook'} ${Object.keys(st.makes).map(e).join(' ')}`;
+      return st.makes[held.id] ? `${st.verb || 'Cook'} ${held.emoji}` : `Can't ${(st.verb || 'cook').toLowerCase()} ${held.emoji}`;
+    case 'plate':
+      if (held) return plateAccepts(S.plate, held.id) ? `Add ${held.emoji}` : `${held.emoji} doesn't fit`;
+      return S.plate.length ? `Take ${e(S.plate[S.plate.length - 1])}` : 'Make a recipe';
+    case 'serve':
+      return held && kitchenFood(held.id).dish ? `Eat ${held.emoji}` : 'Eat food here';
+    case 'trash':
+      return held ? `Throw away ${held.emoji}` : 'Compost';
+  }
+  return '';
+}
+
+function drawFoodEmoji(emoji, x, y, size, alpha) {
+  ctx.save();
+  if (alpha != null) ctx.globalAlpha = alpha;
+  ctx.font = `${Math.round(size)}px ${SCENE_EMOJI_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';                   // opaque, or Chrome fades colour emoji
+  ctx.fillText(emoji, x, y);
+  ctx.restore();
+}
+
+// Food sitting on stations: cooking (with a timer ring + steam), done (bouncing
+// with a sparkle), stacked on the plate, or being eaten at the table.
+function drawStations() {
+  if (!mapConfig || !mapConfig.kitchen) return;
+  const now = performance.now();
+  tickStations(now);
+  for (const obj of interactiveObjects) {
+    const st = obj.station;
+    if (!st) continue;
+    const S = stationState(obj);
+    const x = obj.x + obj.width * (st.slot ? st.slot.px : 0.5);
+    const y = obj.y + obj.height * (st.slot ? st.slot.py : 0.5);
+    const size = (st.slotSize || 0.06) * scaledMapH;
+
+    if (st.type === 'cook' && S.cookEnd) {
+      const p = clamp((now - S.cookStart) / (S.cookEnd - S.cookStart), 0, 1);
+      const jiggle = Math.sin(now / 70) * size * 0.04;
+      drawFoodEmoji(kitchenFood(S.cooking).emoji, x + jiggle, y, size);
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.75, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#FFD54F';
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p);
+      ctx.stroke();
+      if (st.fx) {
+        for (let i = 0; i < 3; i++) {
+          const ph = (now / 900 + i / 3) % 1;
+          drawFoodEmoji(st.fx, x + (i - 1) * size * 0.45, y - size * (0.7 + ph * 0.9), size * 0.45, 1 - ph);
+        }
+      }
+    } else if (st.type === 'cook' && S.item) {
+      const since = now - (S.doneAt || 0);
+      const hop = since < 1200 ? Math.abs(Math.sin(since / 120)) * size * 0.25 : 0;
+      drawFoodEmoji(kitchenFood(S.item).emoji, x, y - hop, size);
+      drawFoodEmoji('✨', x + size * 0.55, y - size * 0.5, size * 0.4, 0.5 + 0.5 * Math.sin(now / 200));
+      if (since < 1500) {
+        ctx.save();
+        ctx.globalAlpha = 1 - since / 1500;
+        ctx.font = 'bold 24px "Comic Sans MS", cursive';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#221c1a';
+        ctx.fillStyle = '#FFF59D';
+        ctx.strokeText('DING!', x, y - size - since / 30);
+        ctx.fillText('DING!', x, y - size - since / 30);
+        ctx.restore();
+      }
+    } else if (st.type === 'plate' && S.plate.length) {
+      const n = S.plate.length;
+      S.plate.forEach((id, i) => {
+        drawFoodEmoji(kitchenFood(id).emoji, x + (i - (n - 1) / 2) * size * 0.6, y - i * size * 0.12, size);
+      });
+      if (S.madeAt && now - S.madeAt < 1500) {
+        for (let i = 0; i < 5; i++) {
+          const a = i * 1.26 + (now - S.madeAt) / 300;
+          const r = size * (0.6 + (now - S.madeAt) / 1500);
+          drawFoodEmoji('✨', x + Math.cos(a) * r, y + Math.sin(a) * r * 0.6, size * 0.35, 1 - (now - S.madeAt) / 1500);
+        }
+      }
+    } else if (st.type === 'serve' && S.eating) {
+      const t = (now - S.eating.start) / 1600;
+      if (t >= 1) { S.eating = null; continue; }
+      drawFoodEmoji(S.eating.emoji, x, y, size * (1 - t * 0.9), 1 - t * 0.5);
+      drawFoodEmoji('😋', x + size * 0.6, y - size * (0.6 + t * 0.8), size * 0.5, 1 - t);
+    }
+  }
+}
+
+// Top-of-screen badge: which dishes you've made, and what's in your hands
+function drawKitchenHud() {
+  if (!mapConfig || !mapConfig.kitchen) return;
+  const dishes = kitchenDishes();
+  const made = dishes.filter(id => dishesMade.includes(id)).length;
+  ctx.save();
+  ctx.font = 'bold 14px "Comic Sans MS", cursive';
+  const label = `Recipes made ${made}/${dishes.length}`;
+  const iconW = 30;
+  const w = ctx.measureText(label).width + dishes.length * iconW + 34;
+  const x = canvas.width / 2 - w / 2, y = 10;
+  ctx.fillStyle = 'rgba(40, 24, 8, 0.8)';
+  roundRect(x, y, w, 36, 12);
+  ctx.fill();
+  ctx.fillStyle = '#FFD54F';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + 14, y + 18);
+  ctx.restore();
+  dishes.forEach((id, i) => {
+    drawFoodEmoji(kitchenFood(id).emoji, x + w - 20 - (dishes.length - 1 - i) * iconW - 2, y + 18, 22,
+      dishesMade.includes(id) ? 1 : 0.25);
+  });
+  if (heldItem) {
+    ctx.save();
+    ctx.font = 'bold 13px "Comic Sans MS", cursive';
+    const t = `In your hands: ${heldItem.emoji} ${heldItem.name}`;
+    const tw = ctx.measureText(t).width + 24;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    roundRect(canvas.width / 2 - tw / 2, y + 42, tw, 24, 8);
+    ctx.fill();
+    ctx.fillStyle = '#FFF9C4';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t, canvas.width / 2, y + 54);
+    ctx.restore();
+  }
+}
+
 // --- Door swinging open before walking through a portal ---
 // A portal hotspot's optional `door` is { px, py, pw, ph, color } in map
 // fractions: the door drawn on the map, which swings toward the viewer on its
@@ -2957,6 +3523,7 @@ function drawGame() {
 
   // Draw map at scaled size
   ctx.drawImage(mapImage, 0, 0, scaledMapW, scaledMapH);
+  drawStations();
   if (doorOpening) drawDoorOpening();
 
   // Draw interaction highlights
@@ -2991,6 +3558,8 @@ function drawGame() {
       let hintText;
       if (obj.targetMap) {
         hintText = isTouchDevice() ? '🚪 [ TAP ]' : '🚪 [ ENTER ]';
+      } else if (obj.station) {
+        hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} ${stationHint(obj)}`;
       } else {
         hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
       }
@@ -3011,6 +3580,7 @@ function drawGame() {
 
   // Speech bubbles (screen space so they can be kept on-screen)
   drawSpeechBubbles();
+  drawKitchenHud();
 
   // Tap ripple visual
   if (tapRipple) {
@@ -3958,14 +4528,16 @@ function drawBackpack() {
 function drawUseToast() {
   if (!useToast) return;
   useToast.age++;
-  if (useToast.age > 90) { useToast = null; return; }
-  const alpha = useToast.age < 60 ? 1 : 1 - (useToast.age - 60) / 30;
+  // Kitchen messages sit low (out of the way of the stations) and stay longer
+  const life = useToast.low ? 170 : 90;
+  if (useToast.age > life) { useToast = null; return; }
+  const alpha = useToast.age < life - 30 ? 1 : 1 - (useToast.age - (life - 30)) / 30;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = 'bold 18px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
   const w = ctx.measureText(useToast.text).width + 28;
-  const y = canvas.height * 0.35;
+  const y = useToast.low ? canvas.height - 60 : canvas.height * 0.35;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
   roundRect(canvas.width / 2 - w / 2, y - 24, w, 36, 10);
   ctx.fill();

@@ -1,0 +1,190 @@
+{
+  "name": "Camp Kitchen",
+  "playerStart": { "px": 0.3, "py": 0.6 },
+  "spriteScale": 1.8,
+  "kitchen": {
+    "foods": {
+      "bread":       { "name": "Bread",          "emoji": "🍞" },
+      "cheese":      { "name": "Cheese",         "emoji": "🧀" },
+      "lettuce":     { "name": "Lettuce",        "emoji": "🥬" },
+      "tomato":      { "name": "Tomato",         "emoji": "🍅" },
+      "pasta_box":   { "name": "Box of Pasta",   "emoji": "📦" },
+      "noodles":     { "name": "Cooked Noodles", "emoji": "🍜" },
+      "sauce":       { "name": "Tomato Sauce",   "emoji": "🥫" },
+      "dough":       { "name": "Dough",          "emoji": "🥟" },
+      "chickpeas":   { "name": "Chickpeas",      "emoji": "🫘" },
+      "falafel_mix": { "name": "Falafel Mix",    "emoji": "🥣" },
+      "pita":        { "name": "Pita",           "emoji": "🫓", "dish": true },
+      "falafel":     { "name": "Falafel",        "emoji": "🧆", "dish": true },
+      "sandwich":    { "name": "Sandwich",       "emoji": "🥪", "dish": true },
+      "pasta":       { "name": "Pasta",          "emoji": "🍝", "dish": true },
+      "falafel_pita":{ "name": "Falafel Pita",   "emoji": "🥙", "dish": true }
+    },
+    "recipes": [
+      { "makes": "sandwich",     "needs": ["bread", "cheese", "lettuce"] },
+      { "makes": "pasta",        "needs": ["noodles", "sauce"] },
+      { "makes": "falafel_pita", "needs": ["pita", "falafel", "lettuce"] }
+    ]
+  },
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": { "height": 0.05, "color": "#7a4a2a" },
+    "wall": { "pattern": "planks", "color": "#f6dfae" },
+    "floor": { "from": 0.52, "pattern": "planks", "color": "#c79a68", "skirting": "#7a4a2a" },
+    "props": [
+      { "kind": "sign", "text": "TO CAMP", "px": 0.025, "py": 0.1, "pw": 0.085, "ph": 0.05, "color": "#f59f1b", "rotate": -3 },
+      { "kind": "door", "px": 0.025, "py": 0.18, "pw": 0.085, "ph": 0.34, "color": "#a04c9a" },
+      { "kind": "mat", "px": 0.01, "py": 0.525, "pw": 0.115, "ph": 0.04, "color": "#7e57c2", "text": "YUM!" },
+
+      { "kind": "fridge", "px": 0.13, "py": 0.14, "pw": 0.09, "ph": 0.4, "magnets": ["⭐", "🐸", "🍓"] },
+      { "kind": "window", "px": 0.24, "py": 0.12, "pw": 0.045, "ph": 0.09 },
+
+      { "kind": "chalkboard", "px": 0.29, "py": 0.07, "pw": 0.235, "ph": 0.245, "title": "RECIPES",
+        "columns": [
+          { "title": "on the plate", "lines": ["🍞+🧀+🥬 = 🥪", "🍜+🥫 = 🍝", "🫓+🧆+🥬 = 🥙"] },
+          { "title": "cook it", "lines": ["boil 📦 = 🍜", "boil 🍅 = 🥫", "chop 🫘 = 🥣", "fry 🥣 = 🧆", "bake 🥟 = 🫓"] }
+        ] },
+
+      { "kind": "hood", "px": 0.535, "py": 0.12, "pw": 0.14, "ph": 0.09 },
+      { "kind": "rail", "px": 0.695, "py": 0.2, "pw": 0.08, "ph": 0.11, "items": ["🥄", "🍴", "🥄"] },
+
+      { "kind": "counter", "px": 0.23, "py": 0.4, "pw": 0.55, "ph": 0.14, "color": "#29b6f6" },
+      { "kind": "oven", "px": 0.545, "py": 0.425, "pw": 0.12, "ph": 0.105 },
+      { "kind": "crate", "style": "basket", "px": 0.236, "py": 0.325, "pw": 0.06, "ph": 0.078, "peek": ["🍞", "🥖"] },
+      { "kind": "cuttingBoard", "px": 0.31, "py": 0.383, "pw": 0.085, "ph": 0.022 },
+      { "kind": "plate", "px": 0.42, "py": 0.38, "pw": 0.09, "ph": 0.03 },
+      { "kind": "cooktop", "px": 0.53, "py": 0.392, "pw": 0.15, "ph": 0.012, "burners": [0.25, 0.72] },
+      { "kind": "pot", "px": 0.54, "py": 0.3, "pw": 0.065, "ph": 0.095 },
+      { "kind": "pan", "px": 0.61, "py": 0.367, "pw": 0.085, "ph": 0.028 },
+      { "kind": "emoji", "emoji": "🧂", "px": 0.705, "py": 0.355, "pw": 0.02, "ph": 0.04 },
+      { "kind": "emoji", "emoji": "🫖", "px": 0.745, "py": 0.35, "pw": 0.03, "ph": 0.05 },
+
+      { "kind": "shelf", "px": 0.8, "py": 0.215, "pw": 0.18, "ph": 0.014 },
+      { "kind": "packet", "label": "PASTA", "emoji": "🍝", "px": 0.815, "py": 0.105, "pw": 0.045, "ph": 0.11, "color": "#fdd835" },
+      { "kind": "jar", "emoji": "🫘", "px": 0.875, "py": 0.13, "pw": 0.045, "ph": 0.085, "lid": "#e53935" },
+      { "kind": "jar", "emoji": "🍯", "px": 0.935, "py": 0.145, "pw": 0.035, "ph": 0.07, "lid": "#ffb300" },
+      { "kind": "shelf", "px": 0.8, "py": 0.385, "pw": 0.18, "ph": 0.014 },
+      { "kind": "bowl", "emoji": "🥟", "px": 0.82, "py": 0.32, "pw": 0.07, "ph": 0.065, "color": "#ef9a9a" },
+      { "kind": "emoji", "emoji": "🌶️", "px": 0.915, "py": 0.355, "pw": 0.02, "ph": 0.04, "rotate": 20 },
+      { "kind": "emoji", "emoji": "🧄", "px": 0.945, "py": 0.358, "pw": 0.025, "ph": 0.035 },
+      { "kind": "mouseHole", "emoji": "🐭", "px": 0.79, "py": 0.47, "pw": 0.03, "ph": 0.045 },
+
+      { "kind": "crate", "px": 0.14, "py": 0.65, "pw": 0.08, "ph": 0.1, "peek": ["🥬", "🥬", "🥬"], "label": "LETTUCE" },
+      { "kind": "crate", "px": 0.25, "py": 0.65, "pw": 0.08, "ph": 0.1, "peek": ["🍅", "🍅", "🍅"], "label": "TOMATOES" },
+      { "kind": "picnicTable", "px": 0.4, "py": 0.72, "pw": 0.26, "ph": 0.15 },
+      { "kind": "trashCan", "px": 0.87, "py": 0.68, "pw": 0.07, "ph": 0.16, "label": "COMPOST", "color": "#7cb342", "peek": "🪱" }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back to Camp",
+      "px": 0.02, "py": 0.18, "pw": 0.1, "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to camp",
+      "interactionText": "You head back out to camp. Mmm, it smells like cooking!",
+      "items": [], "uses": [],
+      "targetMap": "assets/game_design.json",
+      "targetHotspot": "kitchen",
+      "arrive": { "px": 0.07, "py": 0.63 }
+    },
+    {
+      "id": "recipe_board",
+      "name": "Recipe Board",
+      "px": 0.29, "py": 0.07, "pw": 0.235, "ph": 0.245,
+      "action": "explore",
+      "description": "How to make every recipe",
+      "interactionText": "🥪 Sandwich: 🍞 + 🧀 + 🥬 on the plate. 🍝 Pasta: boil the 📦 pasta AND a 🍅 tomato, then put both on the plate. 🫓 Pita: bake 🥟 dough. 🧆 Falafel: chop 🫘 chickpeas, then fry them. 🥙 Falafel Pita: 🫓 + 🧆 + 🥬 on the plate!",
+      "items": [], "uses": []
+    },
+    {
+      "id": "fridge", "name": "Fridge",
+      "px": 0.13, "py": 0.14, "pw": 0.09, "ph": 0.4,
+      "action": "cook", "description": "Cold cheese inside", "items": [], "uses": [],
+      "station": { "type": "source", "item": "cheese" }
+    },
+    {
+      "id": "bread_basket", "name": "Bread Basket",
+      "px": 0.225, "py": 0.31, "pw": 0.08, "ph": 0.11,
+      "action": "cook", "description": "Fresh bread", "items": [], "uses": [],
+      "station": { "type": "source", "item": "bread" }
+    },
+    {
+      "id": "cutting_board", "name": "Cutting Board",
+      "px": 0.305, "py": 0.31, "pw": 0.095, "ph": 0.11,
+      "action": "cook", "description": "Chop chop!", "items": [], "uses": [],
+      "station": { "type": "cook", "verb": "Chop", "doing": "Chopping", "seconds": 1.5, "fx": "🔪",
+                   "makes": { "chickpeas": "falafel_mix" }, "slot": { "px": 0.45, "py": 0.55 } }
+    },
+    {
+      "id": "plate", "name": "Plate",
+      "px": 0.41, "py": 0.31, "pw": 0.11, "ph": 0.11,
+      "action": "cook", "description": "Put foods together to make a recipe", "items": [], "uses": [],
+      "station": { "type": "plate", "slot": { "px": 0.5, "py": 0.55 } }
+    },
+    {
+      "id": "pot", "name": "Cooking Pot",
+      "px": 0.53, "py": 0.26, "pw": 0.085, "ph": 0.13,
+      "action": "cook", "description": "Bubbling hot water", "items": [], "uses": [],
+      "station": { "type": "cook", "verb": "Boil", "doing": "Boiling", "seconds": 3, "fx": "💨",
+                   "makes": { "pasta_box": "noodles", "tomato": "sauce" }, "slot": { "px": 0.5, "py": 0.25 } }
+    },
+    {
+      "id": "pan", "name": "Frying Pan",
+      "px": 0.605, "py": 0.29, "pw": 0.09, "ph": 0.1,
+      "action": "cook", "description": "Sizzle sizzle", "items": [], "uses": [],
+      "station": { "type": "cook", "verb": "Fry", "doing": "Frying", "seconds": 3, "fx": "♨️",
+                   "makes": { "falafel_mix": "falafel" }, "slot": { "px": 0.38, "py": 0.65 } }
+    },
+    {
+      "id": "oven", "name": "Oven",
+      "px": 0.545, "py": 0.42, "pw": 0.12, "ph": 0.11,
+      "action": "cook", "description": "Nice and toasty", "items": [], "uses": [],
+      "station": { "type": "cook", "verb": "Bake", "doing": "Baking", "seconds": 3.5, "fx": "🔥",
+                   "makes": { "dough": "pita" }, "slot": { "px": 0.5, "py": 0.65 }, "slotSize": 0.05 }
+    },
+    {
+      "id": "pasta_shelf", "name": "Pasta Box",
+      "px": 0.805, "py": 0.1, "pw": 0.06, "ph": 0.12,
+      "action": "cook", "description": "Dry pasta", "items": [], "uses": [],
+      "station": { "type": "source", "item": "pasta_box" }
+    },
+    {
+      "id": "chickpea_jar", "name": "Chickpea Jar",
+      "px": 0.868, "py": 0.12, "pw": 0.06, "ph": 0.1,
+      "action": "cook", "description": "Chickpeas for falafel", "items": [], "uses": [],
+      "station": { "type": "source", "item": "chickpeas" }
+    },
+    {
+      "id": "dough_bowl", "name": "Dough Bowl",
+      "px": 0.81, "py": 0.3, "pw": 0.09, "ph": 0.09,
+      "action": "cook", "description": "Soft dough for pita", "items": [], "uses": [],
+      "station": { "type": "source", "item": "dough" }
+    },
+    {
+      "id": "lettuce_crate", "name": "Lettuce",
+      "px": 0.13, "py": 0.62, "pw": 0.1, "ph": 0.14,
+      "action": "cook", "description": "Crunchy lettuce", "items": [], "uses": [],
+      "station": { "type": "source", "item": "lettuce" }
+    },
+    {
+      "id": "tomato_crate", "name": "Tomatoes",
+      "px": 0.24, "py": 0.62, "pw": 0.1, "ph": 0.14,
+      "action": "cook", "description": "Juicy tomatoes", "items": [], "uses": [],
+      "station": { "type": "source", "item": "tomato" }
+    },
+    {
+      "id": "picnic_table", "name": "Picnic Table",
+      "px": 0.39, "py": 0.68, "pw": 0.28, "ph": 0.2,
+      "action": "eat", "description": "Eat what you cooked!", "items": [], "uses": [],
+      "station": { "type": "serve", "slot": { "px": 0.5, "py": 0.22 } }
+    },
+    {
+      "id": "compost", "name": "Compost Bin",
+      "px": 0.86, "py": 0.65, "pw": 0.09, "ph": 0.2,
+      "action": "explore", "description": "For food you don't want", "items": [], "uses": [],
+      "station": { "type": "trash" }
+    }
+  ]
+}

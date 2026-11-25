@@ -114,6 +114,33 @@ the broken toilet (`assets/bathroom_stall_2.json`).
   "localReplies": { "hello": [], "bye": [], "question": [], "any": [] } }  // offline lines; {name} = player
 ```
 
+### Kitchen / cooking
+`assets/camp_kitchen.json` (entered through the pink door under the sink on
+the main map, hotspot `kitchen`) is a cooking room. A map with a `kitchen`
+object turns hotspots that have a `station` into cooking spots:
+```json
+"kitchen": {
+  "foods":   { "bread": { "name": "Bread", "emoji": "🍞" },
+               "sandwich": { "name": "Sandwich", "emoji": "🥪", "dish": true } },
+  "recipes": [ { "makes": "sandwich", "needs": ["bread", "cheese", "lettuce"] } ]
+}
+// on a hotspot:
+"station": { "type": "source", "item": "bread" }                       // grab (never runs out)
+"station": { "type": "cook", "verb": "Boil", "doing": "Boiling", "seconds": 3, "fx": "💨",
+             "makes": { "tomato": "sauce" }, "slot": { "px": 0.5, "py": 0.25 } }
+"station": { "type": "plate" }    // foods placed here become a recipe's `makes` when they match
+"station": { "type": "serve" }    // eat a `dish` (counts toward "Recipes made")
+"station": { "type": "trash" }
+```
+- Space at a station picks up / puts down / cooks (no dialog). The player
+  holds **one** food at a time, drawn in their hands (`heldItem`). It never goes
+  in the backpack, and is left behind when they walk out of the kitchen.
+- `slot` is where food sits on the station (fractions of the hotspot box).
+- Food on stations lives in memory only; which dishes have been eaten is saved
+  as `dishesMade`.
+- The recipe chalkboard is a `chalkboard` scene prop with hand-written
+  `columns` — update it when recipes change.
+
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
 The player has a 10-slot backpack (`BACKPACK_CAPACITY`). The `items` array in
