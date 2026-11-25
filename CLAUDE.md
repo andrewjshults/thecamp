@@ -131,6 +131,7 @@ object turns hotspots that have a `station` into cooking spots:
 "station": { "type": "plate" }    // foods placed here become a recipe's `makes` when they match
 "station": { "type": "serve" }    // eat a `dish` (counts toward "Recipes made")
 "station": { "type": "trash" }
+"station": { "type": "shop", "item": "cupcake" }   // buy a dessert with 🪙 coins
 ```
 - Space at a station picks up / puts down / cooks (no dialog). The player
   holds **one** food at a time, drawn in their hands (`heldItem`). It never goes
@@ -140,6 +141,14 @@ object turns hotspots that have a `station` into cooking spots:
   as `dishesMade`.
 - The recipe chalkboard is a `chalkboard` scene prop with hand-written
   `columns` — update it when recipes change.
+
+**Desserts → strength.** A food with `"dessert": true, "price": 20, "strength": 5`
+is sold at a `shop` station (the `dessertCase` prop: 🍪 $10 +2, 🧁 $20 +5,
+🍰 $30 +8). Buying pays with coin items from the backpack (`value`, default 10)
+and puts the dessert in your hands; Space at the shop again puts it back for a
+refund. Eat it at the table (or it's eaten automatically if you walk out) to
+add its `strength` to `strengthBoost` — permanently (saved, capped at
+`STRENGTH_BOOST_MAX` = 10; the shop won't sell once you're maxed). Desserts don't count toward "Recipes made".
 
 ### Boss fight — Glug Glub Blob
 The main map has a `boss` object and a `cave` hotspot (top-right corner). The
@@ -155,6 +164,7 @@ You can also press Space at the cave or next to it (or tap it).
   "phrases":     ["EAT!", "nom nom you!", ...],   // shouted before every attack
   "hitPhrases":  [...],            // when it lands a hit
   "hurtPhrases": [...],            // when it gets hit
+  "dodgePhrases": [...],           // when your swing is too weak to land
   "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
 }
 ```
@@ -166,6 +176,13 @@ jump. It sometimes blocks, more often if you mash, and after blocking it
 counter-attacks with a wind-up you can't interrupt. Win → `reward` goes in the
 backpack (or at the cave if the backpack is full). Lose → every coin item
 (`coin: true` or an id containing "coin") is taken from the backpack.
+
+**Strength.** Every fight starts you at `STRENGTH_BASE` (10) + `strengthBoost`
+from desserts (the boost is kept between fights). Each hit you take costs 1
+strength for the rest of that fight (the 💪 bar under your name). Strength sets how fast you walk and swing
+(`strengthSpeed`: 0.55× at 0, normal at 10, 1.45× at 20) and the odds that an
+unblocked swing lands or your block holds (`strengthOdds`: 30% at 0, 83% at
+10, 96% at 20). A miss shows "DODGED!", a failed block "BLOCK BROKEN!".
 
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).

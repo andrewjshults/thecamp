@@ -300,7 +300,8 @@ function loadMap(jsonPath, then = GameState.MODE_SELECT) {
 function switchMap(targetPath, targetHotspotId) {
   // Kitchen food can't leave the kitchen
   if (heldItem) {
-    kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
+    if (heldItem.dessert) eatDessert(heldItem, true);   // you paid for it!
+    else kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
     heldItem = null;
   }
   // Stash current map's hotspot items
@@ -1184,6 +1185,39 @@ const SCENE_PROPS = {
     });
   },
 
+  // Glass dessert case on a pink stand. items: [{ emoji, price: "$10" }], one per column
+  dessertCase(p, b, o) {
+    const { x, y, w, h } = b, S = p.S;
+    const items = o.items || [];
+    const signH = h * 0.16, baseY = y + h * 0.7;
+    // striped awning sign on top
+    p.rect(x - w * 0.03, y, w * 1.06, signH, o.signColor || '#f06292', { r: 10 * S });
+    p.text(x + w / 2, y + signH / 2, o.sign || 'SWEETS', { size: signH * 0.62, color: '#fff8e1' });
+    // glass box
+    const gy = y + signH, gh = baseY - gy;
+    p.rect(x, gy, w, gh, 'rgba(179, 229, 252, 0.55)', { sw: 0.9 });
+    p.line(x + w * 0.08, gy + gh * 0.15, x + w * 0.2, gy + gh * 0.05, { sw: 0.5, stroke: 'rgba(255,255,255,0.9)' });
+    p.line(x + w * 0.08, gy + gh * 0.35, x + w * 0.32, gy + gh * 0.1, { sw: 0.4, stroke: 'rgba(255,255,255,0.8)' });
+    // stand with a scalloped edge
+    p.rect(x - w * 0.02, baseY, w * 1.04, y + h - baseY, o.color || '#f8bbd0', { r: 6 * S, sw: 0.9 });
+    let d = `M ${x - w * 0.02} ${baseY}`;
+    const n = 12, sw = w * 1.04 / n;
+    for (let i = 0; i < n; i++) d += ` q ${sw / 2} ${sw * 0.7} ${sw} 0`;
+    p.path(d + ' Z', '#ffffff', { sw: 0.5 });
+    items.forEach((it, i) => {
+      const cx = x + w * (i + 0.5) / items.length;
+      if (i > 0) p.line(x + w * i / items.length, gy, x + w * i / items.length, baseY, { sw: 0.4, stroke: 'rgba(0,0,0,0.25)' });
+      p.ellipse(cx, baseY - gh * 0.12, w / items.length * 0.36, gh * 0.06, '#ffffff', { sw: 0.4 });   // doily
+      p.emoji(cx, baseY - gh * 0.42, it.emoji, Math.min(gh * 0.5, w / items.length * 0.7));
+      if (it.price) {
+        const tw = w / items.length * 0.62, th = (y + h - baseY) * 0.42;
+        const ty = baseY + (y + h - baseY) * 0.42;
+        p.rect(cx - tw / 2, ty, tw, th, '#fff59d', { r: 5 * S, sw: 0.5 });
+        p.text(cx, ty + th / 2, it.price, { size: th * 0.78, color: '#2e7d32' });
+      }
+    });
+  },
+
   mouseHole(p, b, o) {
     const { x, y, w, h } = b;
     p.path(`M ${x} ${y + h} L ${x} ${y + h * 0.5} Q ${x} ${y} ${x + w / 2} ${y} Q ${x + w} ${y} ${x + w} ${y + h * 0.5} L ${x + w} ${y + h} Z`, '#1b1b1b', { sw: 0.6 });
@@ -1373,6 +1407,7 @@ function writeSave() {
     backpack,
     completedUses,
     dishesMade,
+    strengthBoost,
     maps: {
       ...allMapSaves,
       [currentMapPath]: { hotspots: hotspotItems }
@@ -1409,6 +1444,7 @@ function initFreshSave() {
   hotspotItems = defaultHotspotItems();
   completedUses = [];
   dishesMade = [];
+  strengthBoost = 0;
   allMapSaves = {};
   writeSave();
 }
@@ -1416,6 +1452,7 @@ function applySave(save) {
   backpack      = Array.isArray(save.backpack)      ? save.backpack.map(it => ({ ...it }))    : [];
   completedUses = Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
   dishesMade    = Array.isArray(save.dishesMade)    ? [...save.dishesMade]                      : [];
+  strengthBoost = clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX);
   // v2: maps object keyed by map path
   if (save.maps) {
     allMapSaves = {};
@@ -3435,6 +3472,8 @@ function drawStar(x, y, size) {
 //   plate  — combine foods; when they match a kitchen.recipes[].needs it becomes `makes`
 //   serve  — eat a finished dish (a food with "dish": true)
 //   trash  — throw away whatever you're holding
+//   shop   — { item }: buy a dessert (a food with "dessert": true, `price`,
+//            `strength`) with 🪙 coins from the backpack
 let heldItem = null;          // { id, name, emoji } — only ever exists inside a kitchen
 let dishesMade = [];          // dish ids eaten at least once (saved)
 const stationStates = {};     // `${mapPath}#${hotspotId}` → state (kept while the game runs)
@@ -3457,6 +3496,41 @@ function stationState(obj) {
 }
 function kitchenToast(text) {
   useToast = { text, age: 0, low: true };
+}
+
+// --- Desserts → strength ---
+// Eating a dessert adds its `strength` to strengthBoost (saved, for good, up to
+// STRENGTH_BOOST_MAX). Every Blob fight starts you at STRENGTH_BASE + strengthBoost.
+const STRENGTH_BASE = 10;
+const STRENGTH_BOOST_MAX = 10;
+let strengthBoost = 0;
+
+function coinValue(it) { return it.value || 10; }
+function walletTotal() { return backpack.filter(isCoin).reduce((sum, it) => sum + coinValue(it), 0); }
+
+function eatDessert(f, onTheWayOut) {
+  const before = strengthBoost;
+  strengthBoost = Math.min(STRENGTH_BOOST_MAX, strengthBoost + (f.strength || 1));
+  writeSave();
+  const got = strengthBoost - before;
+  const ate = onTheWayOut ? `You gobble up the ${foodLabel(f.id)} on your way out!` : `Yum! You eat the ${foodLabel(f.id)}.`;
+  kitchenToast(got
+    ? `${ate} +${got} 💪 You're stronger for good! (Strength ${STRENGTH_BASE + strengthBoost})`
+    : `${ate} You can't get any stronger! (Strength ${STRENGTH_BASE + STRENGTH_BOOST_MAX} 💪)`);
+}
+
+// Pay `price` with coins from the backpack (smallest first). Returns the coins paid.
+function payCoins(price) {
+  const coins = backpack.filter(isCoin).sort((a, b) => coinValue(a) - coinValue(b));
+  const paid = [];
+  let sum = 0;
+  for (const c of coins) {
+    if (sum >= price) break;
+    paid.push(c);
+    sum += coinValue(c);
+  }
+  backpack = backpack.filter(it => !paid.includes(it));
+  return paid;
 }
 
 // Multiset check: can every food in `have` be found in `needs`?
@@ -3531,6 +3605,7 @@ function doStation(obj) {
 
     case 'plate': {
       if (held) {
+        if (held.dessert) { kitchenToast(`The ${foodLabel(held.id)} doesn't need a plate! Take it to the table to eat it.`); break; }
         if (!plateAccepts(S.plate, held.id)) {
           const f = kitchenFood(held.id);
           if (!S.plate.length && f.dish) kitchenToast(`The ${foodLabel(f.id)} is ready to eat! Take it to the table.`);
@@ -3560,6 +3635,12 @@ function doStation(obj) {
     case 'serve': {
       if (!held) { kitchenToast('Make some food and bring it here to eat! 🍽️'); break; }
       const f = kitchenFood(held.id);
+      if (f.dessert) {
+        heldItem = null;
+        S.eating = { emoji: f.emoji, start: now };
+        eatDessert(f);
+        break;
+      }
       if (!f.dish) { kitchenToast(`Raw ${f.name.toLowerCase()}? Yuck! Cook it or make a recipe first.`); break; }
       heldItem = null;
       S.eating = { emoji: f.emoji, start: now };
@@ -3583,6 +3664,39 @@ function doStation(obj) {
         kitchenToast(`Into the compost goes the ${foodLabel(held.id)}! ♻️`);
       } else kitchenToast('Nothing to throw away!');
       break;
+
+    case 'shop': {
+      const f = kitchenFood(st.item);
+      const price = f.price || 10;
+      if (held) {
+        if (held.id !== st.item || !held.paid) { handsFull(); break; }
+        // Changed your mind: put it back and get the coins back
+        if (backpack.length + held.paid.length > BACKPACK_CAPACITY) {
+          kitchenToast(`Your backpack is too full for the coins! Eat the ${foodLabel(f.id)} instead.`);
+          break;
+        }
+        backpack.push(...held.paid);
+        heldItem = null;
+        writeSave();
+        kitchenToast(`You put the ${foodLabel(f.id)} back and get your $${price} back.`);
+        break;
+      }
+      if (strengthBoost >= STRENGTH_BOOST_MAX) {
+        kitchenToast(`You're already as strong as can be (Strength ${STRENGTH_BASE + STRENGTH_BOOST_MAX} 💪)! Save your coins.`);
+        break;
+      }
+      const have = walletTotal();
+      if (have < price) {
+        kitchenToast(have
+          ? `The ${foodLabel(f.id)} costs $${price}, but you only have $${have}. Beat the Blob to win more 🪙!`
+          : `The ${foodLabel(f.id)} costs $${price}. Beat the Blob to win 🪙 $10 coins!`);
+        break;
+      }
+      heldItem = { ...f, paid: payCoins(price) };
+      writeSave();
+      kitchenToast(`You buy a ${foodLabel(f.id)} for $${price}! Take it to the table to eat it. (+${f.strength || 1} 💪)`);
+      break;
+    }
   }
 }
 
@@ -3602,10 +3716,17 @@ function stationHint(obj) {
     case 'plate':
       if (held) return plateAccepts(S.plate, held.id) ? `Add ${held.emoji}` : `${held.emoji} doesn't fit`;
       return S.plate.length ? `Take ${e(S.plate[S.plate.length - 1])}` : 'Make a recipe';
-    case 'serve':
-      return held && kitchenFood(held.id).dish ? `Eat ${held.emoji}` : 'Eat food here';
+    case 'serve': {
+      const f = held && kitchenFood(held.id);
+      return f && (f.dish || f.dessert) ? `Eat ${held.emoji}` : 'Eat food here';
+    }
     case 'trash':
       return held ? `Throw away ${held.emoji}` : 'Compost';
+    case 'shop': {
+      const f = kitchenFood(st.item);
+      if (held) return held.id === st.item && held.paid ? `Put back ${held.emoji} (get $${f.price || 10} back)` : 'Hands full';
+      return `Buy ${f.emoji} for $${f.price || 10} (+${f.strength || 1} 💪)`;
+    }
   }
   return '';
 }
@@ -3715,20 +3836,26 @@ function drawKitchenHud() {
     drawFoodEmoji(kitchenFood(id).emoji, x + w - 20 - (dishes.length - 1 - i) * iconW - 2, y + 18, 22,
       dishesMade.includes(id) ? 1 : 0.25);
   });
-  if (heldItem) {
+  const pill = (t, py, color) => {
     ctx.save();
     ctx.font = 'bold 13px "Comic Sans MS", cursive';
-    const t = `In your hands: ${heldItem.emoji} ${heldItem.name}`;
     const tw = ctx.measureText(t).width + 24;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    roundRect(canvas.width / 2 - tw / 2, y + 42, tw, 24, 8);
+    roundRect(canvas.width / 2 - tw / 2, py, tw, 24, 8);
     ctx.fill();
-    ctx.fillStyle = '#FFF9C4';
+    ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(t, canvas.width / 2, y + 54);
+    ctx.fillText(t, canvas.width / 2, py + 12);
     ctx.restore();
+  };
+  let py = y + 42;
+  // Your coins and dessert strength, once the kitchen sells desserts
+  if (Object.values(mapConfig.kitchen.foods).some(f => f.dessert)) {
+    pill(`🪙 $${walletTotal()}   •   💪 Strength: ${STRENGTH_BASE + strengthBoost}`, py, '#FFE0B2');
+    py += 30;
   }
+  if (heldItem) pill(`In your hands: ${heldItem.emoji} ${heldItem.name}`, py, '#FFF9C4');
 }
 
 // --- Door swinging open before walking through a portal ---
@@ -5294,6 +5421,7 @@ function mpStartPlaying() {
   backpack      = save ? items(save.backpack).slice(0, BACKPACK_CAPACITY) : [];
   completedUses = save && Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
   dishesMade    = save && Array.isArray(save.dishesMade) ? [...save.dishesMade] : [];
+  strengthBoost = save ? clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX) : 0;
   allMapSaves = {};
   hotspotItems = mpItemsFor(currentMapPath, mapConfig);
   // Arrive beside (not on top of) any friends standing at the start
@@ -5366,7 +5494,7 @@ function mpLoadSave() {
 function mpWriteSave() {
   try {
     localStorage.setItem(mpSaveKey(), JSON.stringify({
-      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, strengthBoost
     }));
   } catch (e) { console.warn('Failed to write save', e); }
 }
@@ -6780,6 +6908,12 @@ const JUMP_V = 950, GRAVITY = 2600;
 let fight = null;
 let fightTouch = { left: false, right: false, block: false };
 
+// Strength: you start every fight with STRENGTH_BASE + the desserts you ate
+// (strengthBoost, which you keep). Each hit you take costs 1 for that fight. It sets
+// how fast you move and swing, and how often your swings and blocks work.
+function strengthOdds(s) { return 1 - 0.7 * Math.exp(-s / 7); }       // 0 → 30%, 10 → 83%, 20 → 96%
+function strengthSpeed(s) { return clamp(0.55 + 0.045 * s, 0.55, 1.45); }   // 10 → normal speed
+
 function newFighter(x, facing) {
   return { x, y: 0, vy: 0, facing, act: 'idle', actStart: 0, walk: 0, pushV: 0, score: 0, hitChecked: false, ai: 'wait' };
 }
@@ -6802,6 +6936,8 @@ function startFight() {
     lastT: now,
     p: newFighter(320, 'right'),
     b: newFighter(680, 'left'),
+    boost: strengthBoost,      // extra strength from desserts
+    strengthLostAt: 0,
     bossThinkAt: now + 2600,
     shout: null,               // { text, start, dur } — the Blob yelling
     pops: [],                  // floating words: { text, x, y, color, size, start }
@@ -6811,6 +6947,7 @@ function startFight() {
     winner: null,
     result: null
   };
+  fight.p.strength = fight.p.maxStrength = STRENGTH_BASE + strengthBoost;
   state = GameState.FIGHTING;
 }
 
@@ -6826,6 +6963,7 @@ function fightAttack() {
   p.actStart = now;
   p.lastAttack = now;
   p.hitChecked = false;
+  p.recover = P_RECOVER / strengthSpeed(p.strength);   // tired arms swing slower
   // Sometimes the Blob sees it coming and puts its sword up
   b.rolledBlock = Math.abs(p.x - b.x) < P_REACH + 60 && bossMaybeBlock(f, now);
 }
@@ -6881,7 +7019,11 @@ function resolveHit(f, att, def, who) {
     f.shake = 4;
     return;
   }
-  if (def.act === 'block' && def.y === 0) {
+  // Your block only holds if you're strong enough
+  if (def.act === 'block' && def.y === 0 && who === 'boss' && Math.random() > strengthOdds(def.strength)) {
+    f.sparks.push({ x: def.x - away * 70, y: 140, color: '#FF8A65', start: now });
+    fightPop(f, 'BLOCK BROKEN!', def.x - away * 40, 300, '#FF8A65', 0.8);
+  } else if (def.act === 'block' && def.y === 0) {
     def.act = 'blockstun';
     def.actStart = now;
     if (who === 'player') def.counter = true;     // the Blob hits right back!
@@ -6889,6 +7031,13 @@ function resolveHit(f, att, def, who) {
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
     fightPop(f, pickOne(['BLOCKED!', 'CLANG!', 'TINK!']), def.x - away * 40, 230, '#90CAF9', 0.9);
     f.shake = 4;
+    return;
+  }
+  // Your swing only lands if you're strong enough — otherwise it wriggles away
+  if (who === 'player' && Math.random() > strengthOdds(att.strength)) {
+    def.pushV = 380 * away;
+    fightPop(f, pickOne(['DODGED!', 'TOO WEAK!', 'WIGGLED AWAY!']), def.x, 250, '#B3E5FC', 0.9);
+    if (f.def && f.def.dodgePhrases && Math.random() < 0.6) fightSay(f, bossSays('dodgePhrases'), 900);
     return;
   }
   // HIT! One point.
@@ -6902,6 +7051,11 @@ function resolveHit(f, att, def, who) {
   fightPop(f, pickOne(['POW!', 'BONK!', 'SMACK!', 'WHACK!', 'THWACK!', 'BOOF!']), def.x, 250 + def.y, '#FFEB3B', 1.1);
   fightPop(f, '+1', att.x, 260, who === 'player' ? player.character.color : '#FF9E5E', 0.8);
   f.shake = 10;
+  if (who === 'boss' && def.strength > 0) {
+    def.strength--;
+    f.strengthLostAt = now;
+    fightPop(f, '-1 💪', def.x, 330 + def.y, '#FF8A65', 0.7);
+  }
   if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
   else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
   else f.shout = null;
@@ -7051,7 +7205,7 @@ function updateFight() {
   const pt = now - p.actStart;
   if (p.act === 'attack') {
     if (!p.hitChecked && pt >= P_STARTUP) { p.hitChecked = true; resolveHit(f, p, b, 'player'); }
-    if (p.act === 'attack' && pt >= P_STARTUP + P_ACTIVE + P_RECOVER) p.act = 'idle';
+    if (p.act === 'attack' && pt >= P_STARTUP + P_ACTIVE + (p.recover || P_RECOVER)) p.act = 'idle';
   } else if (p.act === 'hit' && pt > HIT_STUN) p.act = 'idle';
   else if (p.act === 'blockstun' && pt > BLOCK_STUN) p.act = 'block';
 
@@ -7062,8 +7216,9 @@ function updateFight() {
       const dir = (right ? 1 : 0) - (left ? 1 : 0);
       if (dir) {
         const forward = (dir > 0) === (p.facing === 'right');
-        p.x += dir * (forward ? 280 : 230) * dt;
-        p.walk += dt;
+        const speed = strengthSpeed(p.strength);
+        p.x += dir * (forward ? 280 : 230) * speed * dt;
+        p.walk += dt * speed;
       }
       p.act = p.y > 0 ? 'jump' : (dir ? 'walk' : 'idle');
     }
@@ -7292,7 +7447,7 @@ function playerSwordPose(p, now) {
   const mix = (A, B, u) => ({ hx: lerp(A.hx, B.hx, u), hy: lerp(A.hy, B.hy, u), a: lerp(A.a, B.a, u) });
   if (t < P_STARTUP) return mix(rest, up, t / P_STARTUP);
   if (t < P_STARTUP + P_ACTIVE) return mix(up, out, easeOutCubic((t - P_STARTUP) / P_ACTIVE));
-  return mix(out, rest, clamp((t - P_STARTUP - P_ACTIVE) / P_RECOVER, 0, 1));
+  return mix(out, rest, clamp((t - P_STARTUP - P_ACTIVE) / (p.recover || P_RECOVER), 0, 1));
 }
 
 function drawFightPlayer(v, p, now) {
@@ -7479,6 +7634,7 @@ function drawFightHud(v, f, now) {
     }
   };
   plate(pad, ch.name.toUpperCase(), ch.color, null, 'left');
+  drawStrengthMeter(f, pad, pad + plateH + 6, plateW, now);
   plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', def.aka ? `a.k.a. the ${def.aka}` : null, 'right');
   bigText('VS', W / 2, pad + plateH / 2, 26, '#FFD54F');
 
@@ -7543,6 +7699,57 @@ function drawFightHud(v, f, now) {
   }
 }
 
+// 💪 bar: one notch per point of strength, flashes red when you lose one
+function drawStrengthMeter(f, x, y, w, now) {
+  const p = f.p, max = p.maxStrength || STRENGTH_BASE;
+  const h = 22, frac = clamp(p.strength / max, 0, 1);
+  const flash = Math.max(0, 1 - (now - f.strengthLostAt) / 500);
+  ctx.save();
+  ctx.fillStyle = 'rgba(20, 12, 6, 0.8)';
+  roundRect(x, y, w, h, 8);
+  ctx.fill();
+  const ix = x + 30, iw = w - 36, iy = y + 4, ih = h - 8;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  roundRect(ix, iy, iw, ih, 5);
+  ctx.fill();
+  if (frac > 0) {
+    ctx.fillStyle = frac > 0.6 ? '#66BB6A' : frac > 0.3 ? '#FFCA28' : '#EF5350';
+    roundRect(ix, iy, iw * frac, ih, 5);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.lineWidth = 1.5;
+  for (let i = 1; i < max; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ix + iw * i / max, iy + 1);
+    ctx.lineTo(ix + iw * i / max, iy + ih - 1);
+    ctx.stroke();
+  }
+  if (flash > 0) {
+    ctx.fillStyle = `rgba(255, 82, 82, ${flash * 0.6})`;
+    roundRect(x, y, w, h, 8);
+    ctx.fill();
+  }
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = f.boost ? '#F48FB1' : 'rgba(255, 255, 255, 0.4)';
+  roundRect(x, y, w, h, 8);
+  ctx.stroke();
+  ctx.font = `14px ${SCENE_EMOJI_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';
+  ctx.fillText('💪', x + 15, y + h / 2 + 1);
+  ctx.font = 'bold 12px "Comic Sans MS", cursive';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+  const label = `STRENGTH ${p.strength}/${max}`;
+  ctx.strokeText(label, ix + iw / 2, y + h / 2 + 1);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(label, ix + iw / 2, y + h / 2 + 1);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
 function drawFightButtons() {
   for (const b of fightButtonRects()) {
     const down = (b.id in fightTouch) && fightTouch[b.id];
@@ -7577,6 +7784,7 @@ function drawFightOverlay(v, f, now) {
       bigText(bossName().toUpperCase(), W / 2, Hc * 0.3, big * 0.55, '#FF9E5E');
       if (f.def && f.def.aka) bigText(`a.k.a. the ${f.def.aka}`, W / 2, Hc * 0.3 + big * 0.5, big * 0.28, '#FFE0B2');
       bigText('READY...', W / 2, Hc * 0.3 + big * 1.1, big * 0.5, '#fff');
+      if (f.boost) bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, Hc * 0.3 + big * 1.65, big * 0.3, '#F8BBD0');
       ctx.restore();
     } else {
       const u = clamp((t - 1200) / 250, 0, 1);

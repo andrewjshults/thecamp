@@ -18,7 +18,10 @@
       "falafel":     { "name": "Falafel",        "emoji": "🧆", "dish": true },
       "sandwich":    { "name": "Sandwich",       "emoji": "🥪", "dish": true },
       "pasta":       { "name": "Pasta",          "emoji": "🍝", "dish": true },
-      "falafel_pita":{ "name": "Falafel Pita",   "emoji": "🥙", "dish": true }
+      "falafel_pita":{ "name": "Falafel Pita",   "emoji": "🥙", "dish": true },
+      "cookie":      { "name": "Cookie",         "emoji": "🍪", "dessert": true, "price": 10, "strength": 2 },
+      "cupcake":     { "name": "Cupcake",        "emoji": "🧁", "dessert": true, "price": 20, "strength": 5 },
+      "cake":        { "name": "Cake",           "emoji": "🍰", "dessert": true, "price": 30, "strength": 8 }
     },
     "recipes": [
       { "makes": "sandwich",     "needs": ["bread", "cheese", "lettuce"] },
@@ -73,6 +76,8 @@
       { "kind": "crate", "px": 0.14, "py": 0.65, "pw": 0.08, "ph": 0.1, "peek": ["🥬", "🥬", "🥬"], "label": "LETTUCE" },
       { "kind": "crate", "px": 0.25, "py": 0.65, "pw": 0.08, "ph": 0.1, "peek": ["🍅", "🍅", "🍅"], "label": "TOMATOES" },
       { "kind": "picnicTable", "px": 0.4, "py": 0.72, "pw": 0.26, "ph": 0.15 },
+      { "kind": "dessertCase", "px": 0.685, "py": 0.545, "pw": 0.155, "ph": 0.24, "sign": "SWEETS",
+        "items": [ { "emoji": "🍪", "price": "$10" }, { "emoji": "🧁", "price": "$20" }, { "emoji": "🍰", "price": "$30" } ] },
       { "kind": "trashCan", "px": 0.87, "py": 0.68, "pw": 0.07, "ph": 0.16, "label": "COMPOST", "color": "#7cb342", "peek": "🪱" }
     ]
   },
@@ -179,6 +184,24 @@
       "px": 0.39, "py": 0.68, "pw": 0.28, "ph": 0.2,
       "action": "eat", "description": "Eat what you cooked!", "items": [], "uses": [],
       "station": { "type": "serve", "slot": { "px": 0.5, "py": 0.22 } }
+    },
+    {
+      "id": "shop_cookie", "name": "Cookie",
+      "px": 0.68, "py": 0.54, "pw": 0.055, "ph": 0.25,
+      "action": "eat", "description": "Costs $10. Gives you +2 strength!", "items": [], "uses": [],
+      "station": { "type": "shop", "item": "cookie" }
+    },
+    {
+      "id": "shop_cupcake", "name": "Cupcake",
+      "px": 0.735, "py": 0.54, "pw": 0.052, "ph": 0.25,
+      "action": "eat", "description": "Costs $20. Gives you +5 strength!", "items": [], "uses": [],
+      "station": { "type": "shop", "item": "cupcake" }
+    },
+    {
+      "id": "shop_cake", "name": "Cake",
+      "px": 0.787, "py": 0.54, "pw": 0.058, "ph": 0.25,
+      "action": "eat", "description": "Costs $30. Gives you +8 strength!", "items": [], "uses": [],
+      "station": { "type": "shop", "item": "cake" }
     },
     {
       "id": "compost", "name": "Compost Bin",
