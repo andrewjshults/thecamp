@@ -78,7 +78,7 @@ Portal hotspot extras:
   "py": 0.0,         // top  edge as fraction of image height (0–1)
   "pw": 0.1,         // width  as fraction of image width
   "ph": 0.1,         // height as fraction of image height
-  "action":          "sleep|fly|cook|climb|stargaze|play|wash|eat|explore|shelter|bathroom",
+  "action":          "sleep|fly|cook|climb|stargaze|play|wash|eat|explore|shelter|bathroom|fight",
   "description":     "Short tooltip description",
   "interactionText": "Text shown when the player interacts with this hotspot.",
   "items": [         // 0–3 entries — default items present at this hotspot
@@ -140,6 +140,32 @@ object turns hotspots that have a `station` into cooking spots:
   as `dishesMade`.
 - The recipe chalkboard is a `chalkboard` scene prop with hand-written
   `columns` — update it when recipes change.
+
+### Boss fight — Glug Glub Blob
+The main map has a `boss` object and a `cave` hotspot (top-right corner). The
+cave is drawn over the map in code (`drawBossCave`), and the Blob (human head,
+fox body, sword in its tail — `drawBlob`) lives there. It comes out at random
+to roam, chases you when you're close, and starts a fight if it catches you.
+You can also press Space at the cave or next to it (or tap it).
+```json
+"boss": {
+  "name": "Glug Glub Blob", "aka": "I Eat You Blob",
+  "cave": "cave",                  // hotspot id it lives in
+  "pointsToWin": 10,
+  "phrases":     ["EAT!", "nom nom you!", ...],   // shouted before every attack
+  "hitPhrases":  [...],            // when it lands a hit
+  "hurtPhrases": [...],            // when it gets hit
+  "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
+}
+```
+The fight view (`GameState.FIGHTING`) is a side-on duel: ← → move, ↑ jump,
+Space attack, hold B to block, Esc runs away (counts as a loss). Touch devices
+get on-screen buttons. Each unblocked hit scores 1 point. The Blob always
+shouts a phrase while it winds up, and that's your cue to block, back off or
+jump. It sometimes blocks, more often if you mash, and after blocking it
+counter-attacks with a wind-up you can't interrupt. Win → `reward` goes in the
+backpack (or at the cave if the backpack is full). Lose → every coin item
+(`coin: true` or an id containing "coin") is taken from the backpack.
 
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
