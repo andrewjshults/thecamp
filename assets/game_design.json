@@ -399,6 +399,7 @@
     ],
     "hitPhrases": ["hehe yummy!", "nom nom!", "me winning!", "tasty yous!", "glub glub hehe!"],
     "hurtPhrases": ["OWIE!", "no fair yous!", "ouchy me!", "grrr glub!", "me tummy hurts!"],
+    "missPhrases": ["aww me missed!", "come back snack!", "grrr slippy yous!", "no fair dodgy!"],
     "dodgePhrases": ["missed me!", "too slow yous!", "wiggle wiggle!", "hehe! no touchy!", "me too quick!"],
     "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
   },

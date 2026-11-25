@@ -6908,11 +6908,34 @@ const JUMP_V = 950, GRAVITY = 2600;
 let fight = null;
 let fightTouch = { left: false, right: false, block: false };
 
-// Strength: you start every fight with STRENGTH_BASE + the desserts you ate
-// (strengthBoost, which you keep). Each hit you take costs 1 for that fight. It sets
-// how fast you move and swing, and how often your swings and blocks work.
+// Strength, for you AND the Blob: you start every fight with STRENGTH_BASE +
+// the desserts you ate (strengthBoost, which you keep); the Blob starts with
+// boss.strength (default STRENGTH_BASE). Each hit taken costs 1, and each
+// fighter gets 1 back every STRENGTH_REGEN_MS (up to where they started). It
+// sets how fast you move and swing, and how often your swings and blocks work.
+const STRENGTH_REGEN_MS = 8000;      // tested: fights last ~20–30s, so 15s gave back only ~1 point; 8s gives 2–3
 function strengthOdds(s) { return 1 - 0.7 * Math.exp(-s / 7); }       // 0 → 30%, 10 → 83%, 20 → 96%
 function strengthSpeed(s) { return clamp(0.55 + 0.045 * s, 0.55, 1.45); }   // 10 → normal speed
+
+function loseStrength(f, a, now) {
+  if (a.strength <= 0) return;
+  a.strength--;
+  a.lostAt = now;
+  if (!a.regenAt) a.regenAt = now + STRENGTH_REGEN_MS;
+  fightPop(f, '-1 💪', a.x, 330 + a.y, '#FF8A65', 0.7);
+}
+
+function regenStrength(f, now) {
+  for (const a of [f.p, f.b]) {
+    if (a.strength >= a.maxStrength) { a.regenAt = 0; continue; }
+    if (!a.regenAt) { a.regenAt = now + STRENGTH_REGEN_MS; continue; }
+    if (now < a.regenAt) continue;
+    a.strength++;
+    a.gainAt = now;
+    a.regenAt = a.strength < a.maxStrength ? now + STRENGTH_REGEN_MS : 0;
+    fightPop(f, '+1 💪', a.x, 330 + a.y, '#A5D6A7', 0.7);
+  }
+}
 
 function newFighter(x, facing) {
   return { x, y: 0, vy: 0, facing, act: 'idle', actStart: 0, walk: 0, pushV: 0, score: 0, hitChecked: false, ai: 'wait' };
@@ -6937,7 +6960,6 @@ function startFight() {
     p: newFighter(320, 'right'),
     b: newFighter(680, 'left'),
     boost: strengthBoost,      // extra strength from desserts
-    strengthLostAt: 0,
     bossThinkAt: now + 2600,
     shout: null,               // { text, start, dur } — the Blob yelling
     pops: [],                  // floating words: { text, x, y, color, size, start }
@@ -6948,6 +6970,7 @@ function startFight() {
     result: null
   };
   fight.p.strength = fight.p.maxStrength = STRENGTH_BASE + strengthBoost;
+  fight.b.strength = fight.b.maxStrength = def.strength || STRENGTH_BASE;
   state = GameState.FIGHTING;
 }
 
@@ -7019,8 +7042,9 @@ function resolveHit(f, att, def, who) {
     f.shake = 4;
     return;
   }
-  // Your block only holds if you're strong enough
-  if (def.act === 'block' && def.y === 0 && who === 'boss' && Math.random() > strengthOdds(def.strength)) {
+  // A block only holds if the blocker is strong enough
+  const broke = def.act === 'block' && def.y === 0 && Math.random() > strengthOdds(def.strength);
+  if (broke) {
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#FF8A65', start: now });
     fightPop(f, 'BLOCK BROKEN!', def.x - away * 40, 300, '#FF8A65', 0.8);
   } else if (def.act === 'block' && def.y === 0) {
@@ -7033,11 +7057,16 @@ function resolveHit(f, att, def, who) {
     f.shake = 4;
     return;
   }
-  // Your swing only lands if you're strong enough — otherwise it wriggles away
-  if (who === 'player' && Math.random() > strengthOdds(att.strength)) {
+  // A swing only lands if the swinger is strong enough — otherwise it gets dodged
+  if (!broke && Math.random() > strengthOdds(att.strength)) {
     def.pushV = 380 * away;
-    fightPop(f, pickOne(['DODGED!', 'TOO WEAK!', 'WIGGLED AWAY!']), def.x, 250, '#B3E5FC', 0.9);
-    if (f.def && f.def.dodgePhrases && Math.random() < 0.6) fightSay(f, bossSays('dodgePhrases'), 900);
+    if (who === 'player') {
+      fightPop(f, pickOne(['DODGED!', 'TOO WEAK!', 'WIGGLED AWAY!']), def.x, 250, '#B3E5FC', 0.9);
+      if (f.def && f.def.dodgePhrases && Math.random() < 0.6) fightSay(f, bossSays('dodgePhrases'), 900);
+    } else {
+      fightPop(f, pickOne(['YOU DODGED!', 'WHOOSH!', 'MISSED YOU!']), def.x, 250, '#B3E5FC', 0.9);
+      if (f.def && f.def.missPhrases && Math.random() < 0.6) fightSay(f, bossSays('missPhrases'), 900);
+    }
     return;
   }
   // HIT! One point.
@@ -7051,11 +7080,7 @@ function resolveHit(f, att, def, who) {
   fightPop(f, pickOne(['POW!', 'BONK!', 'SMACK!', 'WHACK!', 'THWACK!', 'BOOF!']), def.x, 250 + def.y, '#FFEB3B', 1.1);
   fightPop(f, '+1', att.x, 260, who === 'player' ? player.character.color : '#FF9E5E', 0.8);
   f.shake = 10;
-  if (who === 'boss' && def.strength > 0) {
-    def.strength--;
-    f.strengthLostAt = now;
-    fightPop(f, '-1 💪', def.x, 330 + def.y, '#FF8A65', 0.7);
-  }
+  loseStrength(f, def, now);
   if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
   else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
   else f.shout = null;
@@ -7101,10 +7126,10 @@ function startBossWindup(f, now, quick) {
   b.act = 'windup';
   b.actStart = now;
   b.armor = !!quick;
-  // Gets a bit quicker as the fight goes on
-  b.windup = quick
+  // Gets a bit quicker as the fight goes on, and slower as it gets tired
+  b.windup = (quick
     ? randBetween(380, 480)
-    : clamp(1000 - 25 * b.score - 12 * f.p.score, 620, 1000) + randBetween(0, 250);
+    : clamp(1000 - 25 * b.score - 12 * f.p.score, 620, 1000) + randBetween(0, 250)) / strengthSpeed(b.strength);
   fightSay(f, bossSays('phrases'), b.windup + 250);   // always says something before it attacks
 }
 
@@ -7113,6 +7138,7 @@ function bossAI(f, now, dt) {
   const dist = Math.abs(p.x - b.x);
   const toward = p.x > b.x ? 1 : -1;
   const t = now - b.actStart;
+  const spd = strengthSpeed(b.strength);
   switch (b.act) {
     case 'hit':
       if (t > HIT_STUN) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450); }
@@ -7128,13 +7154,13 @@ function bossAI(f, now, dt) {
       if (t > BOSS_BLOCK_MS) b.act = 'idle';
       return;
     case 'windup':
-      if (t > b.windup) { b.act = 'attack'; b.actStart = now; b.hitChecked = false; }
-      else b.x += toward * 50 * dt;                  // creeps in while yelling
+      if (t > b.windup) { b.act = 'attack'; b.actStart = now; b.hitChecked = false; b.recover = B_RECOVER / spd; }
+      else b.x += toward * 50 * spd * dt;            // creeps in while yelling
       return;
     case 'attack':
-      if (t < B_ACTIVE) b.x += toward * 380 * dt;    // lunge!
+      if (t < B_ACTIVE) b.x += toward * 380 * spd * dt;   // lunge!
       if (!b.hitChecked && t >= B_ACTIVE * 0.7) { b.hitChecked = true; resolveHit(f, b, p, 'boss'); }
-      if (t >= B_ACTIVE + B_RECOVER && b.act === 'attack') { b.act = 'idle'; f.bossThinkAt = now + randBetween(250, 700); }
+      if (t >= B_ACTIVE + (b.recover || B_RECOVER) && b.act === 'attack') { b.act = 'idle'; f.bossThinkAt = now + randBetween(250, 700); }
       return;
   }
   // Free to choose what to do next
@@ -7154,12 +7180,12 @@ function bossAI(f, now, dt) {
     f.bossThinkAt = now + randBetween(300, 800);
   }
   if (b.ai === 'approach' && dist > FIGHT_MIN_GAP + 30) {
-    b.x += toward * 190 * dt;
-    b.walk += dt;
+    b.x += toward * 190 * spd * dt;
+    b.walk += dt * spd;
     b.act = 'walk';
   } else if (b.ai === 'retreat') {
-    b.x -= toward * 150 * dt;
-    b.walk += dt;
+    b.x -= toward * 150 * spd * dt;
+    b.walk += dt * spd;
     b.act = 'walk';
   } else {
     b.act = 'idle';
@@ -7192,6 +7218,7 @@ function updateFight() {
     return;
   }
   if (f.phase !== 'fight') return;
+  regenStrength(f, now);
 
   const p = f.p, b = f.b;
   p.facing = b.x >= p.x ? 'right' : 'left';
@@ -7530,7 +7557,7 @@ function bossTail(b, now) {
     }
     case 'attack':
       if (t < B_ACTIVE) return lerpPose(P.windup, P.strike, easeOutCubic(t / B_ACTIVE));
-      return lerpPose(P.strike, P.idle, clamp((t - B_ACTIVE) / B_RECOVER, 0, 1));
+      return lerpPose(P.strike, P.idle, clamp((t - B_ACTIVE) / (b.recover || B_RECOVER), 0, 1));
     case 'block':
     case 'blockstun':
       return P.block;
@@ -7634,7 +7661,8 @@ function drawFightHud(v, f, now) {
     }
   };
   plate(pad, ch.name.toUpperCase(), ch.color, null, 'left');
-  drawStrengthMeter(f, pad, pad + plateH + 6, plateW, now);
+  drawStrengthMeter(f.p, pad, pad + plateH + 6, plateW, now, f.boost ? '#F48FB1' : null);
+  drawStrengthMeter(f.b, W - pad - plateW, pad + plateH + 6, plateW, now, '#FF9E5E');
   plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', def.aka ? `a.k.a. the ${def.aka}` : null, 'right');
   bigText('VS', W / 2, pad + plateH / 2, 26, '#FFD54F');
 
@@ -7699,11 +7727,13 @@ function drawFightHud(v, f, now) {
   }
 }
 
-// 💪 bar: one notch per point of strength, flashes red when you lose one
-function drawStrengthMeter(f, x, y, w, now) {
-  const p = f.p, max = p.maxStrength || STRENGTH_BASE;
+// 💪 bar: one notch per point of strength, flashes red when one is lost and
+// green when one comes back. The thin line underneath fills up to the next +1.
+function drawStrengthMeter(p, x, y, w, now, edge) {
+  const max = p.maxStrength || STRENGTH_BASE;
   const h = 22, frac = clamp(p.strength / max, 0, 1);
-  const flash = Math.max(0, 1 - (now - f.strengthLostAt) / 500);
+  const flash = Math.max(0, 1 - (now - (p.lostAt || 0)) / 500);
+  const glow = Math.max(0, 1 - (now - (p.gainAt || 0)) / 600);
   ctx.save();
   ctx.fillStyle = 'rgba(20, 12, 6, 0.8)';
   roundRect(x, y, w, h, 8);
@@ -7725,13 +7755,18 @@ function drawStrengthMeter(f, x, y, w, now) {
     ctx.lineTo(ix + iw * i / max, iy + ih - 1);
     ctx.stroke();
   }
-  if (flash > 0) {
-    ctx.fillStyle = `rgba(255, 82, 82, ${flash * 0.6})`;
+  if (flash > 0 || glow > 0) {
+    ctx.fillStyle = flash > 0 ? `rgba(255, 82, 82, ${flash * 0.6})` : `rgba(165, 214, 167, ${glow * 0.6})`;
     roundRect(x, y, w, h, 8);
     ctx.fill();
   }
+  if (p.regenAt) {
+    const u = clamp(1 - (p.regenAt - now) / STRENGTH_REGEN_MS, 0, 1);
+    ctx.fillStyle = '#C5E1A5';
+    ctx.fillRect(ix, y + h - 4, iw * u, 3);
+  }
   ctx.lineWidth = 2;
-  ctx.strokeStyle = f.boost ? '#F48FB1' : 'rgba(255, 255, 255, 0.4)';
+  ctx.strokeStyle = edge || 'rgba(255, 255, 255, 0.4)';
   roundRect(x, y, w, h, 8);
   ctx.stroke();
   ctx.font = `14px ${SCENE_EMOJI_FONT}`;

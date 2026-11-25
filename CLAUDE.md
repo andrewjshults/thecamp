@@ -165,6 +165,8 @@ You can also press Space at the cave or next to it (or tap it).
   "hitPhrases":  [...],            // when it lands a hit
   "hurtPhrases": [...],            // when it gets hit
   "dodgePhrases": [...],           // when your swing is too weak to land
+  "missPhrases":  [...],           // when its swing is too weak to land
+  "strength": 10,                  // optional, the Blob's starting strength
   "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
 }
 ```
@@ -177,12 +179,18 @@ counter-attacks with a wind-up you can't interrupt. Win → `reward` goes in the
 backpack (or at the cave if the backpack is full). Lose → every coin item
 (`coin: true` or an id containing "coin") is taken from the backpack.
 
-**Strength.** Every fight starts you at `STRENGTH_BASE` (10) + `strengthBoost`
-from desserts (the boost is kept between fights). Each hit you take costs 1
-strength for the rest of that fight (the 💪 bar under your name). Strength sets how fast you walk and swing
-(`strengthSpeed`: 0.55× at 0, normal at 10, 1.45× at 20) and the odds that an
-unblocked swing lands or your block holds (`strengthOdds`: 30% at 0, 83% at
-10, 96% at 20). A miss shows "DODGED!", a failed block "BLOCK BROKEN!".
+**Strength — same rules for you and the Blob.** You start every fight at
+`STRENGTH_BASE` (10) + `strengthBoost` from desserts (kept between fights); the
+Blob starts at `boss.strength` (default 10). Each hit taken costs 1, and each
+fighter gets 1 back every `STRENGTH_REGEN_MS` (8s) up to where they started.
+A 💪 bar sits under each name plate, with a thin line filling toward the next
++1. Strength sets how fast a fighter walks and swings (`strengthSpeed`: 0.55×
+at 0, normal at 10, 1.45× at 20; for the Blob that's its wind-up, lunge and
+recovery too) and the odds that an unblocked swing lands or a block holds
+(`strengthOdds`: 30% at 0, 83% at 10, 96% at 20). A miss shows "DODGED!" /
+"YOU DODGED!", a failed block "BLOCK BROKEN!". Regen was tuned with simulated
+fights: they last ~20–30s, so 15s regen gave back only ~1 point, 8s gives 2–3,
+and 5s or faster cancels most of the damage.
 
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
