@@ -1987,11 +1987,24 @@ function characterByName(name) {
   return characters.find(c => c.name === name);
 }
 
+// An NPC is either one of the campers (`character`) or a critter drawn as an
+// emoji (`emoji` + `name`, e.g. the frog living in the broken toilet).
+function isCritter(npc) {
+  return !!(npc && npc !== 'player' && npc.emoji);
+}
+function npcName(npc) {
+  return npc.name || npc.character;
+}
+// Critter height in map px (`size` is a fraction of the map height)
+function critterSize(npc) {
+  return (npc.size || 0.07) * scaledMapH;
+}
+
 function currentNpcs() {
   if (!mapConfig || !Array.isArray(mapConfig.npcs)) return [];
-  return mapConfig.npcs.filter(n =>
-    characterByName(n.character) &&
-    (!player.character || n.character !== player.character.name));
+  return mapConfig.npcs.filter(n => isCritter(n) ||
+    (characterByName(n.character) &&
+     (!player.character || n.character !== player.character.name)));
 }
 
 function npcPos(npc) {
@@ -2004,6 +2017,10 @@ function speakerFeet(owner) {
 }
 function speakerHead(owner) {
   const f = speakerFeet(owner);
+  if (isCritter(owner)) {
+    const s = critterSize(owner);
+    return { x: f.x, top: f.y - s, mouthY: f.y - s * 0.4 };
+  }
   const spriteX = f.x - player.width / 2;
   const spriteY = f.y - player.height;
   return {
@@ -2041,7 +2058,7 @@ function startConversation(npc) {
   const p = npcPos(npc);
   player.facing = p.x < player.x ? 'left' : 'right';
   npcFacing[npc.id] = p.x < player.x ? 'right' : 'left';
-  talkTo.textContent = `💬 Talking with ${npc.character}`;
+  talkTo.textContent = `💬 Talking with ${npcName(npc)}`;
   talkInput.value = '';
   talkBar.hidden = false;
   setTalkEnabled(true);
@@ -2077,7 +2094,7 @@ talkBar.addEventListener('submit', (e) => {
 
   const npc = talkingTo;
   const token = talkToken;
-  const history = conversations[npc.character] || (conversations[npc.character] = []);
+  const history = conversations[npcName(npc)] || (conversations[npcName(npc)] = []);
   history.push({ speaker: 'player', text });
   say('player', text, npc);
   talkPhase = 'playerSpeaking';
@@ -2109,7 +2126,7 @@ function updateConversation() {
       const { npc, text } = pendingReply;
       pendingReply = null;
       npcThinking = null;
-      conversations[npc.character].push({ speaker: 'npc', text });
+      conversations[npcName(npc)].push({ speaker: 'npc', text });
       say(npc, text, 'player');
       talkPhase = 'npcSpeaking';
     } else if (!npcThinking) {
@@ -2132,7 +2149,12 @@ async function fetchNpcReply(npc, history) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        npc: { name: npc.character, desc: ch ? ch.desc : '', personality: npc.personality || '' },
+        npc: {
+          name: npcName(npc),
+          what: npc.what || '',                 // critters: what kind of creature they are
+          desc: ch ? ch.desc : '',
+          personality: npc.personality || ''
+        },
         playerName: player.character ? player.character.name : 'a friend',
         mapName: mapConfig ? mapConfig.name : 'The Camp',
         places: mapConfig ? mapConfig.hotspots.filter(h => !h.targetMap).map(h => h.name) : [],
@@ -2153,6 +2175,7 @@ async function fetchNpcReply(npc, history) {
 // Simple built-in reply maker used when Claude isn't reachable
 // (e.g. on GitHub Pages, or no API key on the dev server).
 function localNpcReply(npc, history) {
+  if (npc.localReplies) return localCritterReply(npc, history);
   const said = (history[history.length - 1] || { text: '' }).text.toLowerCase();
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   const name = player.character ? player.character.name : 'friend';
@@ -2198,6 +2221,21 @@ function localNpcReply(npc, history) {
     `That reminds me, have you seen the ${place} today?`,
     `Cool! I love hanging out with you at camp.`
   ]);
+}
+
+// Critters can bring their own offline lines in the map JSON:
+//   "localReplies": { "hello": [...], "bye": [...], "question": [...], "any": [...] }
+// `{name}` is replaced with the player's character name.
+function localCritterReply(npc, history) {
+  const said = (history[history.length - 1] || { text: '' }).text.toLowerCase();
+  const r = npc.localReplies;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  let pool = r.any || [];
+  if (/\b(hi|hello|hey|howdy|hiya)\b/.test(said) && r.hello) pool = r.hello;
+  else if (/\b(bye|goodbye|see ya|see you|later)\b/.test(said) && r.bye) pool = r.bye;
+  else if (said.includes('?') && r.question) pool = r.question;
+  const name = player.character ? player.character.name : 'friend';
+  return (pool.length ? pick(pool) : '...').replace(/\{name\}/g, name);
 }
 
 // --- Speech bubbles ---
@@ -2269,6 +2307,7 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function speakerColor(owner) {
   if (owner === 'player') return player.character ? player.character.color : '#333';
+  if (owner.color) return owner.color;
   const ch = characterByName(owner.character);
   return ch ? ch.color : '#333';
 }
@@ -2447,7 +2486,33 @@ function drawPlayerSprite() {
   ctx.fill();
 }
 
+// Critters are a big emoji that bobs gently, and squishes up and down
+// while they're talking (their "mouth" moving).
+function drawCritterSprite(npc) {
+  const p = npcPos(npc);
+  const s = critterSize(npc);
+  const now = performance.now();
+  const talk = mouthOpenFor(npc);
+  const bob = Math.sin(now / 450 + p.x) * s * 0.03;
+  const squish = talk ? 1 + 0.12 * talk : 1;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, s * 0.4, s * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(2 - squish, squish);          // taller + thinner when "speaking"
+  ctx.font = `${Math.round(s)}px ${SCENE_EMOJI_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';                  // opaque, or Chrome fades colour emoji
+  ctx.fillText(npc.emoji, 0, -s * 0.5 + bob);
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
 function drawNpcSprite(npc) {
+  if (isCritter(npc)) { drawCritterSprite(npc); return; }
   const p = npcPos(npc);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
   ctx.beginPath();
@@ -2471,7 +2536,7 @@ function drawNpcTalkHint(npc) {
   const y = head.top - 16;
   ctx.textAlign = 'center';
   ctx.font = 'bold 13px "Comic Sans MS", cursive';
-  const label = npc.character;
+  const label = npcName(npc);
   const lw = ctx.measureText(label).width + 16;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
   roundRect(x - lw / 2, y - 14, lw, 22, 6);
@@ -2587,7 +2652,7 @@ function update() {
 
   // Nearby friends: they turn to look at you, and the closest one can be talked to
   nearbyNpc = null;
-  let npcBest = NPC_TALK_RANGE;
+  let npcBest = NPC_TALK_RANGE * (SPRITE_SCALE / BASE_SPRITE_SCALE);   // bigger people reach further
   for (const npc of currentNpcs()) {
     const p = npcPos(npc);
     const d = Math.hypot(px - p.x, py - p.y);

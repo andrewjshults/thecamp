@@ -16,7 +16,6 @@
       { "kind": "scribble", "text": "glug glug", "px": 0.585, "py": 0.33, "pw": 0.1, "ph": 0.04, "color": "#1e88e5", "rotate": -5 },
 
       { "kind": "toilet", "px": 0.43, "py": 0.4, "pw": 0.14, "ph": 0.27, "lid": "down" },
-      { "kind": "emoji", "emoji": "🐸", "px": 0.475, "py": 0.475, "pw": 0.05, "ph": 0.075 },
       { "kind": "emoji", "emoji": "🫧", "px": 0.415, "py": 0.47, "pw": 0.025, "ph": 0.035 },
       { "kind": "emoji", "emoji": "🫧", "px": 0.565, "py": 0.44, "pw": 0.02, "ph": 0.028 },
       { "kind": "puddle", "px": 0.4, "py": 0.665, "pw": 0.2, "ph": 0.06 },
@@ -127,6 +126,43 @@
           "animation": "eat"
         }
       ]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "toilet_frog",
+      "name": "Sir Ribbit",
+      "emoji": "🐸",
+      "color": "#2e7d32",
+      "size": 0.1,
+      "px": 0.5,
+      "py": 0.575,
+      "what": "a little talking frog who lives in the broken toilet in Stall 2 of the camp bathroom",
+      "personality": "Very polite and a bit dramatic. Sits on the toilet lid like a king on a throne and believes the broken toilet is his royal castle with a splashy swimming pool inside. Proud of the GLUG-GLUG noises it makes (he calls it his castle music). Loves bubbles, puddles, fish food and catching flies. Says ribbit a lot and calls the player 'my royal visitor'. He does NOT want the toilet fixed because then where would he swim?",
+      "localReplies": {
+        "hello": [
+          "Ribbit! Welcome to my royal castle, {name}! 👑",
+          "Ah, a royal visitor! Ribbit ribbit! Please, have a seat... not on my throne though.",
+          "Croak! Hello, {name}! Mind the puddle, it's my moat."
+        ],
+        "bye": [
+          "Farewell, my royal visitor! Come back for a splash! 🐸",
+          "Ribbit! Wash your hands on the way out!",
+          "Goodbye, {name}! I shall now return to my royal bath. GLUG!"
+        ],
+        "question": [
+          "Hmm... ribbit. I think the answer is FLIES. It's usually flies.",
+          "Excellent question! Let me ask my royal toilet. ...GLUG GLUG. It says yes!",
+          "Croak? Even a royal frog doesn't know EVERYTHING. But almost!"
+        ],
+        "any": [
+          "Did you hear that? GLUG GLUG! That's my castle music! 🎶",
+          "Please don't fix my toilet. It's the best swimming pool in camp! 🏊",
+          "Ribbit! Do you have any flies? Or fish food? I'm a little peckish.",
+          "This toilet is out of order... because it's MY toilet now! 👑",
+          "Bubbles are my favorite thing. After flies. And puddles. Ribbit!"
+        ]
+      }
     }
   ]
 }

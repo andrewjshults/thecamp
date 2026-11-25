@@ -102,6 +102,18 @@ Replies come from Claude via `POST /api/npc-reply` in `server.js` (needs
 key, static hosting like GitHub Pages), the browser uses `localNpcReply()`.
 Conversations live in memory only.
 
+**Critter NPCs** use an `emoji` instead of a `character` and are drawn as that
+emoji (bobbing, squishing while they talk). Example: Sir Ribbit, the frog in
+the broken toilet (`assets/bathroom_stall_2.json`).
+```json
+{ "id": "toilet_frog", "name": "Sir Ribbit", "emoji": "🐸", "color": "#2e7d32",
+  "size": 0.1,                                   // height as a fraction of the map
+  "px": 0.5, "py": 0.575,                        // FEET position
+  "what": "a little talking frog who lives in the broken toilet",  // tells Claude what they are
+  "personality": "...",
+  "localReplies": { "hello": [], "bye": [], "question": [], "any": [] } }  // offline lines; {name} = player
+```
+
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
 The player has a 10-slot backpack (`BACKPACK_CAPACITY`). The `items` array in
