@@ -1,0 +1,132 @@
+{
+  "name": "Stall 2",
+  "playerStart": { "px": 0.3, "py": 0.86 },
+  "spriteScale": 2.5,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": { "height": 0.04, "color": "#7a4a2a" },
+    "wall": { "pattern": "blocks", "color": "#e1ecaf" },
+    "floor": { "from": 0.6, "pattern": "concrete", "color": "#cbc5ba" },
+    "props": [
+      { "kind": "cobweb", "px": 0.74, "py": 0.12, "pw": 0.06, "ph": 0.09, "corner": "tr", "spider": true },
+      { "kind": "sign", "text": "OUT OF\nORDER", "px": 0.44, "py": 0.25, "pw": 0.12, "ph": 0.1, "color": "#fffdf5", "textColor": "#d32f2f", "rotate": 4 },
+      { "kind": "scribble", "text": "BEWARE\nOF FROG!", "px": 0.28, "py": 0.19, "pw": 0.13, "ph": 0.12, "color": "#2e7d32", "rotate": -6 },
+      { "kind": "scribble", "text": "RIBBIT", "px": 0.6, "py": 0.24, "pw": 0.09, "ph": 0.05, "color": "#6a3fb5", "rotate": 8 },
+      { "kind": "scribble", "text": "glug glug", "px": 0.585, "py": 0.33, "pw": 0.1, "ph": 0.04, "color": "#1e88e5", "rotate": -5 },
+
+      { "kind": "toilet", "px": 0.43, "py": 0.4, "pw": 0.14, "ph": 0.27, "lid": "down" },
+      { "kind": "emoji", "emoji": "🐸", "px": 0.475, "py": 0.475, "pw": 0.05, "ph": 0.075 },
+      { "kind": "emoji", "emoji": "🫧", "px": 0.415, "py": 0.47, "pw": 0.025, "ph": 0.035 },
+      { "kind": "emoji", "emoji": "🫧", "px": 0.565, "py": 0.44, "pw": 0.02, "ph": 0.028 },
+      { "kind": "puddle", "px": 0.4, "py": 0.665, "pw": 0.2, "ph": 0.06 },
+      { "kind": "tpHolder", "px": 0.6, "py": 0.43, "pw": 0.065, "ph": 0.09, "empty": true },
+      { "kind": "emoji", "emoji": "🪠", "px": 0.635, "py": 0.6, "pw": 0.05, "ph": 0.1, "rotate": 12 },
+
+      { "kind": "sideWall", "side": "left", "px": 0.0, "py": 0.12, "pw": 0.26, "ph": 0.48,
+        "door": { "t0": 0.12, "t1": 0.72, "color": "#8dbb2a", "latch": "locked" } },
+      { "kind": "sideWall", "side": "right", "px": 0.74, "py": 0.12, "pw": 0.26, "ph": 0.48,
+        "peek": [ { "emoji": "👟", "t": 0.32, "flip": true }, { "emoji": "👟", "t": 0.56, "flip": true } ] }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "stall_door",
+      "name": "Stall Door",
+      "px": 0.03,
+      "py": 0.1,
+      "pw": 0.16,
+      "ph": 0.7,
+      "action": "enter",
+      "description": "Get out of here before the frog does!",
+      "interactionText": "You unlock the door and tiptoe back out.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_bathroom.json",
+      "targetHotspot": "stall_2",
+      "arrive": { "px": 0.3, "py": 0.86 }
+    },
+    {
+      "id": "broken_toilet",
+      "name": "Broken Toilet",
+      "px": 0.42,
+      "py": 0.38,
+      "pw": 0.16,
+      "ph": 0.32,
+      "action": "explore",
+      "description": "OUT OF ORDER — and there's a frog on it",
+      "interactionText": "GLUG... GLUG... BLORP! The frog on the lid says \"RIBBIT!\" This toilet is definitely out of order. 🐸",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "plunger",
+          "text": "You plunge the toilet. SHLOOOORP! ...Nope, still broken. But the frog gives you a big round of applause! 🪠🐸",
+          "animation": "play"
+        },
+        {
+          "itemId": "flashlight",
+          "text": "You shine your flashlight under the lid. There's a whole FROG FAMILY living in there! 🐸🐸🐸",
+          "animation": "explore"
+        },
+        {
+          "itemId": "fish_food",
+          "text": "You sprinkle fish food for the frog family. They all go RIBBIT at once! What a choir! 🐸🎶",
+          "animation": "eat"
+        }
+      ]
+    },
+    {
+      "id": "plunger_corner",
+      "name": "Plunger",
+      "px": 0.6,
+      "py": 0.55,
+      "pw": 0.09,
+      "ph": 0.15,
+      "action": "explore",
+      "description": "A trusty plunger leaning in the corner",
+      "interactionText": "A plunger is leaning in the corner. It looks like it's been VERY busy.",
+      "items": [
+        { "id": "plunger", "name": "Plunger", "emoji": "🪠" }
+      ],
+      "uses": []
+    },
+    {
+      "id": "empty_roll",
+      "name": "Empty Roll",
+      "px": 0.59,
+      "py": 0.4,
+      "pw": 0.09,
+      "ph": 0.12,
+      "action": "explore",
+      "description": "Uh oh... no toilet paper",
+      "interactionText": "Oh no! The toilet paper roll is EMPTY. Just a sad cardboard tube.",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "toilet_paper",
+          "text": "You put a fresh roll on the holder. You're the hero of Stall 2! 🧻🦸",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "next_door",
+      "name": "Next Door",
+      "px": 0.8,
+      "py": 0.7,
+      "pw": 0.14,
+      "ph": 0.15,
+      "action": "explore",
+      "description": "There are sneakers under the wall",
+      "interactionText": "You spot sneakers under the wall. \"Um... HI!\" says a voice from Stall 3. 👟",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "cookie",
+          "text": "You slide a cookie under the wall. \"Best. Stall neighbor. EVER.\" 🍪",
+          "animation": "eat"
+        }
+      ]
+    }
+  ]
+}

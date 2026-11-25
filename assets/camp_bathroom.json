@@ -150,19 +150,15 @@
       "py": 0.1,
       "pw": 0.09,
       "ph": 0.42,
-      "action": "bathroom",
+      "action": "enter",
       "description": "A toilet stall with a moon on the door",
-      "interactionText": "You use the bathroom. Don't forget to wash your hands!",
-      "items": [
-        { "id": "toilet_paper", "name": "Toilet Paper", "emoji": "🧻" }
-      ],
-      "uses": [
-        {
-          "itemId": "sponge",
-          "text": "You scrub Stall 1 with the sponge. Spick and span! Camp chores: ✅ 🧽",
-          "animation": "wash"
-        }
-      ]
+      "interactionText": "You open the stall door and step inside.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/bathroom_stall_1.json",
+      "targetHotspot": "stall_door",
+      "arrive": { "px": 0.58, "py": 0.55 },
+      "door": { "px": 0.5409, "py": 0.1108, "pw": 0.0821, "ph": 0.3388, "color": "#8dbb2a", "inside": "🚽" }
     },
     {
       "id": "stall_2",
@@ -171,19 +167,15 @@
       "py": 0.1,
       "pw": 0.09,
       "ph": 0.42,
-      "action": "explore",
-      "description": "This one says OUT OF ORDER",
-      "interactionText": "You peek inside. The toilet goes GLUG... GLUG... BLORP. Definitely out of order! 🚧",
-      "items": [
-        { "id": "plunger", "name": "Plunger", "emoji": "🪠" }
-      ],
-      "uses": [
-        {
-          "itemId": "flashlight",
-          "text": "You shine your flashlight inside. A frog is sitting on the toilet lid like a tiny king! 🐸👑",
-          "animation": "explore"
-        }
-      ]
+      "action": "enter",
+      "description": "This one says OUT OF ORDER... peek inside?",
+      "interactionText": "You open the stall door and peek inside.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/bathroom_stall_2.json",
+      "targetHotspot": "stall_door",
+      "arrive": { "px": 0.67, "py": 0.55 },
+      "door": { "px": 0.629, "py": 0.1108, "pw": 0.0821, "ph": 0.3388, "color": "#8dbb2a", "inside": "🐸" }
     },
     {
       "id": "stall_3",

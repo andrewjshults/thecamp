@@ -1,0 +1,157 @@
+{
+  "name": "Stall 1",
+  "playerStart": { "px": 0.3, "py": 0.86 },
+  "spriteScale": 2.5,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": { "height": 0.04, "color": "#7a4a2a" },
+    "wall": { "pattern": "blocks", "color": "#e1ecaf" },
+    "floor": { "from": 0.6, "pattern": "concrete", "color": "#cbc5ba" },
+    "props": [
+      { "kind": "window", "px": 0.455, "py": 0.09, "pw": 0.09, "ph": 0.11 },
+      { "kind": "emoji", "emoji": "🦋", "px": 0.565, "py": 0.1, "pw": 0.03, "ph": 0.045, "rotate": 15 },
+      { "kind": "sign", "text": "JIGGLE THE\nHANDLE!", "px": 0.445, "py": 0.27, "pw": 0.11, "ph": 0.07, "color": "#fff8dc", "rotate": -3 },
+
+      { "kind": "scribble", "text": "CAMP\nROCKS!", "px": 0.29, "py": 0.18, "pw": 0.12, "ph": 0.12, "color": "#6a3fb5", "rotate": -8 },
+      { "kind": "scribble", "text": "♥", "px": 0.385, "py": 0.31, "pw": 0.04, "ph": 0.07, "color": "#e53935", "rotate": 10 },
+      { "kind": "scribble", "text": "★ ★ ★", "px": 0.285, "py": 0.36, "pw": 0.1, "ph": 0.05, "color": "#f59f1b", "rotate": 4 },
+      { "kind": "scribble", "text": "B.F.F.", "px": 0.61, "py": 0.22, "pw": 0.08, "ph": 0.06, "color": "#1e88e5", "rotate": 7 },
+      { "kind": "scribble", "text": "WAS HERE :)", "px": 0.595, "py": 0.29, "pw": 0.11, "ph": 0.045, "color": "#2e7d32", "rotate": -4 },
+
+      { "kind": "toilet", "px": 0.43, "py": 0.4, "pw": 0.14, "ph": 0.27 },
+      { "kind": "tpHolder", "px": 0.6, "py": 0.43, "pw": 0.065, "ph": 0.09 },
+      { "kind": "drain", "px": 0.62, "py": 0.75, "pw": 0.03, "ph": 0.018 },
+
+      { "kind": "sideWall", "side": "left", "px": 0.0, "py": 0.12, "pw": 0.26, "ph": 0.48,
+        "door": { "t0": 0.12, "t1": 0.72, "color": "#8dbb2a", "latch": "locked", "hang": "🎒" },
+        "peek": [ { "emoji": "🍂", "t": 0.28, "size": 0.5 } ] },
+      { "kind": "sideWall", "side": "right", "px": 0.74, "py": 0.12, "pw": 0.26, "ph": 0.48,
+        "peek": [ { "emoji": "🐸", "t": 0.45 } ] }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "stall_door",
+      "name": "Stall Door",
+      "px": 0.03,
+      "py": 0.1,
+      "pw": 0.16,
+      "ph": 0.7,
+      "action": "enter",
+      "description": "Unlock the door and go back out",
+      "interactionText": "Click! You unlock the door and head back out.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_bathroom.json",
+      "targetHotspot": "stall_1",
+      "arrive": { "px": 0.3, "py": 0.86 }
+    },
+    {
+      "id": "toilet",
+      "name": "Toilet",
+      "px": 0.42,
+      "py": 0.38,
+      "pw": 0.16,
+      "ph": 0.32,
+      "action": "bathroom",
+      "description": "Time to go!",
+      "interactionText": "You sit down and use the toilet. Then you jiggle the handle... FLUSH! WHOOSH-GURGLE-GLUG! 🚽 Don't forget to wash your hands!",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "sponge",
+          "text": "You scrub the toilet with the sponge. Sparkly clean! Camp chores: ✅ 🧽",
+          "animation": "wash"
+        },
+        {
+          "itemId": "book",
+          "text": "You read your book on the toilet. The BEST reading spot in the whole camp! 📚",
+          "animation": "sit"
+        },
+        {
+          "itemId": "rubber_duck",
+          "text": "You drop the rubber duck in and FLUSH! ...It bobs right back up. The duck is UNSTOPPABLE. 🦆",
+          "animation": "bathroom"
+        }
+      ]
+    },
+    {
+      "id": "tp_holder",
+      "name": "Toilet Paper",
+      "px": 0.59,
+      "py": 0.4,
+      "pw": 0.09,
+      "ph": 0.14,
+      "action": "explore",
+      "description": "A nice fresh roll",
+      "interactionText": "You spin the roll. Wheeeee! It unrolls all over the floor. Oops! 🧻",
+      "items": [
+        { "id": "toilet_paper", "name": "Toilet Paper", "emoji": "🧻" }
+      ],
+      "uses": []
+    },
+    {
+      "id": "doodles",
+      "name": "Wall Doodles",
+      "px": 0.28,
+      "py": 0.16,
+      "pw": 0.14,
+      "ph": 0.27,
+      "action": "craft",
+      "description": "Campers have doodled all over the wall",
+      "interactionText": "Hearts, stars, and \"CAMP ROCKS!\" in purple marker. Every camper leaves a little doodle here!",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "crayons",
+          "text": "You add your own doodle: a Flying Car with wings! Now YOU'RE part of camp history! 🖍️",
+          "animation": "craft"
+        },
+        {
+          "itemId": "stickers",
+          "text": "You stick a shiny gold star right next to \"CAMP ROCKS!\" ⭐",
+          "animation": "craft"
+        }
+      ]
+    },
+    {
+      "id": "tiny_window",
+      "name": "Tiny Window",
+      "px": 0.44,
+      "py": 0.07,
+      "pw": 0.12,
+      "ph": 0.16,
+      "action": "stargaze",
+      "description": "A little window way up high",
+      "interactionText": "You stand on your tippy-toes and peek out. The stars are twinkling over camp! ✨",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "telescope",
+          "text": "You point your telescope out the tiny window. You can see the Moon's craters! 🔭🌙",
+          "animation": "stargaze"
+        }
+      ]
+    },
+    {
+      "id": "frog_visitor",
+      "name": "Frog Visitor",
+      "px": 0.83,
+      "py": 0.72,
+      "pw": 0.11,
+      "ph": 0.13,
+      "action": "explore",
+      "description": "Someone is peeking under the wall...",
+      "interactionText": "A frog peeks under the wall from Stall 2. \"RIBBIT!\" It must have escaped from the broken toilet! 🐸",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "fish_food",
+          "text": "You offer the frog some fish food. It's not a fish... but it gobbles it up anyway! 🐸",
+          "animation": "eat"
+        }
+      ]
+    }
+  ]
+}

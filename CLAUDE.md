@@ -50,11 +50,24 @@ Kinds live in `SCENE_PROPS` in `index.html`: `emoji` (`emoji`, `rotate`),
 `cobweb` (`spider`), `mirror`, `sinks` (`count`), `dryer`, `stalls` (`doors`:
 `label`/`sign`/`occupied`/`feet`), `shower` (`curtain`), `bench` (`towel`),
 `box` (`label`, `peek` emojis), `trashCan` (`label`, `peek`), `mopBucket`,
-`drain`, `puddle`, `footprints`. Hotspots are separate: they're placed over
+`drain`, `puddle`, `footprints`, and for small close-up rooms: `toilet`
+(`lid: "up"|"down"`), `tpHolder` (`empty`), `scribble` (marker writing on the
+wall: `text`, `color`, `rotate`) and `sideWall` (a perspective stall partition:
+`side`, `gap`, `door: { t0, t1, color, latch, hang }`, `peek: [{ emoji, t }]`
+for things seen under the gap). Hotspots are separate: they're placed over
 the props by hand.
 
-A portal hotspot may have `"arrive": { "px", "py" }` — where the player lands
-when entering the map through it (default: the hotspot's centre).
+Toilet stalls 1 and 2 in the bathroom open into `assets/bathroom_stall_1.json`
+and `assets/bathroom_stall_2.json`; stall 3 is "occupied" and stays shut.
+
+Map-level `"spriteScale": 2.5` draws people bigger on that map (close-ups
+like the stalls). Default 1.
+
+Portal hotspot extras:
+- `"arrive": { "px", "py" }` — where the player lands when entering the map
+  through it (default: the hotspot's centre).
+- `"door": { "px", "py", "pw", "ph", "color", "inside": "🚽" }` — the door
+  drawn on the map; it swings open (with a CREEEAK!) before the map switches.
 
 ### Hotspot schema
 ```json
