@@ -68,10 +68,126 @@
   #talkSay { background: #4CAF50; }
   #talkSay:disabled { background: #9E9E9E; cursor: default; }
   #talkBye { background: #E57373; }
+
+  /* --- Start menu (single / multi player, create / join a world) --- */
+  #menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  }
+  #menu[hidden], #menu [hidden] { display: none !important; }
+  .menuPanel {
+    width: min(440px, 100%);
+    padding: 22px 22px 18px;
+    background: #3E2723;
+    border: 3px solid #8D6E63;
+    border-radius: 18px;
+    box-shadow: 0 0 0 6px rgba(62, 39, 35, 0.5), 0 12px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    color: #FFECB3;
+  }
+  .menuPanel h1 {
+    font-size: 44px;
+    color: #FF9800;
+    -webkit-text-stroke: 1.5px #5D4037;
+    margin-bottom: 4px;
+  }
+  .menuScreen { display: flex; flex-direction: column; gap: 12px; }
+  .menuScreen p { font-size: 17px; }
+  .menuScreen p.small { font-size: 13px; color: #BCAAA4; }
+  .menuPanel button {
+    font: bold 20px 'Comic Sans MS', 'Chalkboard SE', cursive;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 14px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+    transition: transform 0.08s;
+  }
+  .menuPanel button:hover, .menuPanel button:focus-visible { transform: translateY(-2px); outline: 3px solid #FFD54F; }
+  .menuPanel button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+  .menuPanel button small { display: block; font-size: 13px; font-weight: normal; opacity: 0.9; }
+  .menuPanel button.green  { background: #43A047; }
+  .menuPanel button.purple { background: #8E24AA; }
+  .menuPanel button.orange { background: #F57C00; }
+  .menuPanel button.blue   { background: #1E88E5; }
+  .menuPanel button.link {
+    background: none;
+    box-shadow: none;
+    color: #BCAAA4;
+    font-size: 15px;
+    padding: 4px;
+  }
+  .menuPanel button:disabled { background: #757575; cursor: default; transform: none; }
+  #joinCode {
+    font: bold 40px 'Comic Sans MS', 'Chalkboard SE', cursive;
+    letter-spacing: 10px;
+    text-align: center;
+    width: 100%;
+    padding: 8px 4px 8px 14px;
+    border: 3px solid #FFD54F;
+    border-radius: 14px;
+    background: #FFF8E1;
+    color: #3E2723;
+    outline: none;
+    user-select: text;
+  }
+  #joinCode::placeholder { color: #D7CCC8; }
+  .menuError { color: #FF8A80; font-size: 15px; min-height: 20px; }
+  .menuSpinner {
+    width: 44px; height: 44px; margin: 6px auto;
+    border: 6px solid rgba(255, 213, 79, 0.25);
+    border-top-color: #FFD54F;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/pubnub@13.1.3/dist/web/pubnub.min.js"></script>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
+<div id="menu" hidden>
+  <div class="menuPanel">
+    <h1>The Camp</h1>
+    <div id="menuMode" class="menuScreen">
+      <p>How do you want to play?</p>
+      <button type="button" class="green" data-act="single">🏕️ Single Player<small>Explore the camp on your own</small></button>
+      <button type="button" class="purple" data-act="multi">👫 Multi Player<small>Play with friends on other computers</small></button>
+      <div class="menuError" id="modeError"></div>
+    </div>
+    <div id="menuMulti" class="menuScreen" hidden>
+      <p>Play with friends!</p>
+      <button type="button" class="orange" data-act="create">✨ Create a new world<small>You get a code to give your friends</small></button>
+      <button type="button" class="blue" data-act="join">🔑 Join a world<small>Type in a friend's code</small></button>
+      <div class="menuError" id="multiError"></div>
+      <button type="button" class="link" data-act="mode">← Back</button>
+    </div>
+    <form id="menuJoin" class="menuScreen" hidden autocomplete="off">
+      <p>Type your friend's 6-digit world code</p>
+      <input id="joinCode" inputmode="numeric" maxlength="6" placeholder="000000" enterkeyhint="go">
+      <div class="menuError" id="joinError"></div>
+      <button type="submit" class="blue" id="joinGo">Join! 🚀</button>
+      <button type="button" class="link" data-act="multi">← Back</button>
+    </form>
+    <div id="menuBusy" class="menuScreen" hidden>
+      <div class="menuSpinner"></div>
+      <p id="busyText">Connecting…</p>
+      <button type="button" class="link" data-act="cancel">Cancel</button>
+    </div>
+    <div id="menuEmpty" class="menuScreen" hidden>
+      <p id="emptyText"></p>
+      <p class="small">Check the code with your friend. Their game needs to be open in that world.</p>
+      <button type="button" class="blue" data-act="join">🔑 Try another code</button>
+      <button type="button" class="orange" data-act="joinAnyway">Go in anyway</button>
+    </div>
+  </div>
+</div>
 <form id="talkBar" hidden autocomplete="off">
   <div id="talkTo"></div>
   <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
@@ -91,6 +207,7 @@ const ctx = canvas.getContext('2d');
 // --- Game State ---
 const GameState = {
   LOADING: 'loading',
+  MODE_SELECT: 'modeSelect',          // single / multi player menu (HTML #menu)
   CHARACTER_SELECT: 'characterSelect',
   RESUME_PROMPT: 'resumePrompt',
   PLAYING: 'playing',
@@ -154,7 +271,7 @@ let loadingMessage = 'Loading...';
 // --- Load map config then image ---
 // Convention: each map image has a sibling .json file with the same base name.
 // To add a new map, drop a new image + json pair in assets/ and call loadMap().
-function loadMap(jsonPath) {
+function loadMap(jsonPath, then = GameState.MODE_SELECT) {
   currentMapPath = jsonPath;
   state = GameState.LOADING;
 
@@ -166,7 +283,8 @@ function loadMap(jsonPath) {
       mapImage = img;
       mapLoaded = true;
       recalcMapScale();
-      state = GameState.CHARACTER_SELECT;
+      state = then;
+      if (then === GameState.MODE_SELECT) showMenu('menuMode');
     });
   }
 
@@ -199,8 +317,11 @@ function switchMap(targetPath, targetHotspotId) {
       allMapConfigs[targetPath] = config;
       loadingMessage = `Loading ${config.name}...`;
 
-      // Restore or default hotspot items for the new map
-      hotspotItems = restoreOrDefaultHotspots(config, allMapSaves[targetPath] || {});
+      // Restore or default hotspot items for the new map. In a multiplayer
+      // world they're the shared world's items (kept in sync by PubNub).
+      hotspotItems = mp.active
+        ? mpItemsFor(targetPath, config)
+        : restoreOrDefaultHotspots(config, allMapSaves[targetPath] || {});
 
       loadMapImage(config).then(img => {
         mapImage = img;
@@ -1242,6 +1363,9 @@ function loadSave(name) {
 }
 function writeSave() {
   if (!player.character) return;
+  // Multiplayer: the hotspot items belong to the shared world, so only the
+  // player's own things are saved (per world + character).
+  if (mp.active) { mpWriteSave(); return; }
   const payload = {
     version: SAVE_VERSION,
     currentMap: currentMapPath,
@@ -1309,7 +1433,7 @@ function applySave(save) {
 const keys = {};
 window.addEventListener('keydown', (e) => {
   // Typing in the talk bar must not drive the game (its own listener handles Esc)
-  if (e.target === talkInput) return;
+  if (e.target === talkInput || menuEl.contains(e.target)) return;
   keys[e.key] = true;
   if (e.key === ' ') {
     e.preventDefault();
@@ -1330,6 +1454,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       selectCharacter(selectedCharIndex);
     }
+    if (e.key === 'Escape') backToModeSelect();
   } else if (state === GameState.RESUME_PROMPT) {
     if (e.key === 'Enter' || e.key === 'r' || e.key === 'R') {
       resumePendingSave();
@@ -1342,8 +1467,7 @@ window.addEventListener('keydown', (e) => {
     }
   } else if (state === GameState.CONFIRM_DIALOG) {
     if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
-      state = GameState.CHARACTER_SELECT;
-      player.character = null;
+      goToCharacterSelect();
     } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
       state = GameState.PLAYING;
     }
@@ -1523,6 +1647,10 @@ function getHoveredCharacter(mx, my) {
 let pendingResumeSave = null;
 
 function selectCharacter(index) {
+  if (mp.active && mpCharacterTaken(characters[index].name)) {
+    charSelectNote = { text: `A friend is already playing ${characters[index].name}! Pick another camper.`, at: performance.now() };
+    return;
+  }
   player.character = characters[index];
   heldItem = null;
   // Friends don't remember chats with a different character
@@ -1534,6 +1662,8 @@ function selectCharacter(index) {
   player.y = scaledMapH * start.py;
   backpackOpen = false;
   backpackSelection = { row: 'backpack', col: 0 };
+
+  if (mp.active) { mpStartPlaying(); return; }
 
   const existing = loadSave(player.character.name);
   if (existing) {
@@ -1837,6 +1967,11 @@ function handleCanvasTap(screenX, screenY) {
   }
 
   if (state === GameState.CHARACTER_SELECT) {
+    const b = charSelectBackRect();
+    if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
+      backToModeSelect();
+      return;
+    }
     const idx = getHoveredCharacter(screenX, screenY);
     if (idx >= 0) selectCharacter(idx);
   } else if (state === GameState.RESUME_PROMPT) {
@@ -1856,8 +1991,7 @@ function handleCanvasTap(screenX, screenY) {
     const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
     const noBtnX = canvas.width / 2 + btnGap / 2;
     if (screenX >= yesBtnX && screenX <= yesBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
-      state = GameState.CHARACTER_SELECT;
-      player.character = null;
+      goToCharacterSelect();
     } else if (screenX >= noBtnX && screenX <= noBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
       state = GameState.PLAYING;
     }
@@ -2087,7 +2221,8 @@ function itemActionButtons() {
     ];
   }
   // Backpack item
-  const hotspotFull = !a.hotspotId || (hotspotItems[a.hotspotId] || []).length >= HOTSPOT_CAPACITY;
+  const hotspotFull = !a.hotspotId ||
+    (hotspotItems[a.hotspotId] || []).length + mpPendingDropsAt(a.hotspotId) >= HOTSPOT_CAPACITY;
   return [
     { id: 'drop',   label: 'Drop here', disabled: hotspotFull },
     { id: 'cancel', label: 'Cancel',    disabled: false },
@@ -2096,6 +2231,7 @@ function itemActionButtons() {
 
 // Move a hotspot item into the backpack. Returns false if the backpack is full.
 function pickUpHotspotItem(hotspotId, index) {
+  if (mp.active) return mpRequestTake(hotspotId, index);
   if (backpack.length >= BACKPACK_CAPACITY) return false;
   const items = hotspotItems[hotspotId] || [];
   const [item] = items.splice(index, 1);
@@ -2128,10 +2264,15 @@ function performItemAction(buttonId) {
   }
   if (buttonId === 'drop' && a.source === 'backpack') {
     const items = hotspotItems[a.hotspotId] || [];
-    if (items.length >= HOTSPOT_CAPACITY) return;
+    if (items.length + mpPendingDropsAt(a.hotspotId) >= HOTSPOT_CAPACITY) return;
     const [item] = backpack.splice(a.index, 1);
-    if (item) items.push(item);
-    hotspotItems[a.hotspotId] = items;
+    if (mp.active) {
+      // The world decides: it lands once the drop comes back from PubNub
+      if (item) mpRequestDrop(a.hotspotId, item);
+    } else {
+      if (item) items.push(item);
+      hotspotItems[a.hotspotId] = items;
+    }
     writeSave();
     // Keep cursor on backpack row at a valid position
     const newCol = Math.min(a.index, Math.max(0, backpack.length - 1));
@@ -2228,27 +2369,37 @@ function isCritter(npc) {
   return !!(npc && npc !== 'player' && npc.emoji);
 }
 function npcName(npc) {
-  return npc.name || npc.character;
+  return npc.name || npc.character;   // remote players carry their character's name in `name`
 }
 // Critter height in map px (`size` is a fraction of the map height)
 function critterSize(npc) {
   return (npc.size || 0.07) * scaledMapH;
 }
 
+// Camper NPCs step aside when a real person (you, or a friend in a
+// multiplayer world) is playing as that character.
 function currentNpcs() {
   if (!mapConfig || !Array.isArray(mapConfig.npcs)) return [];
   return mapConfig.npcs.filter(n => isCritter(n) ||
     (characterByName(n.character) &&
-     (!player.character || n.character !== player.character.name)));
+     (!player.character || n.character !== player.character.name) &&
+     !mpCharacterTaken(n.character)));
+}
+
+// Everyone on this map you can walk up to and talk with: NPCs + friends
+function talkablesHere() {
+  return [...currentNpcs(), ...mpPlayersHere()];
 }
 
 function npcPos(npc) {
   return { x: npc.px * scaledMapW, y: npc.py * scaledMapH };
 }
 
-// Map-space feet / head / mouth for 'player' or an npc def.
+// Map-space feet / head / mouth for 'player', an npc def, or a remote player.
 function speakerFeet(owner) {
-  return owner === 'player' ? { x: player.x, y: player.y } : npcPos(owner);
+  if (owner === 'player') return { x: player.x, y: player.y };
+  if (owner.remote) return { x: owner.x, y: owner.y };
+  return npcPos(owner);
 }
 function speakerHead(owner) {
   const f = speakerFeet(owner);
@@ -2266,9 +2417,9 @@ function speakerHead(owner) {
 }
 
 function npcAtScreenPoint(sx, sy) {
-  for (const npc of currentNpcs()) {
+  for (const npc of talkablesHere()) {
     const h = speakerHead(npc);
-    const f = npcPos(npc);
+    const f = speakerFeet(npc);
     const cy = (h.top + f.y) / 2;
     if (Math.hypot(sx - (h.x - camera.x), sy - (cy - camera.y)) < 80) return npc;
   }
@@ -2289,11 +2440,15 @@ function startConversation(npc) {
   talkPhase = 'input';
   pendingReply = null;
   npcThinking = null;
-  speechBubbles = [];
-  const p = npcPos(npc);
+  // Keep what a friend just said to you, so you can answer it
+  speechBubbles = npc.remote ? speechBubbles.filter(b => b.owner === npc) : [];
+  const p = speakerFeet(npc);
   player.facing = p.x < player.x ? 'left' : 'right';
-  npcFacing[npc.id] = p.x < player.x ? 'right' : 'left';
-  talkTo.textContent = `💬 Talking with ${npcName(npc)}`;
+  if (!npc.remote) npcFacing[npc.id] = p.x < player.x ? 'right' : 'left';
+  if (npc.remote && useToast && useToast === mp.talkToast) useToast = null;   // you're answering now
+  talkTo.textContent = npc.remote
+    ? `💬 Talking with your friend ${npcName(npc)}`
+    : `💬 Talking with ${npcName(npc)}`;
   talkInput.value = '';
   talkBar.hidden = false;
   setTalkEnabled(true);
@@ -2329,10 +2484,14 @@ talkBar.addEventListener('submit', (e) => {
 
   const npc = talkingTo;
   const token = talkToken;
-  const history = conversations[npcName(npc)] || (conversations[npcName(npc)] = []);
-  history.push({ speaker: 'player', text });
   say('player', text, npc);
   talkPhase = 'playerSpeaking';
+  // Friends nearby see the bubble too (and a friend you're talking to answers)
+  mpSay(text, npc);
+  if (npc.remote) return;
+
+  const history = conversations[npcName(npc)] || (conversations[npcName(npc)] = []);
+  history.push({ speaker: 'player', text });
 
   // Ask for the reply right away; it's revealed once the player finishes talking
   fetchNpcReply(npc, history.slice()).then(reply => {
@@ -2357,12 +2516,19 @@ function updateConversation() {
     const pb = speechBubbles.find(b => b.owner === 'player');
     const playerDone = !pb || now - pb.start > pb.duration + 400;
     if (!playerDone) return;
+    if (talkingTo.remote) {
+      // A friend answers whenever they like — you can keep talking
+      talkPhase = 'input';
+      setTalkEnabled(true);
+      return;
+    }
     if (pendingReply) {
       const { npc, text } = pendingReply;
       pendingReply = null;
       npcThinking = null;
       conversations[npcName(npc)].push({ speaker: 'npc', text });
       say(npc, text, 'player');
+      mpSay(text, 'player', npc);
       talkPhase = 'npcSpeaking';
     } else if (!npcThinking) {
       npcThinking = { npc: talkingTo, since: now };
@@ -2792,10 +2958,14 @@ function drawNpcTalkHint(npc) {
 
 function drawPeople() {
   const people = currentNpcs().map(npc => ({ y: npcPos(npc).y, draw: () => drawNpcSprite(npc) }));
+  const friends = mpPlayersHere();
+  for (const rp of friends) people.push({ y: rp.y, draw: () => drawRemotePlayer(rp) });
   people.push({ y: player.y, draw: drawPlayerSprite });
   people.sort((a, b) => a.y - b.y);
   for (const p of people) p.draw();
-  if (state === GameState.PLAYING && nearbyNpc) drawNpcTalkHint(nearbyNpc);
+  const hinting = state === GameState.PLAYING ? nearbyNpc : null;
+  for (const rp of friends) if (rp !== hinting) drawNameTag(rp);
+  if (hinting) drawNpcTalkHint(hinting);
 }
 
 // --- Game Logic ---
@@ -2889,10 +3059,10 @@ function update() {
   // Nearby friends: they turn to look at you, and the closest one can be talked to
   nearbyNpc = null;
   let npcBest = NPC_TALK_RANGE * (SPRITE_SCALE / BASE_SPRITE_SCALE);   // bigger people reach further
-  for (const npc of currentNpcs()) {
-    const p = npcPos(npc);
+  for (const npc of talkablesHere()) {
+    const p = speakerFeet(npc);
     const d = Math.hypot(px - p.x, py - p.y);
-    if (d < 450) npcFacing[npc.id] = px < p.x ? 'left' : 'right';
+    if (d < 450 && !npc.remote) npcFacing[npc.id] = px < p.x ? 'left' : 'right';
     if (d < npcBest) {
       npcBest = d;
       nearbyNpc = npc;
@@ -3045,6 +3215,31 @@ function drawLoadingScreen() {
   }
 }
 
+// Dark green backdrop with the map faded in, plus twinkling stars
+function drawMenuBackdrop() {
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (mapImage) {
+    ctx.globalAlpha = 0.15;
+    const scale = Math.max(canvas.width / mapImage.naturalWidth, canvas.height / mapImage.naturalHeight);
+    ctx.drawImage(mapImage, 0, 0, mapImage.naturalWidth * scale, mapImage.naturalHeight * scale);
+    ctx.globalAlpha = 1;
+  }
+  const t = Date.now() / 1000;
+  ctx.fillStyle = '#FFD54F';
+  for (let i = 0; i < 15; i++) {
+    const sx = (Math.sin(i * 2.5 + t * 0.3) * 0.5 + 0.5) * canvas.width;
+    const sy = (Math.cos(i * 1.7 + t * 0.2) * 0.5 + 0.5) * canvas.height * 0.3;
+    drawStar(sx, sy, 2 + Math.sin(t + i) * 1.5);
+  }
+}
+
+// "← Back" (to the single / multi player menu) on the character screen
+function charSelectBackRect() {
+  return { x: 12, y: 12, w: 96, h: 34 };
+}
+let charSelectNote = null;   // { text, at } — e.g. "a friend is already playing ..."
+
 function drawCharacterSelect() {
   // Background
   ctx.fillStyle = '#1a3a1a';
@@ -3057,6 +3252,18 @@ function drawCharacterSelect() {
     ctx.drawImage(mapImage, 0, 0, mapImage.naturalWidth * scale, mapImage.naturalHeight * scale);
     ctx.globalAlpha = 1;
   }
+
+  // Back button
+  const bb = charSelectBackRect();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  roundRect(bb.x, bb.y, bb.w, bb.h, 10);
+  ctx.fill();
+  ctx.fillStyle = '#FFE0B2';
+  ctx.font = 'bold 15px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText('← Back', bb.x + bb.w / 2, bb.y + 23);
+
+  if (mp.active) drawWorldCodeBanner();
 
   // Title
   ctx.fillStyle = '#FF9800';
@@ -3083,6 +3290,8 @@ function drawCharacterSelect() {
     const cx = startX + i * (cardW + gap);
     const isSelected = i === selectedCharIndex;
     const isHovered = i === hoveredCharIndex;
+    const taken = mp.active && mpCharacterTaken(characters[i].name);
+    if (taken) ctx.globalAlpha = 0.45;
 
     // Card background
     ctx.fillStyle = isSelected ? 'rgba(255, 152, 0, 0.3)' : 'rgba(0, 0, 0, 0.3)';
@@ -3107,6 +3316,30 @@ function drawCharacterSelect() {
     ctx.fillStyle = '#BCAAA4';
     ctx.font = '11px "Comic Sans MS", cursive';
     wrapText(characters[i].desc, cx + cardW / 2, cardY + 105, cardW - 12, 14);
+    ctx.globalAlpha = 1;
+    if (taken) {
+      ctx.save();
+      ctx.translate(cx + cardW / 2, cardY + cardH / 2 + 10);
+      ctx.rotate(-0.2);
+      ctx.fillStyle = '#E53935';
+      roundRect(-52, -15, 104, 30, 8);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px "Comic Sans MS", cursive';
+      ctx.fillText('A friend!', 0, 5);
+      ctx.restore();
+    }
+  }
+
+  if (charSelectNote && performance.now() - charSelectNote.at < 3000) {
+    ctx.font = 'bold 16px "Comic Sans MS", cursive';
+    const nw = ctx.measureText(charSelectNote.text).width + 28;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    roundRect(canvas.width / 2 - nw / 2, cardY + cardH + 18, nw, 34, 10);
+    ctx.fill();
+    ctx.fillStyle = '#FFEB3B';
+    ctx.textAlign = 'center';
+    ctx.fillText(charSelectNote.text, canvas.width / 2, cardY + cardH + 41);
   }
 
   // Instructions
@@ -3973,6 +4206,8 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.fillText('♦ ' + player.character.name, 20, 34);
 
+  if (mp.active) drawMpHudBadge();
+
   // Mini instructions
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
   const instrText = isTouchDevice()
@@ -4691,14 +4926,919 @@ function drawConfirmDialog() {
   ctx.fillText('No (N)', noBtnX + btnW / 2, btnY + 24);
 }
 
+// ============================================================
+// START MENU + MULTIPLAYER (shared worlds over PubNub)
+// ============================================================
+// Single player works exactly as before. In multi player, everyone in a
+// world subscribes to one PubNub channel, `louisas-game.world.<6-digit code>`,
+// and sends small JSON messages to it (see "Multiplayer" in CLAUDE.md):
+//
+//   pos   — where I am (map + 0–1 fractions), facing, walking, held food.
+//           Sent ~8×/s while moving, every 2.5s while standing still.
+//   hello — "I just arrived": others answer with `pos`, and one of them
+//           answers with `snap` (where every item in the world is).
+//   snap  — { to, at, items: { mapPath: { hotspotId: [item] } } }
+//   take / drop — item moves. Nobody applies these when they click: every
+//           computer applies them in the order PubNub delivers them (the
+//           channel's timetoken order), so all computers agree on who got
+//           an item first. The clicker learns the result when its own
+//           message comes back.
+//   say   — a speech bubble line (player → friend / NPC, or an NPC's reply).
+//   bye   — I left (also inferred after 9s of silence).
+//
+// There's no server: whoever is in the world holds its state. Each computer
+// also keeps a copy in localStorage so a world can be re-opened later.
+const PUBNUB_PUBLISH_KEY   = 'pub-c-02631177-4938-4aab-916c-c66de3caad38';
+const PUBNUB_SUBSCRIBE_KEY = 'sub-c-ba97efde-d572-48e8-82d6-a06e2b5b0738';
+const MP_CHANNEL_PREFIX = 'louisas-game.world.';
+const MP_MAIN_MAP       = 'assets/game_design.json';
+const MP_POS_EVERY_MS   = 120;    // position updates while moving
+const MP_HEARTBEAT_MS   = 2500;   // "still here" while standing still
+const MP_TIMEOUT_MS     = 9000;   // forget a friend we haven't heard from
+const MP_JOIN_WAIT_MS   = 3500;   // wait this long for someone to answer `hello`
+
+function mpRandomId() {
+  const a = new Uint32Array(2);
+  crypto.getRandomValues(a);
+  return 'p-' + a[0].toString(36) + a[1].toString(36);
+}
+
+const mp = {
+  active: false,           // in a multiplayer world (or joining one)
+  code: null,              // '123456'
+  channel: null,
+  pubnub: null,
+  myId: mpRandomId(),      // one per open tab
+  session: 0,              // bumped on leave, so stale async work bails out
+  connectWaiter: null,
+  connected: false,
+  wasDisconnected: false,
+  synced: false,           // we know where every item in the world is
+  lastOpTT: 0n,            // timetoken of the last take/drop applied
+  buffer: [],              // take/drops that arrived before we were synced
+  items: {},               // mapPath → hotspotId → item[]   (the shared world)
+  mapConfigs: {},          // mapPath → config (every map, for default items)
+  players: new Map(),      // playerId → remote player (see mpOnPos)
+  pendingTakes: new Set(), // `${map}|${hotspot}|${itemId}` waiting for the echo
+  pendingDrops: new Map(), // `${map}|${hotspot}` → count waiting for the echo
+  lastTaker: {},           // `${map}|${hotspot}|${itemId}` → playerId
+  present: false,          // others can see us (we've sent a `pos`)
+  lastPosAt: 0,
+  lastPosKey: '',
+  joinTimer: null,
+  joinExtended: false,
+  snapReplies: new Map(),  // joinerId → timer (cancelled if someone else answers)
+  onSynced: null,
+  cacheTimer: null
+};
+
+// --- Menu (HTML overlay) ---
+const menuEl = document.getElementById('menu');
+const MENU_SCREENS = ['menuMode', 'menuMulti', 'menuJoin', 'menuBusy', 'menuEmpty'];
+let menuScreen = null;
+
+function showMenu(id) {
+  menuEl.hidden = false;
+  menuScreen = id;
+  for (const sId of MENU_SCREENS) document.getElementById(sId).hidden = sId !== id;
+  const first = document.getElementById(id).querySelector('input, button');
+  if (first) first.focus({ preventScroll: true });
+}
+function hideMenu() {
+  if (menuEl.contains(document.activeElement)) document.activeElement.blur();
+  menuEl.hidden = true;
+  menuScreen = null;
+}
+function setMenuError(id, text) {
+  document.getElementById(id).textContent = text || '';
+}
+function showBusy(text) {
+  document.getElementById('busyText').textContent = text;
+  showMenu('menuBusy');
+}
+
+function menuAction(act) {
+  setMenuError('modeError');
+  setMenuError('multiError');
+  switch (act) {
+    case 'single':
+      mpLeave();
+      hideMenu();
+      state = GameState.CHARACTER_SELECT;
+      break;
+    case 'multi':
+      if (!window.PubNub) {
+        showMenu('menuMode');
+        setMenuError('modeError', "Multi player needs the internet — couldn't load PubNub.");
+        return;
+      }
+      mpLeave();
+      showMenu('menuMulti');
+      break;
+    case 'mode':
+      showMenu('menuMode');
+      break;
+    case 'create':
+      mpCreateWorld();
+      break;
+    case 'join': {
+      mpLeave();
+      setMenuError('joinError');
+      showMenu('menuJoin');
+      document.getElementById('joinCode').select();
+      break;
+    }
+    case 'cancel':
+      mpLeave();
+      showMenu('menuMulti');
+      break;
+    case 'joinAnyway':
+      mp.onSynced = null;
+      mpUseCachedWorld();
+      mpEnterWorld();
+      break;
+  }
+}
+
+menuEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (btn) menuAction(btn.dataset.act);
+});
+menuEl.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const back = { menuMulti: 'mode', menuJoin: 'multi', menuBusy: 'cancel', menuEmpty: 'join' }[menuScreen];
+  if (back) { e.preventDefault(); menuAction(back); }
+});
+const joinCodeInput = document.getElementById('joinCode');
+joinCodeInput.addEventListener('input', () => {
+  joinCodeInput.value = joinCodeInput.value.replace(/\D/g, '').slice(0, 6);
+  setMenuError('joinError');
+});
+document.getElementById('menuJoin').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const code = joinCodeInput.value.replace(/\D/g, '');
+  if (code.length !== 6) {
+    setMenuError('joinError', 'World codes have 6 numbers.');
+    joinCodeInput.focus();
+    return;
+  }
+  mpJoinWorld(code);
+});
+
+// Esc on the character screen / "← Back": back to single vs multi player
+function backToModeSelect() {
+  mpLeave();
+  player.character = null;
+  if (currentMapPath !== MP_MAIN_MAP) {
+    loadMap(MP_MAIN_MAP);      // ends on the mode menu
+  } else {
+    state = GameState.MODE_SELECT;
+    showMenu('menuMode');
+  }
+}
+
+// "Switch camper?" → Yes. In a world you stay connected, but friends stop seeing you.
+function goToCharacterSelect() {
+  if (mp.active) mpSendBye();
+  state = GameState.CHARACTER_SELECT;
+  player.character = null;
+}
+
+// --- Creating / joining / leaving a world ---
+async function mpCreateWorld() {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0];
+  const code = String(100000 + (n % 900000));
+  showBusy('Making a new world…');
+  try {
+    await mpOpen(code);
+  } catch (err) {
+    mpFail(err, 'menuMulti', 'multiError');
+    return;
+  }
+  mp.synced = true;   // brand-new world: every item starts where the map JSON puts it
+  mpEnterWorld();
+}
+
+async function mpJoinWorld(code) {
+  showBusy(`Looking for world ${code}…`);
+  try {
+    await mpOpen(code);
+  } catch (err) {
+    mpFail(err, 'menuJoin', 'joinError');
+    return;
+  }
+  mp.onSynced = mpEnterWorld;
+  mpSend({ t: 'hello' });
+  mpArmJoinTimer(MP_JOIN_WAIT_MS);
+}
+
+function mpArmJoinTimer(ms) {
+  clearTimeout(mp.joinTimer);
+  mp.joinTimer = setTimeout(() => {
+    if (!mp.active || mp.synced) return;
+    // Friends are there but nobody has sent the world yet — give them a moment
+    if (mp.players.size && !mp.joinExtended) {
+      mp.joinExtended = true;
+      mpArmJoinTimer(MP_JOIN_WAIT_MS);
+      return;
+    }
+    document.getElementById('emptyText').textContent = `Nobody is playing in world ${mp.code} right now.`;
+    showMenu('menuEmpty');
+  }, ms);
+}
+
+function mpFail(err, screen, errorId) {
+  if (err && err.message === 'cancelled') return;
+  console.warn('Multiplayer connection failed', err);
+  mpLeave();
+  showMenu(screen);
+  setMenuError(errorId, "Couldn't connect. Check the internet and try again!");
+}
+
+// Connect to a world's channel. Resolves once PubNub says we're subscribed.
+async function mpOpen(code) {
+  mpLeave();
+  const session = mp.session;
+  mp.active = true;
+  mp.code = code;
+  mp.channel = MP_CHANNEL_PREFIX + code;
+  mp.items = await mpLoadAllMaps();
+  if (session !== mp.session) throw new Error('cancelled');
+
+  const pn = new PubNub({
+    publishKey: PUBNUB_PUBLISH_KEY,
+    subscribeKey: PUBNUB_SUBSCRIBE_KEY,
+    userId: mp.myId
+  });
+  mp.pubnub = pn;
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { mp.connectWaiter = null; reject(new Error('timeout')); }, 12000);
+    mp.connectWaiter = {
+      resolve: () => { clearTimeout(timer); resolve(); },
+      reject: (e) => { clearTimeout(timer); reject(e); }
+    };
+    pn.addListener({
+      message: (ev) => { if (mp.pubnub === pn) mpOnMessage(ev); },
+      status: (st) => { if (mp.pubnub === pn) mpOnStatus(st); }
+    });
+    pn.subscribe({ channels: [mp.channel] });
+  });
+  if (session !== mp.session) throw new Error('cancelled');
+}
+
+function mpLeave() {
+  if (mp.connectWaiter) {
+    const w = mp.connectWaiter;
+    mp.connectWaiter = null;
+    w.reject(new Error('cancelled'));
+  }
+  clearTimeout(mp.joinTimer);
+  clearTimeout(mp.cacheTimer);
+  for (const t of mp.snapReplies.values()) clearTimeout(t);
+  if (mp.cacheTimer) mpCacheWorld();
+  const pn = mp.pubnub;
+  if (pn) {
+    const done = () => { try { pn.unsubscribeAll(); pn.destroy(); } catch (_) { /* already gone */ } };
+    if (mp.present) {
+      pn.publish({ channel: mp.channel, message: { t: 'bye', from: mp.myId }, storeInHistory: false })
+        .catch(() => {}).finally(done);
+    } else {
+      done();
+    }
+  }
+  if (talkingTo && talkingTo.remote) endConversation();
+  speechBubbles = speechBubbles.filter(b => !(b.owner && b.owner.remote) && !(b.partner && b.partner.remote));
+  Object.assign(mp, {
+    active: false, code: null, channel: null, pubnub: null,
+    connected: false, wasDisconnected: false, synced: false,
+    lastOpTT: 0n, buffer: [], items: {}, lastTaker: {},
+    present: false, lastPosAt: 0, lastPosKey: '',
+    joinTimer: null, joinExtended: false, onSynced: null, cacheTimer: null
+  });
+  mp.players.clear();
+  mp.pendingTakes.clear();
+  mp.pendingDrops.clear();
+  mp.snapReplies.clear();
+  mp.session++;
+}
+
+// Connected and synced: on to picking a camper
+function mpEnterWorld() {
+  hideMenu();
+  if (mapConfig) hotspotItems = mpItemsFor(currentMapPath, mapConfig);
+  charSelectNote = null;
+  state = GameState.CHARACTER_SELECT;
+}
+
+// Called by selectCharacter() in a world. Your backpack + journal are saved
+// per world and camper, so coming back to the same world picks up where you were.
+function mpStartPlaying() {
+  const save = mpLoadSave();
+  const items = arr => Array.isArray(arr) ? arr.map(mpCleanItem).filter(Boolean) : [];
+  backpack      = save ? items(save.backpack).slice(0, BACKPACK_CAPACITY) : [];
+  completedUses = save && Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
+  dishesMade    = save && Array.isArray(save.dishesMade) ? [...save.dishesMade] : [];
+  allMapSaves = {};
+  hotspotItems = mpItemsFor(currentMapPath, mapConfig);
+  // Arrive beside (not on top of) any friends standing at the start
+  const friends = mpPlayersHere();
+  const startX = player.x;
+  let best = startX, bestGap = -1;
+  for (const dx of [0, -110, 110, -220, 220, -330, 330]) {
+    const x = clamp(startX + dx, 10, scaledMapW - 10);
+    const gap = Math.min(Infinity, ...friends.map(rp => Math.hypot(rp.x - x, rp.y - player.y)));
+    if (gap >= 100) { best = x; break; }          // nearest spot with room to stand
+    if (gap > bestGap) { best = x; bestGap = gap; }
+  }
+  player.x = best;
+  state = GameState.PLAYING;
+  const others = mp.players.size;
+  useToast = {
+    text: others ? `Welcome to world ${mp.code}! 👋` : `World ${mp.code} — give your friends this code!`,
+    age: 0
+  };
+  writeSave();
+  if (save && save.currentMap && save.currentMap !== currentMapPath && mp.items[save.currentMap]) {
+    switchMap(save.currentMap, null);
+  }
+}
+
+// Every map's default items, found by following portals from the main map
+async function mpLoadAllMaps() {
+  const queue = [MP_MAIN_MAP];
+  const seen = new Set(queue);
+  const out = {};
+  while (queue.length) {
+    const path = queue.shift();
+    let cfg = mp.mapConfigs[path];
+    if (!cfg) {
+      try {
+        cfg = await (await fetch(path)).json();
+        mp.mapConfigs[path] = cfg;
+      } catch (_) { continue; }
+    }
+    out[path] = restoreOrDefaultHotspots(cfg, {});
+    for (const h of cfg.hotspots || []) {
+      if (h.targetMap && !seen.has(h.targetMap)) {
+        seen.add(h.targetMap);
+        queue.push(h.targetMap);
+      }
+    }
+  }
+  return out;
+}
+
+// The shared item lists for one map (filling in any hotspot we don't know yet)
+function mpItemsFor(path, config) {
+  const m = mp.items[path] || (mp.items[path] = {});
+  for (const def of config.hotspots) {
+    if (!Array.isArray(m[def.id])) m[def.id] = (def.items || []).map(it => ({ ...it }));
+  }
+  return m;
+}
+
+// --- Saves ---
+function mpSaveKey() {
+  return `louisas-game:mp:${mp.code}:${player.character.name}`;
+}
+function mpLoadSave() {
+  try {
+    const raw = localStorage.getItem(mpSaveKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) { return null; }
+}
+function mpWriteSave() {
+  try {
+    localStorage.setItem(mpSaveKey(), JSON.stringify({
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade
+    }));
+  } catch (e) { console.warn('Failed to write save', e); }
+}
+function mpWorldKey() {
+  return `louisas-game:world:${mp.code}`;
+}
+function mpCacheWorld() {
+  mp.cacheTimer = null;
+  if (!mp.code) return;
+  try { localStorage.setItem(mpWorldKey(), JSON.stringify({ items: mp.items, savedAt: Date.now() })); } catch (_) { /* full */ }
+}
+function mpCacheWorldSoon() {
+  if (!mp.cacheTimer) mp.cacheTimer = setTimeout(mpCacheWorld, 1000);
+}
+// Nobody answered: use our own last copy of this world (or a fresh one)
+function mpUseCachedWorld() {
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(mpWorldKey()) || 'null'); } catch (_) { /* ignore */ }
+  mpApplySnapshot({ at: '0', items: (cached && cached.items) || mp.items });
+}
+
+// --- Sending ---
+function mpPublish(message, byPost) {
+  if (!mp.pubnub) return Promise.reject(new Error('not connected'));
+  return mp.pubnub.publish({
+    channel: mp.channel,
+    message: { ...message, from: mp.myId },
+    storeInHistory: false,
+    sendByPost: !!byPost
+  });
+}
+function mpSend(message, byPost) {
+  mpPublish(message, byPost).catch(err => console.warn('PubNub publish failed', err));
+}
+
+// Is our camper out in the world (visible to friends)?
+function mpInWorld() {
+  return !!player.character && [
+    GameState.PLAYING, GameState.TALKING, GameState.INTERACTING, GameState.ITEM_ACTION,
+    GameState.USING_ITEM, GameState.CONFIRM_DIALOG
+  ].includes(state);
+}
+
+function mpSendPos(force) {
+  if (!mp.active || !mp.connected || !mpInWorld() || !scaledMapW) return;
+  const now = performance.now();
+  const msg = {
+    t: 'pos',
+    char: player.character.name,
+    map: currentMapPath,
+    x: +(player.x / scaledMapW).toFixed(4),
+    y: +(player.y / scaledMapH).toFixed(4),
+    f: player.facing,
+    w: player.walking ? 1 : 0,
+    r: player.rotation,
+    h: heldItem ? heldItem.emoji : null
+  };
+  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h].join('|');
+  const due = force ||
+    (key !== mp.lastPosKey && now - mp.lastPosAt >= MP_POS_EVERY_MS) ||
+    now - mp.lastPosAt >= MP_HEARTBEAT_MS;
+  if (!due) return;
+  mp.lastPosKey = key;
+  mp.lastPosAt = now;
+  mp.present = true;
+  mpSend(msg);
+}
+
+function mpSendBye() {
+  if (mp.present) mpSend({ t: 'bye' });
+  mp.present = false;
+  mp.lastPosKey = '';
+}
+
+function mpSendSnapshot(to) {
+  mpSend({ t: 'snap', to, at: String(mp.lastOpTT), items: mp.items }, true);
+}
+
+// A line of speech, so friends on this map see the bubble.
+// `to` is 'player' (me), an NPC def or a remote player; `npcSpeaker` set
+// when it's an NPC's reply to me.
+function mpSay(text, to, npcSpeaker) {
+  if (!mp.active || !mp.present) return;
+  const msg = { t: 'say', map: currentMapPath, text };
+  if (npcSpeaker) {
+    msg.npc = npcSpeaker.id;
+    msg.to = mp.myId;
+  } else {
+    msg.to = to === 'player' ? mp.myId : (to && to.id) || null;
+  }
+  mpSend(msg);
+}
+
+// --- Receiving ---
+function mpOnStatus(st) {
+  const c = st && st.category;
+  if (c === 'PNConnectedCategory' || c === 'PNReconnectedCategory' || c === 'PNSubscriptionChangedCategory') {
+    mp.connected = true;
+    if (mp.connectWaiter) {
+      const w = mp.connectWaiter;
+      mp.connectWaiter = null;
+      w.resolve();
+    } else if (mp.wasDisconnected) {
+      mpResync();   // we may have missed item moves while offline
+    }
+    mp.wasDisconnected = false;
+  } else if (['PNNetworkDownCategory', 'PNNetworkIssuesCategory', 'PNTimeoutCategory',
+              'PNDisconnectedUnexpectedlyCategory', 'PNConnectionErrorCategory',
+              'PNAccessDeniedCategory'].includes(c)) {
+    if (mp.connectWaiter) {
+      const w = mp.connectWaiter;
+      mp.connectWaiter = null;
+      w.reject(new Error(c));
+      return;
+    }
+    mp.connected = false;
+    mp.wasDisconnected = true;
+  }
+}
+
+// After a dropped connection: ask for the world again (keep ours if nobody answers)
+function mpResync() {
+  if (!mp.synced) return;
+  mp.synced = false;
+  mp.buffer = [];
+  mpSend({ t: 'hello' });
+  clearTimeout(mp.joinTimer);
+  mp.joinTimer = setTimeout(() => {
+    if (mp.active && !mp.synced) mpApplySnapshot({ at: String(mp.lastOpTT), items: mp.items });
+  }, MP_JOIN_WAIT_MS);
+}
+
+function mpOnMessage(ev) {
+  const m = ev && ev.message;
+  if (!m || typeof m !== 'object' || typeof m.t !== 'string') return;
+  const from = String(ev.publisher || m.from || '');
+  if (!from) return;
+  let tt;
+  try { tt = BigInt(ev.timetoken); } catch (_) { return; }
+  const known = mp.players.get(from);
+  if (known) known.lastSeen = performance.now();
+
+  switch (m.t) {
+    case 'take':
+    case 'drop':
+      if (mp.synced) mpApplyOp(m, from, tt);
+      else mp.buffer.push({ m, from, tt });
+      break;
+    case 'snap':
+      if (m.to === mp.myId) {
+        if (!mp.synced) mpApplySnapshot(m);
+      } else if (mp.snapReplies.has(m.to)) {
+        // someone else already answered that newcomer
+        clearTimeout(mp.snapReplies.get(m.to));
+        mp.snapReplies.delete(m.to);
+      }
+      break;
+    case 'hello':
+      if (from === mp.myId) break;
+      if (mp.present) setTimeout(() => mpSendPos(true), Math.random() * 300);
+      if (mp.synced && !mp.snapReplies.has(from)) {
+        mp.snapReplies.set(from, setTimeout(() => {
+          mp.snapReplies.delete(from);
+          mpSendSnapshot(from);
+        }, 50 + Math.random() * 450));
+      }
+      break;
+    case 'pos':
+      if (from !== mp.myId) mpOnPos(m, from);
+      break;
+    case 'say':
+      if (from !== mp.myId) mpOnSay(m, from);
+      break;
+    case 'bye':
+      if (from !== mp.myId) mpRemovePlayer(from, 'left');
+      break;
+  }
+}
+
+function mpCleanItem(it) {
+  if (!it || typeof it.id !== 'string' || !it.id) return null;
+  const o = {
+    id: it.id.slice(0, 60),
+    name: String(it.name || it.id).slice(0, 60),
+    emoji: String(it.emoji || '❓').slice(0, 12)
+  };
+  if (typeof it.pickedUpFrom === 'string') o.pickedUpFrom = it.pickedUpFrom.slice(0, 60);
+  return o;
+}
+
+function mpApplySnapshot(m) {
+  if (!m.items || typeof m.items !== 'object') return;
+  let at = 0n;
+  try { at = BigInt(m.at || 0); } catch (_) { /* treat as 0 */ }
+  const items = {};
+  for (const [path, hotspots] of Object.entries(m.items)) {
+    if (!hotspots || typeof hotspots !== 'object') continue;
+    const out = {};
+    for (const [hsId, list] of Object.entries(hotspots)) {
+      if (Array.isArray(list)) out[hsId] = list.map(mpCleanItem).filter(Boolean).slice(0, HOTSPOT_CAPACITY);
+    }
+    items[path] = out;
+  }
+  // Maps the sender didn't know about keep their defaults
+  for (const [path, defaults] of Object.entries(mp.items)) {
+    if (!items[path]) items[path] = defaults;
+  }
+  mp.items = items;
+  mp.lastOpTT = at;
+  mp.synced = true;
+  clearTimeout(mp.joinTimer);
+  // Item moves that happened after the snapshot was taken
+  const later = mp.buffer;
+  mp.buffer = [];
+  for (const b of later) if (b.tt > at) mpApplyOp(b.m, b.from, b.tt);
+  if (mapConfig && mp.items[currentMapPath]) hotspotItems = mpItemsFor(currentMapPath, mapConfig);
+  mpCacheWorldSoon();
+  if (mp.onSynced) {
+    const f = mp.onSynced;
+    mp.onSynced = null;
+    f();
+  }
+}
+
+// Apply one take/drop. Every computer runs this in the same order.
+function mpApplyOp(m, from, tt) {
+  if (tt > mp.lastOpTT) mp.lastOpTT = tt;
+  const mapItems = mp.items[m.map];
+  if (!mapItems || typeof m.hs !== 'string' || !Array.isArray(mapItems[m.hs])) return;
+  const list = mapItems[m.hs];
+  if (m.t === 'take') {
+    const idx = list.findIndex(it => it.id === m.item);
+    const item = idx >= 0 ? list.splice(idx, 1)[0] : null;
+    if (item) mp.lastTaker[`${m.map}|${m.hs}|${m.item}`] = from;
+    if (from === mp.myId) mpOwnTakeResult(m, item);
+  } else {
+    const item = mpCleanItem(m.item);
+    if (!item) return;
+    const ok = list.length < HOTSPOT_CAPACITY;
+    if (ok) list.push(item);
+    if (from === mp.myId) mpOwnDropResult(m, item, ok);
+  }
+  mpCacheWorldSoon();
+}
+
+function mpHotspotName(map, hsId) {
+  const cfg = mp.mapConfigs[map] || (map === currentMapPath ? mapConfig : null);
+  const def = cfg && cfg.hotspots.find(h => h.id === hsId);
+  return def ? def.name : 'there';
+}
+
+function mpOwnTakeResult(m, item) {
+  mp.pendingTakes.delete(`${m.map}|${m.hs}|${m.item}`);
+  if (item) {
+    if (backpack.length < BACKPACK_CAPACITY) {
+      item.pickedUpFrom = m.hs;   // record origin so it can't be used there
+      backpack.push(item);
+      writeSave();
+    } else {
+      mpRequestDrop(m.hs, item, m.map);   // no room after all: put it back
+    }
+    return;
+  }
+  const taker = mp.players.get(mp.lastTaker[`${m.map}|${m.hs}|${m.item}`]);
+  mpToast(taker ? `Too slow! ${taker.name} grabbed it first! 😄` : 'Oops — that one is already gone!');
+}
+
+function mpOwnDropResult(m, item, ok) {
+  const k = `${m.map}|${m.hs}`;
+  const n = (mp.pendingDrops.get(k) || 1) - 1;
+  if (n > 0) mp.pendingDrops.set(k, n); else mp.pendingDrops.delete(k);
+  if (ok) return;
+  // Someone filled the spot first: it comes back to the backpack
+  if (backpack.length < BACKPACK_CAPACITY) backpack.push(item);
+  writeSave();
+  mpToast(`No room at the ${mpHotspotName(m.map, m.hs)} any more — it's back in your backpack.`);
+}
+
+function mpToast(text) {
+  if (state === GameState.INTERACTING) interactionHintText = text;
+  else useToast = { text, age: 0 };
+}
+
+// Ask the world for an item. Returns false only if the backpack is full.
+function mpRequestTake(hotspotId, index) {
+  const item = (hotspotItems[hotspotId] || [])[index];
+  if (!item) return true;
+  if (backpack.length + mp.pendingTakes.size >= BACKPACK_CAPACITY) return false;
+  const key = `${currentMapPath}|${hotspotId}|${item.id}`;
+  if (mp.pendingTakes.has(key)) return true;
+  mp.pendingTakes.add(key);
+  mpPublish({ t: 'take', map: currentMapPath, hs: hotspotId, item: item.id }).catch(() => {
+    mp.pendingTakes.delete(key);
+    mpToast("Couldn't reach your friends — try again!");
+  });
+  return true;
+}
+
+// The item has already left the backpack; it comes back if the drop fails.
+function mpRequestDrop(hotspotId, item, map = currentMapPath) {
+  const k = `${map}|${hotspotId}`;
+  mp.pendingDrops.set(k, (mp.pendingDrops.get(k) || 0) + 1);
+  mpPublish({ t: 'drop', map, hs: hotspotId, item: mpCleanItem(item) }).catch(() => {
+    const n = (mp.pendingDrops.get(k) || 1) - 1;
+    if (n > 0) mp.pendingDrops.set(k, n); else mp.pendingDrops.delete(k);
+    if (backpack.length < BACKPACK_CAPACITY) backpack.push(item);
+    writeSave();
+    mpToast("Couldn't reach your friends — try again!");
+  });
+}
+
+function mpPendingDropsAt(hotspotId) {
+  return mp.active ? (mp.pendingDrops.get(`${currentMapPath}|${hotspotId}`) || 0) : 0;
+}
+
+// --- Remote players ---
+// { id, remote: true, char, name, color, map, tx/ty (latest 0–1 position),
+//   fx/fy (smoothed), x/y (map px), facing, walking, rotation, held, frame }
+function mpOnPos(m, from) {
+  const ch = characterByName(m.char);
+  if (!ch || typeof m.map !== 'string') return;
+  const x = clamp(Number(m.x) || 0, 0, 1);
+  const y = clamp(Number(m.y) || 0, 0, 1);
+  let rp = mp.players.get(from);
+  const isNew = !rp;
+  if (isNew) {
+    rp = { id: from, remote: true, frame: 0, frameTimer: 0 };
+    mp.players.set(from, rp);
+  }
+  if (isNew || rp.map !== m.map) { rp.fx = x; rp.fy = y; }   // pop in, don't slide across the map
+  Object.assign(rp, {
+    char: ch, name: ch.name, color: ch.color, map: m.map, tx: x, ty: y,
+    facing: m.f === 'left' ? 'left' : 'right',
+    walking: !!m.w,
+    rotation: [0, 90, 180, 270].includes(m.r) ? m.r : 0,
+    held: typeof m.h === 'string' ? m.h.slice(0, 12) : null,
+    lastSeen: performance.now()
+  });
+  rp.x = rp.fx * scaledMapW;
+  rp.y = rp.fy * scaledMapH;
+  if (isNew && mpInWorld()) mpToast(`👋 ${ch.name} joined the world!`);
+}
+
+function mpRemovePlayer(id, why) {
+  const rp = mp.players.get(id);
+  if (!rp) return;
+  mp.players.delete(id);
+  speechBubbles = speechBubbles.filter(b => b.owner !== rp && b.partner !== rp);
+  if (talkingTo === rp) endConversation();
+  if (nearbyNpc === rp) nearbyNpc = null;
+  if (mpInWorld()) mpToast(why === 'left' ? `${rp.name} went home. 🏠` : `${rp.name} lost connection.`);
+}
+
+function mpPlayersHere() {
+  if (!mp.active) return [];
+  const out = [];
+  for (const rp of mp.players.values()) if (rp.map === currentMapPath && rp.char) out.push(rp);
+  return out;
+}
+
+function mpCharacterTaken(name) {
+  if (!mp.active) return false;
+  for (const rp of mp.players.values()) if (rp.name === name) return true;
+  return false;
+}
+
+function mpOnSay(m, from) {
+  if (typeof m.text !== 'string' || m.map !== currentMapPath || !mpInWorld()) return;
+  const text = m.text.replace(/\s+/g, ' ').trim().slice(0, 160);
+  const speaker = mp.players.get(from);
+  if (!text || !speaker) return;
+  let owner, partner;
+  if (m.npc) {
+    // An NPC answering a friend
+    owner = currentNpcs().find(n => n.id === m.npc);
+    if (!owner || owner === talkingTo) return;   // we're chatting with them ourselves
+    partner = speaker;
+  } else {
+    owner = speaker;
+    partner = m.to === mp.myId ? 'player'
+      : (mp.players.get(m.to) || currentNpcs().find(n => n.id === m.to) || null);
+  }
+  say(owner, text, partner);
+  const b = speechBubbles[speechBubbles.length - 1];
+  b.fadeStart = b.start + b.duration + 6000;   // friends' lines linger, then fade
+  if (partner === 'player' && talkingTo !== owner && state === GameState.PLAYING) {
+    mpToast(`💬 ${owner.name} is talking to you! ${isTouchDevice() ? 'Tap them' : 'Press T'} to answer.`);
+    mp.talkToast = useToast;
+  }
+}
+
+// Called every frame
+function mpTick() {
+  if (!mp.active) return;
+  mpSendPos(false);
+  for (const rp of mp.players.values()) {
+    rp.fx += (rp.tx - rp.fx) * 0.2;
+    rp.fy += (rp.ty - rp.fy) * 0.2;
+    rp.x = rp.fx * scaledMapW;
+    rp.y = rp.fy * scaledMapH;
+    const moving = rp.walking || Math.hypot(rp.tx - rp.fx, rp.ty - rp.fy) > 0.002;
+    if (moving) {
+      if (++rp.frameTimer > 8) { rp.frame = (rp.frame + 1) % 4; rp.frameTimer = 0; }
+    } else {
+      rp.frame = 0;
+      rp.frameTimer = 0;
+    }
+  }
+  // The friend you're chatting with walked off or went into another room
+  if (state === GameState.TALKING && talkingTo && talkingTo.remote) {
+    const rp = talkingTo;
+    const k = SPRITE_SCALE / BASE_SPRITE_SCALE;
+    if (rp.map !== currentMapPath || Math.hypot(rp.x - player.x, rp.y - player.y) > NPC_TALK_RANGE * k * 2.5) {
+      endConversation();
+      mpToast(`${rp.name} walked away.`);
+    }
+  }
+}
+
+// Runs even when the tab is in the background (rAF pauses there)
+setInterval(() => {
+  if (!mp.active) return;
+  mpSendPos(false);
+  const now = performance.now();
+  for (const [id, rp] of mp.players) if (now - rp.lastSeen > MP_TIMEOUT_MS) mpRemovePlayer(id, 'lost');
+  if (mp.pubnub && !mp.connected && !mp.connectWaiter && typeof mp.pubnub.reconnect === 'function') {
+    try { mp.pubnub.reconnect(); } catch (_) { /* try again next time */ }
+  }
+}, 1000);
+
+// Closing the tab: a "keepalive" request still gets the goodbye out
+window.addEventListener('pagehide', () => {
+  if (!mp.active || !mp.present) return;
+  const msg = encodeURIComponent(JSON.stringify({ t: 'bye', from: mp.myId }));
+  const url = `https://ps.pndsn.com/publish/${PUBNUB_PUBLISH_KEY}/${PUBNUB_SUBSCRIBE_KEY}/0/` +
+    `${encodeURIComponent(mp.channel)}/0/${msg}?uuid=${encodeURIComponent(mp.myId)}&store=0`;
+  try { fetch(url, { keepalive: true, mode: 'no-cors' }); } catch (_) { /* best effort */ }
+});
+
+// --- Drawing friends ---
+function drawRemotePlayer(rp) {
+  const k = SPRITE_SCALE / BASE_SPRITE_SCALE;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(rp.x, rp.y + 2, 42 * k, 15 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const draw = () => drawCharacterSprite(
+    rp.x - player.width / 2, rp.y - player.height, rp.char, rp.frame, rp.facing,
+    SPRITE_SCALE, mouthOpenFor(rp), rp.held
+  );
+  if (rp.rotation) {
+    const cx = rp.x, cy = rp.y - player.height / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rp.rotation * Math.PI / 180);
+    ctx.translate(-cx, -cy);
+    draw();
+    ctx.restore();
+  } else {
+    draw();
+  }
+}
+
+// Small name label over a friend's head
+function drawNameTag(rp) {
+  const head = speakerHead(rp);
+  ctx.font = 'bold 12px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  const label = `⭐ ${rp.name}`;
+  const w = ctx.measureText(label).width + 14;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  roundRect(head.x - w / 2, head.top - 30, w, 20, 6);
+  ctx.fill();
+  ctx.fillStyle = rp.color;
+  ctx.fillText(label, head.x, head.top - 16);
+}
+
+// HUD badge under the camper name: world code + how many campers are here
+function drawMpHudBadge() {
+  const n = 1 + mp.players.size;
+  let text = `🌍 World ${mp.code}  ·  👥 ${n} camper${n === 1 ? '' : 's'}`;
+  if (!mp.connected) text += '  ·  ⚠️ reconnecting…';
+  ctx.font = 'bold 14px "Comic Sans MS", cursive';
+  const w = ctx.measureText(text).width + 20;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  roundRect(10, 52, w, 30, 8);
+  ctx.fill();
+  ctx.fillStyle = '#FFE082';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, 20, 72);
+}
+
+// Character screen in a world: the code to share, and who's here
+function drawWorldCodeBanner() {
+  const code = `${mp.code.slice(0, 3)} ${mp.code.slice(3)}`;
+  const n = mp.players.size;
+  const sub = n
+    ? `${n} friend${n === 1 ? ' is' : 's are'} here!  Tell others the code to join.`
+    : 'Give your friends this code so they can join you!';
+  const w = Math.min(canvas.width - 24, 440), h = 62;
+  const x = canvas.width / 2 - w / 2, y = 136;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.strokeStyle = '#FFD54F';
+  ctx.lineWidth = 2;
+  roundRect(x, y, w, h, 12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD54F';
+  ctx.font = 'bold 24px "Comic Sans MS", cursive';
+  ctx.fillText(`🌍 World code: ${code}`, canvas.width / 2, y + 28);
+  ctx.fillStyle = '#FFE0B2';
+  ctx.font = '13px "Comic Sans MS", cursive';
+  ctx.fillText(sub, canvas.width / 2, y + 50);
+}
+
 // --- Main Game Loop ---
 function gameLoop() {
   update();
+  mpTick();
   updateConversation();
 
   switch (state) {
     case GameState.LOADING:
       drawLoadingScreen();
+      break;
+    case GameState.MODE_SELECT:
+      drawMenuBackdrop();
       break;
     case GameState.CHARACTER_SELECT:
       drawCharacterSelect();

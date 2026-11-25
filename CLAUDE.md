@@ -153,6 +153,41 @@ key and re-seeds from the JSON defaults.
 When adding new items to a hotspot, edit **only** `assets/game_design.json`.
 The server fetches it fresh on every reload — no other file needs updating.
 
+## Multiplayer (PubNub)
+The start menu (HTML `#menu` overlay, state `MODE_SELECT`) offers **Single
+Player** (unchanged) or **Multi Player** → **Create a new world** (random
+6-digit code) / **Join a world** (type the code). Everything lives in the
+"MULTIPLAYER" section of `index.html` (the `mp` object); PubNub's JS SDK is
+loaded from jsDelivr and the publish/subscribe keys are constants there.
+There's no game server, so it works on GitHub Pages too.
+
+Each world is one PubNub channel, `louisas-game.world.<code>`. Messages (all
+carry `from`, the sender's per-tab player id):
+
+| `t`     | fields | meaning |
+|---------|--------|---------|
+| `pos`   | `char, map, x, y, f, w, r, h` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji. ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
+| `hello` | — | I just joined: others reply with `pos`, and one synced player replies with `snap` |
+| `snap`  | `to, at, items` | the whole world's items, `{ mapPath: { hotspotId: [item] } }`, as of op timetoken `at` |
+| `take`  | `map, hs, item` (item id) | take an item from a hotspot |
+| `drop`  | `map, hs, item` (`{id,name,emoji}`) | put an item at a hotspot |
+| `say`   | `map, to, text, npc?` | a speech bubble line; `to` is a player or NPC id; `npc` set when it's an NPC's reply |
+| `bye`   | — | I left |
+
+Item rules: nobody changes the world when they click. `take`/`drop` are
+applied by **every** computer in PubNub's delivery (timetoken) order, so all
+agree who got an item first; the clicker learns the result when its own
+message comes back (backpack updated, or "Too slow!" / item bounced back).
+A joiner buffers ops until its `snap`, then replays the ones newer than `at`.
+On reconnect a player re-sends `hello` to resync.
+
+Saves: the backpack/journal/dishes are saved per world + camper
+(`louisas-game:mp:<code>:<character>`); the world's items are cached in
+`louisas-game:world:<code>` and used if you "Go in anyway" to an empty world.
+One player per character in a world; camper NPCs hide when a player is that
+character. Kitchen station food is still per-player (only held food is shown
+to friends).
+
 ## Developer mode — adjusting hotspot bounds in-game
 
 The game has a built-in hotspot editor activated with **Cmd+D** (Mac)
