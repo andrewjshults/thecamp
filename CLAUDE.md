@@ -39,7 +39,7 @@ load time, so new rooms/tents need no hand-drawn background. Example:
 "scene": {
   "width": 2400, "height": 1700,
   "ceiling": { "height": 0.05, "color": "#7a4a2a" },          // optional striped roof band
-  "wall":    { "pattern": "blocks|planks|canvas", "color": "#e1ecaf" },
+  "wall":    { "pattern": "blocks|planks|canvas|stripes", "color": "#e1ecaf" },  // stripes: wallpaper (`stripe`, `dot` colours)
   "floor":   { "from": 0.45, "pattern": "concrete|tiles|planks", "color": "#cbc5ba" },
   "props": [ { "kind": "door", "px": 0.05, "py": 0.15, "pw": 0.09, "ph": 0.3 } ]
 }
@@ -54,8 +54,18 @@ Kinds live in `SCENE_PROPS` in `index.html`: `emoji` (`emoji`, `rotate`),
 (`lid: "up"|"down"`), `tpHolder` (`empty`), `scribble` (marker writing on the
 wall: `text`, `color`, `rotate`) and `sideWall` (a perspective stall partition:
 `side`, `gap`, `door: { t0, t1, color, latch, hang }`, `peek: [{ emoji, t }]`
-for things seen under the gap). Hotspots are separate: they're placed over
+for things seen under the gap). For cozy rooms: `bunting` (`colors`, `flags`),
+`couch` (`color`, `dark`, `pillows`, `cushions`), `rug` (`colors`, rings from
+the outside in), `coffeeTable` (a board game on top, `board` colour, `items`
+emojis beside it), `gameShelf` (`shelves`: rows of `{ label, color }` game
+boxes and emoji strings), `toyChest` (`peek` toys, `label`, `color`, `lid`) and
+`beanBag` (`color`). Hotspots are separate: they're placed over
 the props by hand.
+
+The red house in the top-left of the main map (hotspot `red_house`, with a
+swinging `door`) opens into `assets/hangout_house.json`, the Hangout House: a
+couch (with a 🪙 coin in the cushions), a board game table, a game shelf, a
+snack bar, a toy chest, a bean bag, and Pancake the cat 🐱 (a critter NPC).
 
 Toilet stalls 1 and 2 in the bathroom open into `assets/bathroom_stall_1.json`
 and `assets/bathroom_stall_2.json`; stall 3 is "occupied" and stays shut.

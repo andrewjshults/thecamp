@@ -140,7 +140,8 @@
         { "itemId": "frisbee",     "text": "You sail the Frisbee up the zigzag stairs. It curves perfectly and lands right at the top! 🥏", "animation": "play" },
         { "itemId": "rope",        "text": "You tie the rope to the railing and zip-line all the way down! WHEEEEE! 🪢", "animation": "fly" },
         { "itemId": "goggles",     "text": "You put on goggles and charge up the purple stairs at TOP SPEED. Maximum aerodynamics! 🥽", "animation": "climb" },
-        { "itemId": "frying_pan",  "text": "You clang the frying pan on every step of the purple stairs. DONG DONG DONG! Camp concert! 🍳", "animation": "play" }
+        { "itemId": "frying_pan",  "text": "You clang the frying pan on every step of the purple stairs. DONG DONG DONG! Camp concert! 🍳", "animation": "play" },
+        { "itemId": "yo_yo",       "text": "You yo-yo all the way down the zigzag stairs. Zig, zag, ZOOM... and back up! 🪀", "animation": "play" }
       ]
     },
     {
@@ -193,7 +194,8 @@
         { "itemId": "apple",         "text": "You place the apple at the base of the tree. A squirrel DASHES down and grabs it! 🍎🐿️", "animation": "explore" },
         { "itemId": "sandwich",      "text": "You eat your sandwich under the big tree. A squirrel watches you enviously. 🥪🐿️", "animation": "eat" },
         { "itemId": "flashlight",    "text": "You shine the flashlight up into the dark tree. A wide-eyed owl blinks back at you! 🦉", "animation": "explore" },
-        { "itemId": "sleeping_bag",  "text": "You hang the sleeping bag between two branches for the BEST outdoor nap spot ever! 💤", "animation": "sleep" }
+        { "itemId": "sleeping_bag",  "text": "You hang the sleeping bag between two branches for the BEST outdoor nap spot ever! 💤", "animation": "sleep" },
+        { "itemId": "kite",     "text": "You fly your kite by the big tree. It soars up... and gets stuck! A friendly bird pecks it free! 🪁🐦", "animation": "play" }
       ]
     },
     {
@@ -217,7 +219,8 @@
         { "itemId": "leaf",     "text": "You fan the camp stove flames with the leaf. They ROAR up! The marshmallows toast instantly! 🍃🔥", "animation": "cook" },
         { "itemId": "moon_rock","text": "You try to cook the Moon Rock on the stove. It glows and hums! Very cosmic! 🌑", "animation": "cook" },
         { "itemId": "apple",    "text": "You cook the apple on the camp stove. Camp applesauce! It smells AMAZING! 🍎", "animation": "cook" },
-        { "itemId": "baseball", "text": "You accidentally drop the baseball on the hot stove. SIZZLE! It bounces straight UP! ⚾", "animation": "cook" }
+        { "itemId": "baseball", "text": "You accidentally drop the baseball on the hot stove. SIZZLE! It bounces straight UP! ⚾", "animation": "cook" },
+        { "itemId": "popcorn",  "text": "You pop more popcorn on the camp stove. POP! POP! POPOPOPOP! It's raining popcorn! 🍿", "animation": "cook" }
       ]
     },
     {
@@ -254,6 +257,23 @@
       "targetMap": "assets/camp_kitchen.json",
       "targetHotspot": "exit_door",
       "door": { "px": 0.452, "py": 0.568, "pw": 0.03, "ph": 0.066, "color": "#a04c9a", "inside": "🍳" }
+    },
+    {
+      "id": "red_house",
+      "name": "Hangout House",
+      "px": 0.0044,
+      "py": 0.19,
+      "pw": 0.0857,
+      "ph": 0.196,
+      "action": "enter",
+      "description": "Snacks, board games, a couch and toys!",
+      "interactionText": "You open the red house's door and step into the Hangout House!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/hangout_house.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.05, "py": 0.42 },
+      "door": { "px": 0.0276, "py": 0.2773, "pw": 0.0436, "ph": 0.096, "color": "#5d3a1a", "inside": "🛋️" }
     },
     {
       "id": "ball_cart",

@@ -1,0 +1,202 @@
+{
+  "name": "Hangout House",
+  "playerStart": { "px": 0.12, "py": 0.66 },
+  "spriteScale": 1.8,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": { "height": 0.05, "color": "#8e2b20" },
+    "wall": { "pattern": "stripes", "color": "#fbd9c4" },
+    "floor": { "from": 0.52, "pattern": "planks", "color": "#c79a68", "skirting": "#8e2b20" },
+    "props": [
+      { "kind": "bunting", "px": 0.13, "py": 0.06, "pw": 0.56, "ph": 0.07, "flags": 11 },
+
+      { "kind": "sign", "text": "TO CAMP", "px": 0.025, "py": 0.1, "pw": 0.085, "ph": 0.05, "color": "#f59f1b", "rotate": -3 },
+      { "kind": "door", "px": 0.025, "py": 0.18, "pw": 0.085, "ph": 0.34, "color": "#c62828" },
+      { "kind": "mat", "px": 0.01, "py": 0.525, "pw": 0.115, "ph": 0.04, "color": "#7e57c2", "text": "HI!" },
+
+      { "kind": "window", "px": 0.165, "py": 0.17, "pw": 0.09, "ph": 0.14 },
+      { "kind": "scribble", "text": "★ ★ ★", "px": 0.15, "py": 0.36, "pw": 0.12, "ph": 0.04, "color": "#f9a825", "rotate": -4 },
+
+      { "kind": "sign", "text": "HANGOUT\nZONE!", "px": 0.39, "py": 0.13, "pw": 0.17, "ph": 0.12, "color": "#fff176", "rotate": -2 },
+      { "kind": "couch", "px": 0.3, "py": 0.3, "pw": 0.37, "ph": 0.24, "color": "#5c6bc0", "pillows": ["#ffca28", "#ef5350"] },
+
+      { "kind": "gameShelf", "px": 0.71, "py": 0.09, "pw": 0.13, "ph": 0.44,
+        "shelves": [
+          ["🧩", "🎲"],
+          [{ "label": "CHECKERS", "color": "#e53935" }, { "label": "MEMORY", "color": "#1e88e5" }],
+          [{ "label": "SNAKES", "color": "#43a047" }, { "label": "LADDERS", "color": "#fb8c00" }, "♟️"],
+          [{ "label": "BINGO", "color": "#8e24aa" }, "🃏"]
+        ] },
+
+      { "kind": "sign", "text": "SNACKS", "px": 0.865, "py": 0.14, "pw": 0.115, "ph": 0.06, "color": "#ffcc80", "rotate": 2 },
+      { "kind": "counter", "px": 0.86, "py": 0.33, "pw": 0.13, "ph": 0.2, "color": "#ef5350", "kick": "#b71c1c", "doors": 1 },
+      { "kind": "bowl", "emoji": "🍿", "px": 0.868, "py": 0.265, "pw": 0.05, "ph": 0.065, "color": "#fff59d" },
+      { "kind": "jar", "emoji": "🥨", "px": 0.925, "py": 0.245, "pw": 0.035, "ph": 0.085, "lid": "#1e88e5" },
+      { "kind": "emoji", "emoji": "🍇", "px": 0.962, "py": 0.285, "pw": 0.025, "ph": 0.045 },
+
+      { "kind": "rug", "px": 0.25, "py": 0.6, "pw": 0.46, "ph": 0.24 },
+      { "kind": "beanBag", "px": 0.05, "py": 0.77, "pw": 0.13, "ph": 0.15, "color": "#ab47bc" },
+      { "kind": "coffeeTable", "px": 0.37, "py": 0.66, "pw": 0.22, "ph": 0.1, "items": ["🎲", "♟️"] },
+      { "kind": "toyChest", "px": 0.77, "py": 0.64, "pw": 0.13, "ph": 0.16, "peek": ["🧸", "🪀", "🚂", "🪁"], "label": "TOYS" },
+
+      { "kind": "emoji", "emoji": "🧱", "px": 0.66, "py": 0.8, "pw": 0.03, "ph": 0.045, "rotate": -10 },
+      { "kind": "emoji", "emoji": "🧱", "px": 0.69, "py": 0.82, "pw": 0.03, "ph": 0.045, "rotate": 8 },
+      { "kind": "emoji", "emoji": "🚗", "px": 0.22, "py": 0.86, "pw": 0.04, "ph": 0.05, "rotate": -6 },
+      { "kind": "emoji", "emoji": "⚽", "px": 0.92, "py": 0.86, "pw": 0.035, "ph": 0.05 }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back to Camp",
+      "px": 0.02, "py": 0.18, "pw": 0.1, "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to camp",
+      "interactionText": "You head back out to camp. Bye, Hangout House!",
+      "items": [], "uses": [],
+      "targetMap": "assets/game_design.json",
+      "targetHotspot": "red_house",
+      "arrive": { "px": 0.07, "py": 0.63 }
+    },
+    {
+      "id": "couch",
+      "name": "Comfy Couch",
+      "px": 0.3, "py": 0.3, "pw": 0.37, "ph": 0.24,
+      "action": "sleep",
+      "description": "Something shiny is stuck in the cushions...",
+      "interactionText": "You flop onto the squishy couch. FLOOMPH! The cushions puff up all around you. So comfy! 🛋️",
+      "items": [
+        { "id": "couch_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 }
+      ],
+      "uses": [
+        { "itemId": "popcorn", "text": "You snuggle into the couch with a big bowl of popcorn. MOVIE NIGHT! 🍿", "animation": "eat" },
+        { "itemId": "teddy_bear", "text": "You sit Teddy Bear on the couch next to you. Best hangout buddy EVER! 🧸", "animation": "sleep" },
+        { "itemId": "pillow", "text": "You add your pillow to the couch. Now it's a pillow FORT! 🛏️", "animation": "sleep" },
+        { "itemId": "book", "text": "You stretch out on the couch and read your book. Just one more chapter... 📚", "animation": "sleep" },
+        { "itemId": "hot_cocoa", "text": "You sip hot cocoa on the couch. Warm, cozy, and chocolatey! ☕", "animation": "eat" }
+      ]
+    },
+    {
+      "id": "game_table",
+      "name": "Board Game Table",
+      "px": 0.36, "py": 0.6, "pw": 0.24, "ph": 0.16,
+      "action": "play",
+      "description": "A board game is all set up!",
+      "interactionText": "You roll the dice... a SIX! You zoom six spaces and land on the ladder all the way to the top! 🎲",
+      "items": [
+        { "id": "dice", "name": "Dice", "emoji": "🎲" },
+        { "id": "playing_cards", "name": "Playing Cards", "emoji": "🃏" }
+      ],
+      "uses": [
+        { "itemId": "puzzle_piece", "text": "You build the puzzle on the table. The last piece goes in... CLICK! It's a picture of the camp! 🧩", "animation": "play" },
+        { "itemId": "popcorn", "text": "Popcorn AND a board game? That's the best game night ever! 🍿🎲", "animation": "eat" },
+        { "itemId": "cookie", "text": "You share cookies with everyone at game night. Everybody wins! 🍪", "animation": "eat" },
+        { "itemId": "crayons", "text": "You draw your own board game with crayons. It has rainbows, dragons AND a waterslide! 🖍️", "animation": "play" }
+      ]
+    },
+    {
+      "id": "game_shelf",
+      "name": "Game Shelf",
+      "px": 0.71, "py": 0.09, "pw": 0.13, "ph": 0.44,
+      "action": "explore",
+      "description": "Stacked with board games!",
+      "interactionText": "The shelf is PACKED with games: Checkers, Memory, Snakes and Ladders, Bingo... which one should we play first? 🎲",
+      "items": [
+        { "id": "puzzle_piece", "name": "Puzzle Piece", "emoji": "🧩" }
+      ],
+      "uses": [
+        { "itemId": "playing_cards", "text": "You put the cards back in their box on the shelf. Neat and tidy! 🃏", "animation": "explore" },
+        { "itemId": "dice", "text": "You put the dice back in the game box... and it rolls right back out! Ha ha! 🎲", "animation": "play" },
+        { "itemId": "magnifying_glass", "text": "You look closely at the shelf and find a tiny secret game hiding behind the others! 🔍", "animation": "explore" }
+      ]
+    },
+    {
+      "id": "snack_bar",
+      "name": "Snack Bar",
+      "px": 0.855, "py": 0.14, "pw": 0.14, "ph": 0.39,
+      "action": "eat",
+      "description": "Popcorn, pretzels and grapes!",
+      "interactionText": "You grab a handful of popcorn and munch away. CRUNCH CRUNCH! Snack time is the best time! 🍿",
+      "items": [
+        { "id": "popcorn", "name": "Popcorn", "emoji": "🍿" },
+        { "id": "pretzel", "name": "Pretzel", "emoji": "🥨" },
+        { "id": "grapes", "name": "Grapes", "emoji": "🍇" }
+      ],
+      "uses": [
+        { "itemId": "plate", "text": "You fill your plate with popcorn, pretzels and grapes. A SNACK MOUNTAIN! 🍽️", "animation": "eat" },
+        { "itemId": "apple", "text": "You cut the apple into snack-size slices for everyone. Crunchy! 🍎", "animation": "eat" },
+        { "itemId": "juice", "text": "You pour juice for all your friends. Cheers! 🧃", "animation": "eat" }
+      ]
+    },
+    {
+      "id": "toy_chest",
+      "name": "Toy Chest",
+      "px": 0.77, "py": 0.6, "pw": 0.13, "ph": 0.2,
+      "action": "play",
+      "description": "Full of toys!",
+      "interactionText": "You lift the heavy lid... it's FULL of toys: a teddy bear, a yo-yo, a choo-choo train and a kite! 🧸🚂",
+      "items": [
+        { "id": "yo_yo", "name": "Yo-yo", "emoji": "🪀" },
+        { "id": "toy_train", "name": "Toy Train", "emoji": "🚂" },
+        { "id": "kite", "name": "Kite", "emoji": "🪁" }
+      ],
+      "uses": [
+        { "itemId": "teddy_bear", "text": "Teddy Bear meets all the other toys. It's a TOY PARTY! 🧸🎉", "animation": "play" },
+        { "itemId": "rubber_duck", "text": "You add the rubber duck to the toy chest. Quack! It's the captain of the toys now. 🦆", "animation": "play" },
+        { "itemId": "soccer_ball", "text": "You bounce the soccer ball into the toy chest. GOAL! ⚽", "animation": "play" }
+      ]
+    },
+    {
+      "id": "bean_bag",
+      "name": "Bean Bag",
+      "px": 0.04, "py": 0.75, "pw": 0.15, "ph": 0.19,
+      "action": "sleep",
+      "description": "Squishy and soft",
+      "interactionText": "You jump into the bean bag. SPLOOSH! It swallows you up like a big squishy marshmallow! 😄",
+      "items": [],
+      "uses": [
+        { "itemId": "toy_train", "text": "You drive the toy train in circles around the bean bag. CHOO CHOO! 🚂", "animation": "play" },
+        { "itemId": "yo_yo", "text": "You do yo-yo tricks from the bean bag. Walk the dog... AROUND THE WORLD! 🪀", "animation": "play" },
+        { "itemId": "sleeping_bag", "text": "You put the sleeping bag on the bean bag. The SQUISHIEST nap spot in camp! 💤", "animation": "sleep" },
+        { "itemId": "grapes", "text": "You snack on grapes in the bean bag. One for you... one for you... 🍇", "animation": "eat" }
+      ]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "couch_cat",
+      "name": "Pancake",
+      "emoji": "🐱",
+      "color": "#f57c00",
+      "size": 0.09,
+      "px": 0.58, "py": 0.47,
+      "what": "a fluffy orange cat who lives in the red Hangout House and naps on the couch",
+      "personality": "Sleepy, cuddly and a little silly. Loves naps in the warm spot on the couch, board games (always wants to be the dice), chasing yo-yos and the sound of popcorn popping. Purrs a lot and sometimes yawns in the middle of a sentence. Kind, encouraging and always happy to have visitors.",
+      "localReplies": {
+        "hello": [
+          "Purrr... oh! Hi, {name}! Welcome to the Hangout House! 🐱",
+          "Mrrow! {name}! Want to play a board game? I'll be the dice!",
+          "*yaaawn* Hi hi! You found the comfiest house in camp."
+        ],
+        "bye": [
+          "Bye, {name}! Come back for game night! 🎲",
+          "Purr... see you soon! I'll keep the couch warm for you.",
+          "Meow! Bye bye! Take a snack for the road!"
+        ],
+        "question": [
+          "Hmm... I think the answer is NAPS. It's usually naps. 😸",
+          "Good question! Let's ask the dice. *roll roll*... it says YES!",
+          "Mrrow? I'm not sure. But I'm sure it would be fun to find out!"
+        ],
+        "any": [
+          "Did somebody say popcorn? 🍿 My ears are listening!",
+          "My favorite game is Snakes and Ladders. I always want to be the ladder!",
+          "Purrrr... this couch is the best spot in the whole camp.",
+          "Want to see my yo-yo trick? I just bat it. Bat bat bat! 🪀",
+          "You're a great hangout buddy, {name}! 😺"
+        ]
+      }
+    }
+  ]
+}
