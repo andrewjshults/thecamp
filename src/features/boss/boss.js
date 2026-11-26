@@ -15,12 +15,6 @@ const BOSS_ENGAGE_MS = 1100;   // map freezes while the Blob shouts, then the fi
 const BOSS_DEFAULT_PHRASES = ['EAT!', 'nom nom you!', 'gobble up yous!'];
 const DEFAULT_BOSS_REWARD = { id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 };
 
-function randBetween(a, b) { return a + Math.random() * (b - a); }
-function pickOne(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function lerp(a, b, t) { return a + (b - a) * t; }
-function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-function isCoin(item) { return !!(item && (item.coin || /coin/i.test(item.id || ''))); }
-
 function bossDef() { return (fight && fight.def) || (mapConfig && mapConfig.boss) || null; }
 function isBossCave(obj) {
   const b = mapConfig && mapConfig.boss;

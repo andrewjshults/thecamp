@@ -59,12 +59,6 @@ function mouthOpenFor(owner) {
   return 0.25 + 0.75 * Math.abs(Math.sin(age / 85));
 }
 
-function easeOutBack(p) {
-  const c1 = 1.70158, c3 = c1 + 1;
-  return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
-}
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
 function speakerColor(owner) {
   if (owner === 'player') return player.character ? player.character.color : '#333';
   if (owner.color) return owner.color;

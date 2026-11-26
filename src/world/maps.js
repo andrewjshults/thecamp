@@ -89,3 +89,35 @@ function switchMap(targetPath, targetHotspotId) {
       });
     });
 }
+
+// --- Every map in the world ---
+// Where a map is, for hints ("out at the camp", "in the Camp Kitchen")
+function mapWhere(cfg) {
+  return cfg.where || `in the ${cfg.name}`;
+}
+// Every map, found by following portals from the main map
+async function crawlMapConfigs() {
+  if (mp.active && Object.keys(mp.mapConfigs).length) return mp.mapConfigs;
+  const queue = [MP_MAIN_MAP], seen = new Set(queue), out = {};
+  while (queue.length) {
+    const path = queue.shift();
+    let cfg = allMapConfigs[path] || swordMapConfigs[path];
+    if (!cfg) {
+      try {
+        cfg = await (await fetch(path)).json();
+        swordMapConfigs[path] = cfg;
+      } catch (_) { continue; }
+    }
+    out[path] = cfg;
+    for (const h of cfg.hotspots || []) {
+      if (h.targetMap && !seen.has(h.targetMap)) { seen.add(h.targetMap); queue.push(h.targetMap); }
+    }
+  }
+  return out;
+}
+// The items at every hotspot of a map, as they are right now
+function worldItemsFor(path, cfg) {
+  if (mp.active) return mpItemsFor(path, cfg);
+  if (path === currentMapPath) return hotspotItems;
+  return restoreOrDefaultHotspots(cfg, allMapSaves[path] || {});
+}

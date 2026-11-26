@@ -117,3 +117,5 @@ registerGameState('PLAYING', {
   onTap: (x, y) => playingTap(x, y),
   inWorld: true
 });
+
+let lastCharTapTime = 0;

@@ -1,21 +1,4 @@
-// --- Item Uses & Adventure Journal ---
-let completedUses = [];           // [{ hotspotId, hotspotName, itemId, itemName, itemEmoji, text }]
-let currentItemUse = null;        // { item, use, hotspot, timer, animation } — active use dialog
-let itemUseAnimation = 0;         // 0→1 popup scale
-let completionToast = null;       // { age } — all-done celebration
-let interactionUseRects = [];     // hit-rects for backpack items shown in interaction dialog
-let interactionDimmedRects = [];  // hit-rects for items not in backpack (dimmed, show hint)
-let interactionHereRects = [];    // hit-rects for items sitting at this hotspot (tap to pick up)
-let interactionHintText = null;   // tooltip text set by hover/tap on a dimmed item
-
-let journalOpen = false;
-let journalScroll = 0;            // current scroll pixel offset (clamped during draw)
-let journalScrollTarget = 0;      // smooth-scroll target
-let journalPanelRect = null;      // { x, y, w, h } — set each frame for hit-testing
-let journalBtnRect = null;        // { x, y, w, h } — toggle tab button
-let journalTouchStartY = null;    // for touch-drag scrolling inside journal
-let journalTouchStartScroll = 0;
-
+// --- Saves (single player): one per character in localStorage ---
 function saveKey(name) {
   return `louisas-game:save:${name}`;
 }
@@ -94,3 +77,5 @@ function applySave(save) {
   // Apply hotspot items for the currently loaded map
   hotspotItems = restoreOrDefaultHotspots(mapConfig, allMapSaves[currentMapPath] || {});
 }
+
+const SAVE_VERSION = 2;

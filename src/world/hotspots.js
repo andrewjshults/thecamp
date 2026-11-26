@@ -134,3 +134,9 @@ registerGameState('INTERACTING', {
   onTap: (x, y) => interactionTap(x, y),
   inWorld: true
 });
+
+// --- The hotspot pop-up's item buttons (hit-rects, set each frame) ---
+let interactionUseRects = [];     // hit-rects for backpack items shown in interaction dialog
+let interactionDimmedRects = [];  // hit-rects for items not in backpack (dimmed, show hint)
+let interactionHereRects = [];    // hit-rects for items sitting at this hotspot (tap to pick up)
+let interactionHintText = null;   // tooltip text set by hover/tap on a dimmed item

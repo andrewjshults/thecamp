@@ -416,3 +416,5 @@ registerGameState('CONFIRM_DIALOG', {
   onTap: (x, y) => confirmDialogTap(x, y),
   inWorld: true
 });
+
+let useToast = null;                                // { text, age }

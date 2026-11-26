@@ -203,3 +203,9 @@ function drawDevModeOverlay() {
   ctx.fillStyle = '#FFD600';
   ctx.fillText(hint, canvas.width / 2, canvas.height - 17);
 }
+
+// --- Dev mode state ---
+let devMode = false;
+let devSelectedHotspot = null;  // index into interactiveObjects
+let devDrag = null;             // { index, corner:'TL'|'TR'|'BL'|'BR' }
+const DEV_HANDLE_R = 14;        // corner handle radius in screen px

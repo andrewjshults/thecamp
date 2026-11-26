@@ -214,3 +214,12 @@ function wrapTextMaxLines(text, x, y, maxWidth, lineHeight, maxLines) {
   }
   if (lineCount < maxLines) ctx.fillText(line.trim(), x, lineY);
 }
+
+// --- Journal panel state ---
+let journalOpen = false;
+let journalScroll = 0;            // current scroll pixel offset (clamped during draw)
+let journalScrollTarget = 0;      // smooth-scroll target
+let journalPanelRect = null;      // { x, y, w, h } — set each frame for hit-testing
+let journalBtnRect = null;        // { x, y, w, h } — toggle tab button
+let journalTouchStartY = null;    // for touch-drag scrolling inside journal
+let journalTouchStartScroll = 0;

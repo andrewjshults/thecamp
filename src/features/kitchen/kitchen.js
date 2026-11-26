@@ -109,9 +109,6 @@ registerSaveField('strengthBoost', {
   load: s => { strengthBoost = Math.max(0, Number(s.strengthBoost) || 0); }
 });
 
-function coinValue(it) { return it.value || 10; }
-function walletTotal() { return backpack.filter(isCoin).reduce((sum, it) => sum + coinValue(it), 0); }
-
 function eatDessert(f, onTheWayOut) {
   const got = f.strength || 1;
   strengthBoost += got;

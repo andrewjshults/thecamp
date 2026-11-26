@@ -238,3 +238,21 @@ registerGameState('USING_ITEM', {
   onTap: (x, y) => closeItemUse(x, y),
   inWorld: true
 });
+
+// --- Using items, and the journal of what you've done ---
+let completedUses = [];           // [{ hotspotId, hotspotName, itemId, itemName, itemEmoji, text }]
+let currentItemUse = null;        // { item, use, hotspot, timer, animation } — active use dialog
+let itemUseAnimation = 0;         // 0→1 popup scale
+let completionToast = null;       // { age } — all-done celebration
+
+// --- Backpack state ---
+const BACKPACK_CAPACITY = 10;
+const HOTSPOT_CAPACITY = 3;
+let backpack = [];                                  // up to BACKPACK_CAPACITY items
+let hotspotItems = {};                              // hotspotId -> item[]
+let backpackOpen = false;
+let backpackSelection = { row: 'backpack', col: 0 };
+let backpackActionButton = 0;                       // index of focused button in action modal
+let currentItemAction = null;                       // { source:'backpack'|'hotspot', index, hotspotId }
+let backpackSlotRects = { backpack: [], hotspot: [] };
+let itemActionButtonRects = [];                     // [{ x,y,w,h,id,disabled }]
