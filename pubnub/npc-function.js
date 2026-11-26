@@ -347,10 +347,17 @@ function costMicro(usage) {
 }
 
 export default (request, response) => {
-  response.headers['Access-Control-Allow-Origin'] = '*';
-  response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-  response.headers['Access-Control-Allow-Headers'] = 'Content-Type';
-  response.headers['Content-Type'] = 'application/json';
+  // Only add headers PubNub hasn't set already: a doubled
+  // Access-Control-Allow-Origin ("*, *") makes browsers reject the reply.
+  const headers = response.headers || (response.headers = {});
+  const setIfMissing = (name, value) => {
+    const has = Object.keys(headers).some(k => k.toLowerCase() === name.toLowerCase());
+    if (!has) headers[name] = value;
+  };
+  setIfMissing('Access-Control-Allow-Origin', '*');
+  setIfMissing('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  setIfMissing('Access-Control-Allow-Headers', 'Content-Type');
+  setIfMissing('Content-Type', 'application/json');
   const reply = (obj, status) => {
     response.status = status || 200;
     return response.send(JSON.stringify(obj));
