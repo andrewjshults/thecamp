@@ -1289,6 +1289,7 @@ const characters = [
     name: 'Green Girl',
     color: '#4CAF50',
     hairColor: '#8B4513',
+    braid: true,             // a braid hanging down behind her shoulder
     shirtColor: '#4CAF50',
     pantsColor: '#2196F3',
     desc: 'Loves exploring nature'
@@ -3241,6 +3242,9 @@ function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held, swor
     if (!swordArm) ctx.fillRect(x + 24 * s, y + 29 * s - armSwing, 6 * s, 4 * s);
   }
 
+  // Braid: drawn before the head so the head covers where it starts
+  if (char.braid) drawBraid(x, y, s, char.hairColor, frame);
+
   // Head
   ctx.fillStyle = '#FFCC80';
   ctx.beginPath();
@@ -3252,6 +3256,16 @@ function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held, swor
   ctx.beginPath();
   ctx.arc(x + 15 * s, y + 7 * s, 10 * s, Math.PI, Math.PI * 2);
   ctx.fill();
+  if (char.braid) {
+    // Side of the hair sweeping back into the braid
+    ctx.beginPath();
+    ctx.moveTo(x + 5 * s, y + 7 * s);
+    ctx.lineTo(x + 9.5 * s, y + 7 * s);
+    ctx.lineTo(x + 8 * s, y + 13 * s);
+    ctx.lineTo(x + 5.6 * s, y + 14 * s);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   // Eyes
   ctx.fillStyle = '#333';
@@ -3274,6 +3288,35 @@ function drawCharacterSprite(x, y, char, frame, facing, scale, mouth, held, swor
   }
 
   ctx.restore();
+}
+
+// A braid down the back of the head (the side away from where they face),
+// woven from alternating tilted lobes, with a pink hair tie and a little tuft.
+function drawBraid(x, y, s, color, frame) {
+  const sway = Math.sin(frame * Math.PI / 2) * 1.2 * s;   // swings a little while walking
+  const bx = x + 5 * s;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.lineWidth = 0.8 * s;
+  for (let i = 0; i < 5; i++) {
+    const t = i / 4;
+    const side = i % 2 ? 1 : -1;
+    ctx.beginPath();
+    ctx.ellipse(bx + sway * t + side * 0.8 * s, y + (13 + i * 3.6) * s,
+      (3.2 - t * 0.7) * s, 2.5 * s, side * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  const ex = bx + sway, ey = y + 29.5 * s;
+  ctx.beginPath();                          // tuft below the tie
+  ctx.moveTo(ex - 2 * s, ey + 1.5 * s);
+  ctx.lineTo(ex + 2 * s, ey + 1.5 * s);
+  ctx.lineTo(ex + 0.5 * s, ey + 5.5 * s);
+  ctx.lineTo(ex - 0.8 * s, ey + 5 * s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#F48FB1';                // hair tie
+  ctx.fillRect(ex - 2.2 * s, ey, 4.4 * s, 2 * s);
 }
 
 function drawLoadingScreen() {
