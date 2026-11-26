@@ -1603,6 +1603,7 @@ function writeSave() {
     customRecipes,
     strengthBoost,
     swordRating,
+    bossWins,
     maps: {
       ...allMapSaves,
       [currentMapPath]: { hotspots: hotspotItems }
@@ -1643,6 +1644,7 @@ function initFreshSave() {
   resetDraftRecipe();
   strengthBoost = 0;
   swordRating = SWORD_MAX;
+  bossWins = 0;
   allMapSaves = {};
   writeSave();
 }
@@ -1654,6 +1656,7 @@ function applySave(save) {
   resetDraftRecipe();
   strengthBoost = clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX);
   swordRating   = savedSwordRating(save);
+  bossWins      = Math.max(0, Math.floor(Number(save.bossWins) || 0));
   // v2: maps object keyed by map path
   if (save.maps) {
     allMapSaves = {};
@@ -6045,6 +6048,7 @@ function mpStartPlaying() {
   resetDraftRecipe();
   strengthBoost = save ? clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX) : 0;
   swordRating   = savedSwordRating(save);
+  bossWins      = save ? Math.max(0, Math.floor(Number(save.bossWins) || 0)) : 0;
   allMapSaves = {};
   hotspotItems = mpItemsFor(currentMapPath, mapConfig);
   // Arrive beside (not on top of) any friends standing at the start
@@ -6118,7 +6122,7 @@ function mpLoadSave() {
 function mpWriteSave() {
   try {
     localStorage.setItem(mpSaveKey(), JSON.stringify({
-      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost, swordRating
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost, swordRating, bossWins
     }));
   } catch (e) { console.warn('Failed to write save', e); }
 }
@@ -7230,7 +7234,7 @@ function drawMapBossHint() {
   const y = p.y - mapBossHeight() - 12;
   ctx.textAlign = 'center';
   ctx.font = 'bold 13px "Comic Sans MS", cursive';
-  const label = bossName();
+  const label = bossLevel() ? `${bossName()} · Lv ${bossLevel()}` : bossName();
   const lw = ctx.measureText(label).width + 16;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
   roundRect(x - lw / 2, y - 14, lw, 22, 6);
@@ -7759,6 +7763,7 @@ const ARENA_MIN_X = 110, ARENA_MAX_X = 890;
 const JUMP_V = 950, GRAVITY = 2600;
 
 let fight = null;
+let bossTuneOverride = null;   // testing: force a tuning (see BOSS_TUNE_BASE)
 let fightTouch = { left: false, right: false, block: false };
 
 // Strength, for you AND the Blob: you start every fight with STRENGTH_BASE +
@@ -7770,22 +7775,65 @@ const STRENGTH_REGEN_MS = 8000;      // tested: fights last ~20–30s, so 15s ga
 function strengthOdds(s) { return 1 - 0.7 * Math.exp(-s / 7); }       // 0 → 30%, 10 → 83%, 20 → 96%
 function strengthSpeed(s) { return clamp(0.55 + 0.045 * s, 0.55, 1.45); }   // 10 → normal speed
 
+// How tough the Blob is in this fight. These are multipliers / additions on the
+// original Blob, which is BOSS_TUNE_BASE. See bossTuning() for how it grows.
+//   strength  added to its starting strength (faster, lands more, blocks hold)
+//   windup    × its wind-up before a normal attack (smaller = less time to react)
+//   counter   × its wind-up before a counter-attack after blocking you
+//   think     × its pauses between moves (smaller = attacks more often)
+//   block     added to its chance of blocking your swings
+//   aggro     added to its chance of attacking when you're in reach
+//   regen     × time to get 1 strength back (smaller = recovers faster)
+//   speed     × how fast it walks in and backs off
+//   armor     chance a normal wind-up can't be interrupted (your swing just CLANGs)
+//   stun      × how long it's stunned after you hit it
+//   tough     chance a hit doesn't cost it any strength
+const BOSS_TUNE_BASE = { strength: 0, windup: 1, counter: 1, think: 1, block: 0, aggro: 0, regen: 1, speed: 1, armor: 0, stun: 1, tough: 0 };
+function fightTune(f) { return (f && f.tune) || BOSS_TUNE_BASE; }
+
+// The Blob gets tougher every time you beat it, up to BOSS_LEVEL_MAX: level L
+// is BOSS_TUNE_BASE moved L/BOSS_LEVEL_MAX of the way to BOSS_TUNE_TOP.
+// Tuned with a simulator (tools/fight-sim.js) against three bot players. The
+// "decent" bot (reacts in ~0.4s, defends ~75% of attacks) wins 100% of fights
+// at level 0, then 99, 96, 86, 64 and 44% at level 5. A "good" bot still wins
+// ~70% at level 5. Dessert strength makes up for it: at level 5 a decent player
+// wins ~70% at strength 15 and ~90% at 20.
+// What mattered: the Blob blocking more, starting stronger, and armored
+// wind-ups that can't be interrupted (paired with shorter wind-ups). Just
+// attacking more often or sooner made it *easier*, because your hits
+// interrupt its wind-ups.
+const BOSS_LEVEL_MAX = 5;
+const BOSS_TUNE_TOP = { block: 0.22, strength: 3.5, armor: 0.5, windup: 0.72, think: 0.72, tough: 0.18, regen: 0.72, speed: 1.22 };
+let bossWins = 0;      // Blob fights won (saved per camper)
+function bossLevel() { return Math.min(bossWins, BOSS_LEVEL_MAX); }
+function bossTuning(level) {
+  const u = clamp(level, 0, BOSS_LEVEL_MAX) / BOSS_LEVEL_MAX;
+  const out = { ...BOSS_TUNE_BASE };
+  for (const [k, top] of Object.entries(BOSS_TUNE_TOP)) out[k] = BOSS_TUNE_BASE[k] + (top - BOSS_TUNE_BASE[k]) * u;
+  out.strength = Math.round(out.strength);
+  return out;
+}
+
 function loseStrength(f, a, now) {
   if (a.strength <= 0) return;
+  if (a === f.b && Math.random() < fightTune(f).tough) {   // shrugged it off
+    fightPop(f, 'TOUGH!', a.x, 330 + a.y, '#FFCC80', 0.7);
+    return;
+  }
   a.strength--;
   a.lostAt = now;
-  if (!a.regenAt) a.regenAt = now + STRENGTH_REGEN_MS;
+  if (!a.regenAt) a.regenAt = now + (a.regenMs || STRENGTH_REGEN_MS);
   fightPop(f, '-1 💪', a.x, 330 + a.y, '#FF8A65', 0.7);
 }
 
 function regenStrength(f, now) {
   for (const a of [f.p, f.b]) {
     if (a.strength >= a.maxStrength) { a.regenAt = 0; continue; }
-    if (!a.regenAt) { a.regenAt = now + STRENGTH_REGEN_MS; continue; }
+    if (!a.regenAt) { a.regenAt = now + (a.regenMs || STRENGTH_REGEN_MS); continue; }
     if (now < a.regenAt) continue;
     a.strength++;
     a.gainAt = now;
-    a.regenAt = a.strength < a.maxStrength ? now + STRENGTH_REGEN_MS : 0;
+    a.regenAt = a.strength < a.maxStrength ? now + (a.regenMs || STRENGTH_REGEN_MS) : 0;
     fightPop(f, '+1 💪', a.x, 330 + a.y, '#A5D6A7', 0.7);
   }
 }
@@ -7822,8 +7870,11 @@ function startFight() {
     winner: null,
     result: null
   };
+  fight.level = bossLevel();
+  fight.tune = bossTuneOverride ? { ...BOSS_TUNE_BASE, ...bossTuneOverride } : bossTuning(fight.level);
   fight.p.strength = fight.p.maxStrength = STRENGTH_BASE + strengthBoost;
-  fight.b.strength = fight.b.maxStrength = def.strength || STRENGTH_BASE;
+  fight.b.strength = fight.b.maxStrength = (def.strength || STRENGTH_BASE) + fight.tune.strength;
+  fight.b.regenMs = STRENGTH_REGEN_MS * fight.tune.regen;
   state = GameState.FIGHTING;
 }
 
@@ -7850,7 +7901,7 @@ function bossMaybeBlock(f, now) {
   const b = f.b, p = f.p;
   if (b.act !== 'idle' && b.act !== 'walk') return false;
   const wary = b.lastHit && now - b.lastHit < 1500 ? 0.2 : 0;
-  const chance = Math.min(0.8, 0.22 + 0.02 * p.score + wary + (p.mashing ? 0.35 : 0));
+  const chance = Math.min(0.8, 0.22 + fightTune(f).block + 0.02 * p.score + wary + (p.mashing ? 0.35 : 0));
   if (Math.random() < chance) {
     b.act = 'block';
     b.actStart = now;
@@ -7982,28 +8033,29 @@ function startBossWindup(f, now, quick) {
   const b = f.b;
   b.act = 'windup';
   b.actStart = now;
-  b.armor = !!quick;
+  const T = fightTune(f);
+  b.armor = !!quick || Math.random() < T.armor;     // armored wind-ups can't be interrupted
   // Gets a bit quicker as the fight goes on, and slower as it gets tired
   b.windup = (quick
-    ? randBetween(380, 480)
-    : clamp(1000 - 25 * b.score - 12 * f.p.score, 620, 1000) + randBetween(0, 250)) / strengthSpeed(b.strength);
+    ? randBetween(380, 480) * T.counter
+    : (clamp(1000 - 25 * b.score - 12 * f.p.score, 620, 1000) + randBetween(0, 250)) * T.windup) / strengthSpeed(b.strength);
   fightSay(f, bossSays('phrases'), b.windup + 250);   // always says something before it attacks
 }
 
 function bossAI(f, now, dt) {
-  const b = f.b, p = f.p;
+  const b = f.b, p = f.p, T = fightTune(f);
   const dist = Math.abs(p.x - b.x);
   const toward = p.x > b.x ? 1 : -1;
   const t = now - b.actStart;
   const spd = strengthSpeed(b.strength);
   switch (b.act) {
     case 'hit':
-      if (t > HIT_STUN) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450); }
+      if (t > HIT_STUN * T.stun) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450) * T.think; }
       return;
     case 'blockstun':
       if (t > BLOCK_STUN) {
         b.act = 'idle';
-        f.bossThinkAt = now + randBetween(100, 300);
+        f.bossThinkAt = now + randBetween(100, 300) * T.think;
         if (b.counter) { b.counter = false; startBossWindup(f, now, true); }
       }
       return;
@@ -8017,7 +8069,7 @@ function bossAI(f, now, dt) {
     case 'attack':
       if (t < B_ACTIVE) b.x += toward * 380 * spd * dt;   // lunge!
       if (!b.hitChecked && t >= B_ACTIVE * 0.7) { b.hitChecked = true; resolveHit(f, b, p, 'boss'); }
-      if (t >= B_ACTIVE + (b.recover || B_RECOVER) && b.act === 'attack') { b.act = 'idle'; f.bossThinkAt = now + randBetween(250, 700); }
+      if (t >= B_ACTIVE + (b.recover || B_RECOVER) && b.act === 'attack') { b.act = 'idle'; f.bossThinkAt = now + randBetween(250, 700) * T.think; }
       return;
   }
   // Free to choose what to do next
@@ -8027,21 +8079,21 @@ function bossAI(f, now, dt) {
     if (p.mashing && now - p.lastAttack < 600 && dist <= P_REACH + 40 && r < 0.6) {
       if (r < 0.4) { b.act = 'block'; b.actStart = now; }
       else b.ai = 'retreat';
-      f.bossThinkAt = now + randBetween(300, 600);
+      f.bossThinkAt = now + randBetween(300, 600) * T.think;
       return;
     }
-    if (dist <= B_REACH + 40 && r < 0.6) { startBossWindup(f, now); return; }
+    if (dist <= B_REACH + 40 && r < 0.6 + T.aggro) { startBossWindup(f, now); return; }
     if (dist > B_REACH - 30 && r < 0.85) b.ai = 'approach';
     else if (r < 0.93 && dist < 520) b.ai = 'retreat';
     else b.ai = 'wait';
-    f.bossThinkAt = now + randBetween(300, 800);
+    f.bossThinkAt = now + randBetween(300, 800) * T.think;
   }
   if (b.ai === 'approach' && dist > FIGHT_MIN_GAP + 30) {
-    b.x += toward * 190 * spd * dt;
+    b.x += toward * 190 * spd * T.speed * dt;
     b.walk += dt * spd;
     b.act = 'walk';
   } else if (b.ai === 'retreat') {
-    b.x -= toward * 150 * spd * dt;
+    b.x -= toward * 150 * spd * T.speed * dt;
     b.walk += dt * spd;
     b.act = 'walk';
   } else {
@@ -8117,6 +8169,7 @@ function finishFight(fled) {
   const won = !fled && f.winner === 'player';
   const reward = (f.def && f.def.reward) || DEFAULT_BOSS_REWARD;
   const res = { won, fled, lines: [] };
+  if (won) bossWins++;
   if (won) {
     if (backpack.length < BACKPACK_CAPACITY) {
       backpack.push({ ...reward });
@@ -8147,6 +8200,14 @@ function finishFight(fled) {
       res.lines.push('You had no coins, so the Blob got nothing.');
       res.lines.push('Phew! 😅');
     }
+  }
+  if (won) {
+    res.lines.push({
+      text: bossLevel() > f.level
+        ? `The Blob is getting tougher! 💪 Next time it's Level ${bossLevel()} of ${BOSS_LEVEL_MAX}.`
+        : `That's the toughest Blob there is (Level ${BOSS_LEVEL_MAX}), and you beat it! ⭐`,
+      color: '#B3E5FC'
+    });
   }
   if (swordRating <= 0) {
     res.lines.push({
@@ -8442,6 +8503,24 @@ function bossTail(b, now) {
 function drawFightBoss(v, f, now) {
   const b = f.b;
   const t = now - b.actStart;
+  if (b.act === 'windup' && b.armor) {
+    // Armored wind-up: it glows, and your swings will just CLANG. Block or back off!
+    const r = 150 * v.scale * (1 + 0.08 * Math.sin(now / 70));
+    const cx = v.sx(b.x), cy = v.sy(b.y + 110);
+    const g = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
+    g.addColorStop(0, 'rgba(255, 82, 40, 0.85)');
+    g.addColorStop(0.6, 'rgba(255, 112, 67, 0.45)');
+    g.addColorStop(1, 'rgba(255, 112, 67, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = `rgba(255, 213, 79, ${0.5 + 0.4 * Math.sin(now / 90)})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   let mouth = shoutMouth(f.shout, now);
   if (b.act === 'attack' && t < B_ACTIVE + 120) mouth = 1;
   drawBlob(v.sx(b.x), v.sy(b.y), 215 * v.scale, b.facing, {
@@ -8534,7 +8613,8 @@ function drawFightHud(v, f, now) {
   drawStrengthMeter(f.p, pad, pad + plateH + 6, plateW, now, f.boost ? '#F48FB1' : null);
   drawSwordMeter(f, pad, pad + plateH + 6 + 22 + 5, plateW, now);
   drawStrengthMeter(f.b, W - pad - plateW, pad + plateH + 6, plateW, now, '#FF9E5E');
-  plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', def.aka ? `a.k.a. the ${def.aka}` : null, 'right');
+  const sub = [def.aka ? `a.k.a. the ${def.aka}` : null, f.level ? `Level ${f.level}` : null].filter(Boolean).join('  ·  ');
+  plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', sub || null, 'right');
   bigText('VS', W / 2, pad + plateH / 2, 26, '#FFD54F');
 
   // Point counter along the bottom
@@ -8684,7 +8764,7 @@ function drawStrengthMeter(p, x, y, w, now, edge) {
     ctx.fill();
   }
   if (p.regenAt) {
-    const u = clamp(1 - (p.regenAt - now) / STRENGTH_REGEN_MS, 0, 1);
+    const u = clamp(1 - (p.regenAt - now) / (p.regenMs || STRENGTH_REGEN_MS), 0, 1);
     ctx.fillStyle = '#C5E1A5';
     ctx.fillRect(ix, y + h - 4, iw * u, 3);
   }
@@ -8742,7 +8822,9 @@ function drawFightOverlay(v, f, now) {
       bigText(bossName().toUpperCase(), W / 2, Hc * 0.3, big * 0.55, '#FF9E5E');
       if (f.def && f.def.aka) bigText(`a.k.a. the ${f.def.aka}`, W / 2, Hc * 0.3 + big * 0.5, big * 0.28, '#FFE0B2');
       bigText('READY...', W / 2, Hc * 0.3 + big * 1.1, big * 0.5, '#fff');
-      if (f.boost) bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, Hc * 0.3 + big * 1.65, big * 0.3, '#F8BBD0');
+      let ly = Hc * 0.3 + big * 1.65;
+      if (f.level) { bigText(`⭐ Level ${f.level} Blob: it's tougher now!`, W / 2, ly, big * 0.3, '#B3E5FC'); ly += big * 0.45; }
+      if (f.boost) bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, ly, big * 0.3, '#F8BBD0');
       ctx.restore();
     } else {
       const u = clamp((t - 1200) / 250, 0, 1);

@@ -224,6 +224,28 @@ recovery too) and the odds that an unblocked swing lands or a block holds
 fights: they last ~20–30s, so 15s regen gave back only ~1 point, 8s gives 2–3,
 and 5s or faster cancels most of the damage.
 
+**The Blob gets tougher every time you beat it.** Each win adds to
+`bossWins` (saved per camper), and the Blob's level is
+`min(bossWins, BOSS_LEVEL_MAX)`, so it tops out at 5. A fight's `tune` holds
+these settings (`BOSS_TUNE_BASE` is the original Blob): `strength` (added),
+`block` (added block chance), `armor` (chance a normal wind-up can't be
+interrupted — your swing CLANGs, and the Blob glows red-orange), `windup` and
+`think` (× its wind-up and pauses), `tough` (chance a hit costs it no
+strength), `regen` (× its time to get strength back) and `speed` (× walking).
+Level L is `BOSS_TUNE_BASE` moved L/5 of the way to `BOSS_TUNE_TOP`
+(`bossTuning`). The level shows in the fight intro, on the Blob's name plate,
+on its map label ("Lv 3") and on the win screen.
+
+Tuned with `tools/fight-sim.js`. Paste it into the console during a single
+player game, then e.g. `simMany(bossTuning(3), 'decent', 300)`. It runs
+instant fights on a fake clock against casual / decent / good bots. Results:
+the decent bot wins 100% at level 0, then 98, 96, 85, 62 and 42% at level 5.
+The good bot wins 67% at level 5, and desserts help a lot (decent at strength
+20: 88%). Lessons: attacking more often or sooner made the Blob *easier*,
+because your hits interrupt its wind-ups. What actually works is blocking more,
+starting stronger, and armored wind-ups paired with shorter wind-ups. Use
+`bossTuneOverride` to force a tuning in tests.
+
 **Your sword wears out.** You fight with a sword rated 0–100 (`swordRating`,
 saved per camper; older saves start at 100). Each swing costs
 `SWORD_SWING_WEAR` (1). A swing that touches the Blob or its sword costs
