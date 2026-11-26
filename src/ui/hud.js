@@ -10,7 +10,11 @@ function drawHUD() {
   ctx.font = 'bold 16px "Comic Sans MS", cursive';
   ctx.textAlign = 'left';
   ctx.fillText('♦ ' + player.character.name, 20, 34);
-  drawSwordBadge(176, 10);
+  let badgeX = 176 + drawSwordBadge(176, 10) + 6;
+  for (const badge of HUD_BADGES) {
+    const w = badge(badgeX, 10);
+    if (w) badgeX += w + 6;
+  }
 
   if (mp.active) drawMpHudBadge();
   if (sidekick) drawSidekickHudBadge(mp.active ? 88 : 52);

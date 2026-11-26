@@ -127,6 +127,26 @@ const FOES_OFF = [];
 function registerFoesOff(isOff) { FOES_OFF.push(isOff); }
 function foesOff() { return FOES_OFF.some(isOff => isOff()); }
 
+// --- In a fight ---
+//   registerPlayerHitGuard(fn): fn(fight, now) is asked when a boss's swing is
+//     about to land on you (score a point); return true to stop it (armor).
+//   registerFightLayer(z, draw): draw(view, fight, now) runs every frame of
+//     the fight view: z < 50 over the fighters, z >= 50 over the HUD.
+const PLAYER_HIT_GUARDS = [];
+const FIGHT_LAYERS = [];
+function registerPlayerHitGuard(fn) { PLAYER_HIT_GUARDS.push(fn); }
+function playerHitGuarded(f, now) { return PLAYER_HIT_GUARDS.some(fn => fn(f, now)); }
+function registerFightLayer(z, draw) { addByZ(FIGHT_LAYERS, z, draw); }
+function drawFightLayers(v, f, now, from, to) {
+  for (const l of FIGHT_LAYERS) if (l.z >= from && l.z < to) l.fn(v, f, now);
+}
+
+// --- HUD badges ---
+// registerHudBadge(draw): draw(x, y) draws a badge in the map HUD's top row,
+// after your name and sword, and returns how wide it was (0 if nothing).
+const HUD_BADGES = [];
+function registerHudBadge(draw) { HUD_BADGES.push(draw); }
+
 // --- Multiplayer messages ---
 // What to do when a message of type `t` arrives on the world's channel (see the
 // table in docs/multiplayer.md). fn(message, fromPlayerId, timetoken).

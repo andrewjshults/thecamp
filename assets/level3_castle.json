@@ -1,0 +1,258 @@
+{
+  "name": "Brick Castle",
+  "where": "in the Brick Castle",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.1,
+    "py": 0.65
+  },
+  "spriteScale": 1.6,
+  "brick": {
+    "home": "throne",
+    "zone": {
+      "px": 0.14,
+      "py": 0.55,
+      "pw": 0.84,
+      "ph": 0.42
+    },
+    "id": "brick",
+    "name": "Brick Blaze",
+    "aka": "Fire Eyes Brick",
+    "label": "BRICK",
+    "chase": 2.4,
+    "sniff": 900,
+    "grace": 2500,
+    "pointsToWin": 10,
+    "reward": {
+      "id": "thirty_dollar_coin",
+      "name": "$30 Coin",
+      "emoji": "🪙",
+      "coin": true,
+      "value": 30
+    },
+    "phrases": [
+      "BRICK SMASH!",
+      "me crush yous!",
+      "you hit a WALL!",
+      "STOMP STOMP!",
+      "fire eyes see yous!",
+      "me built TOUGH!",
+      "CRUMBLE!",
+      "me castle! me rules!",
+      "hot hot BRICK!",
+      "thud thud THUD!"
+    ],
+    "hitPhrases": [
+      "BONK! brick wins!",
+      "hard as rock!",
+      "hehe! squished!",
+      "THUD!"
+    ],
+    "hurtPhrases": [
+      "OW me chip!",
+      "me cracking!",
+      "no dent me!",
+      "grrr crumbles!",
+      "me mortar hurts!"
+    ],
+    "missPhrases": [
+      "stay still!",
+      "me too heavy!",
+      "come back to wall!"
+    ],
+    "dodgePhrases": [
+      "me solid!",
+      "bounce off brick!",
+      "hehe! too hard!",
+      "brick no feel!"
+    ],
+    "winPhrases": [
+      "BRICK CHAMPION!",
+      "me strongest wall!",
+      "stomp stomp WIN!"
+    ],
+    "fledPhrases": [
+      "run run little pebble!",
+      "hehe! me keep shinies!"
+    ]
+  },
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#4e342e",
+      "stripe": "#3e2723"
+    },
+    "wall": {
+      "pattern": "blocks",
+      "color": "#c0603f"
+    },
+    "floor": {
+      "from": 0.5,
+      "pattern": "tiles",
+      "color": "#8d8a94",
+      "skirting": "#3e2723"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#ffcc80",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.32,
+        "color": "#4e342e"
+      },
+      {
+        "kind": "banner",
+        "px": 0.2,
+        "py": 0.08,
+        "pw": 0.07,
+        "ph": 0.26,
+        "color": "#ffca28",
+        "emoji": "🧱"
+      },
+      {
+        "kind": "banner",
+        "px": 0.79,
+        "py": 0.08,
+        "pw": 0.07,
+        "ph": 0.26,
+        "color": "#ffca28",
+        "emoji": "🔥"
+      },
+      {
+        "kind": "torch",
+        "px": 0.32,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "torch",
+        "px": 0.69,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "window",
+        "px": 0.13,
+        "py": 0.14,
+        "pw": 0.05,
+        "ph": 0.12
+      },
+      {
+        "kind": "rug",
+        "px": 0.36,
+        "py": 0.52,
+        "pw": 0.3,
+        "ph": 0.44,
+        "colors": [
+          "#b71c1c",
+          "#ffca28",
+          "#b71c1c"
+        ]
+      },
+      {
+        "kind": "throne",
+        "px": 0.43,
+        "py": 0.12,
+        "pw": 0.16,
+        "ph": 0.42
+      },
+      {
+        "kind": "box",
+        "px": 0.85,
+        "py": 0.6,
+        "pw": 0.1,
+        "ph": 0.14,
+        "label": "TREASURE",
+        "peek": [
+          "💰",
+          "👑"
+        ]
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🦴",
+        "px": 0.2,
+        "py": 0.85,
+        "pw": 0.04,
+        "ph": 0.05,
+        "rotate": 30
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🕸️",
+        "px": 0.92,
+        "py": 0.06,
+        "pw": 0.06,
+        "ph": 0.1
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.34,
+      "action": "enter",
+      "description": "Back out to the Third Camp",
+      "interactionText": "You run back out of the castle, over the bridge!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level3.json",
+      "targetHotspot": "castle_door",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.6
+      }
+    },
+    {
+      "id": "throne",
+      "name": "Brick's Throne",
+      "px": 0.43,
+      "py": 0.12,
+      "pw": 0.16,
+      "ph": 0.42,
+      "action": "fight",
+      "description": "The Brick sits here, with fire in its eyes...",
+      "interactionText": "A big stone throne, still warm. Scorch marks everywhere! 🔥👀",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "treasure",
+      "name": "Treasure Box",
+      "px": 0.84,
+      "py": 0.58,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "The Brick's treasure!",
+      "interactionText": "You peek in the treasure box. Lots of shiny things... and a crown!",
+      "items": [
+        {
+          "id": "crown",
+          "name": "Crown",
+          "emoji": "👑"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

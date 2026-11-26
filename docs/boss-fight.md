@@ -5,6 +5,8 @@ the map, `cave.js`, `draw-blob.js`, `fight.js` starting a fight and tuning,
 `fight-moves.js` the duel, `fight-sidekick.js`, `fight-draw.js`),
 `src/features/sword.js`, `src/mp/boss-sync.js`, and `tools/fight-sim.js`.
 
+The Third Camp's Brick uses it too (see [level-three.md](level-three.md)), and
+armor can stop a boss's hit ([armor-shop.md](armor-shop.md)).
 The Second Camp's bosses, the Marshmallows, use the same fight: see
 [level-two.md](level-two.md).
 

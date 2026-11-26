@@ -16,6 +16,15 @@ registerSaveField('level2Open', { save: () => level2Open, load: s => { level2Ope
 
 function lockLevel2() { level2Open = false; }
 
+// Which passages are open. A passage names its lock (`"lock": "level3"`,
+// default "level2"); each level that opens one adds its check here.
+const PASSAGE_LOCKS = { level2: () => level2Open };
+function passageLock(obj) { return (obj.passage && obj.passage.lock) || 'level2'; }
+function passageOpen(obj) {
+  const isOpen = PASSAGE_LOCKS[passageLock(obj)];
+  return !!obj.passage && !!isOpen && isOpen();
+}
+
 // Beat the toughest Blob: the passage opens
 onGameEvent('fightOver', ({ foe, won, level, res }) => {
   if (foe.id !== 'blob' || !won || level < BOSS_LEVEL_MAX) return;
@@ -33,18 +42,18 @@ function goThroughPassage(obj) {
   switchMap(obj.passage.targetMap, obj.passage.targetHotspot);
 }
 registerHotspotKind({
-  match: obj => !!obj.passage && level2Open,
+  match: obj => passageOpen(obj),
   interact: obj => goThroughPassage(obj),
   hint: () => isTouchDevice() ? '🕳️ [ TAP ] Secret passage!' : '🕳️ [ SPACE ] Secret passage!'
 }, { first: true });
 
-// A purple glow swirling in the cave's mouth while the passage is open
-function drawPassageGlow() {
-  const c = interactiveObjects.find(o => o.passage);
-  if (!c) return;
+// A purple glow swirling in the passage's mouth (the cave's, or where the
+// passage's `glow` says: { "x", "y" } fractions of the hotspot box)
+function drawPassageGlow(c) {
   const now = performance.now();
   const mw = c.width * 0.46, mh = c.height * 0.6;
-  const cx = c.x + c.width / 2, cy = c.y + c.height - mh * 0.4;
+  const g0 = c.passage.glow;
+  const cx = c.x + c.width * (g0 ? g0.x : 0.5), cy = g0 ? c.y + c.height * g0.y : c.y + c.height - mh * 0.4;
   const r = mw * (0.45 + 0.04 * Math.sin(now / 300));
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
   g.addColorStop(0, 'rgba(225, 190, 255, 0.9)');
@@ -65,4 +74,5 @@ function drawPassageGlow() {
   }
   ctx.restore();
 }
-registerMapLayer(21, () => { if (level2Open) drawPassageGlow(); });
+// (exploration mode glows the ones that aren't open: explore.js)
+registerMapLayer(21, () => { for (const o of interactiveObjects) if (passageOpen(o)) drawPassageGlow(o); });

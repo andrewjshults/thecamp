@@ -117,6 +117,8 @@ function resolveHit(f, att, def, who) {
     }
     return;
   }
+  // Something of yours (armor) may stop the boss's hit
+  if (who === 'boss' && playerHitGuarded(f, now)) return;
   // HIT! One point (your sidekick's hits count for you).
   if (who === 'player') wearSword(f, SWORD_HIT_WEAR);
   const scorer = who === 'sidekick' ? f.p : att;

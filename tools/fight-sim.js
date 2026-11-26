@@ -13,6 +13,9 @@
 // argument, e.g.
 //   simMany(mallowTuning(8), 'good', 300, 10, { sword: 'flame' })     // Mega Mallow, level 8
 //   simMany(kidTuning(6), 'decent', 300, 10, { toWin: 8 })           // Mini Mallow (first to 8)
+// The Third Camp's Brick (src/features/level3/brick.js) and armor
+// (src/features/armor-shop/armor.js): { armor } in the same argument, e.g.
+//   simMany(brickTuning(13), 'good', 300, 10, { sword: 'rainbow', armor: 'knight' })
 //
 // → { win: % the player won, dur: average seconds, wear: sword wear per fight,
 //     loserPts: points the loser got, timeouts }
@@ -73,12 +76,14 @@ window.simFight = function (tune, botName, pStrength, opts = {}) {
   const bot = BOTS[botName];
   let clock = 1e8;
   performance.now = () => clock;
-  const saved = { sword: swordRating, kind: swordKind, boost: strengthBoost, state };
+  const saved = { sword: swordRating, kind: swordKind, boost: strengthBoost, state, armor: armorKind, armorR: armorRating };
   try {
     strengthBoost = (pStrength || STRENGTH_BASE) - STRENGTH_BASE;
     for (const k of Object.keys(keys)) keys[k] = false;
     swordKind = opts.sword || 'plain';
     swordRating = 1e6;
+    armorKind = opts.armor || null;          // armor that never wears out (see src/features/armor-shop/armor.js)
+    armorRating = opts.armor ? 1e6 : 0;
     bossTuneOverride = tune || null;
     startFight(simFoe(opts.toWin));
     const f = fight;
@@ -89,6 +94,7 @@ window.simFight = function (tune, botName, pStrength, opts = {}) {
     return { won: f.winner === 'player', timeout: !f.winner, dur: (clock - start) / 1000, p: f.p.score, b: f.b.score, wear: 1e6 - swordRating };
   } finally {
     fight = null; state = saved.state; bossTuneOverride = null; swordRating = saved.sword; swordKind = saved.kind; strengthBoost = saved.boost;
+    armorKind = saved.armor; armorRating = saved.armorR;
     fightTouch = { left: false, right: false, block: false };
     delete performance.now;
   }

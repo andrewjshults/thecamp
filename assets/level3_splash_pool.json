@@ -1,0 +1,209 @@
+{
+  "name": "Splash Pool",
+  "where": "at the Splash Pool",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.1,
+    "py": 0.4
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "splash_whale",
+      "name": "Bubbles",
+      "emoji": "🐳",
+      "color": "#29b6f6",
+      "size": 0.1,
+      "px": 0.6,
+      "py": 0.62,
+      "wander": false,
+      "what": "a little whale who splashes around in the Splash Pool at the Third Camp",
+      "personality": "Giggly and splashy. Loves spraying water out of her blowhole, going down the slide and pool floaties. Very friendly.",
+      "localReplies": {
+        "hello": [
+          "Splish splash, {name}! 🐳",
+          "Hi {name}! Wanna see me spray water?",
+          "Bubbles here! Hi hi!"
+        ],
+        "bye": [
+          "Bye bye, {name}! *sploosh*",
+          "Come back and splash, {name}!"
+        ],
+        "question": [
+          "Hmm... bubble bubble... I don't know!",
+          "Ask me about splashing!"
+        ],
+        "any": [
+          "PFFFSHH! That's my blowhole! 💦",
+          "The slide is the best! Wheee!",
+          "The castle moat is yucky poison. This pool is nice and clean!"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "wall": {
+      "pattern": "stripes",
+      "color": "#b3e5fc",
+      "stripe": "rgba(255,255,255,0.5)",
+      "dot": "rgba(255,235,59,0.4)"
+    },
+    "floor": {
+      "from": 0.45,
+      "pattern": "tiles",
+      "color": "#e0f7fa",
+      "skirting": "#0288d1"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.04,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "emoji",
+        "emoji": "☀️",
+        "px": 0.82,
+        "py": 0.03,
+        "pw": 0.08,
+        "ph": 0.13
+      },
+      {
+        "kind": "pool",
+        "px": 0.3,
+        "py": 0.5,
+        "pw": 0.42,
+        "ph": 0.3,
+        "lanes": 1,
+        "floaties": [
+          "🦆",
+          "🛟"
+        ],
+        "color": "#81d4fa"
+      },
+      {
+        "kind": "waterSlide",
+        "px": 0.17,
+        "py": 0.14,
+        "pw": 0.16,
+        "ph": 0.44,
+        "color": "#42a5f5"
+      },
+      {
+        "kind": "bench",
+        "px": 0.8,
+        "py": 0.6,
+        "pw": 0.15,
+        "ph": 0.1,
+        "towel": "#ff8a65"
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🪣",
+        "px": 0.82,
+        "py": 0.84,
+        "pw": 0.05,
+        "ph": 0.07
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🏖️",
+        "px": 0.08,
+        "py": 0.8,
+        "pw": 0.08,
+        "ph": 0.12
+      },
+      {
+        "kind": "puddle",
+        "px": 0.2,
+        "py": 0.86,
+        "pw": 0.08,
+        "ph": 0.04
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_gate",
+      "name": "Pool Gate",
+      "px": 0.0,
+      "py": 0.0,
+      "pw": 0.12,
+      "ph": 0.2,
+      "action": "enter",
+      "description": "Back out to the Third Camp",
+      "interactionText": "You drip-drop back out to the Third Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level3.json",
+      "targetHotspot": "splash_pool",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.4
+      }
+    },
+    {
+      "id": "splash_pool",
+      "name": "Splash Pool",
+      "px": 0.3,
+      "py": 0.5,
+      "pw": 0.42,
+      "ph": 0.3,
+      "action": "swim",
+      "description": "Splish splash!",
+      "interactionText": "You splash and kick and blow bubbles. Bubbles the whale sprays you! 💦🐳",
+      "items": [
+        {
+          "id": "water_wings",
+          "name": "Water Wings",
+          "emoji": "🦾"
+        },
+        {
+          "id": "beach_ball",
+          "name": "Beach Ball",
+          "emoji": "⚽"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "little_slide",
+      "name": "Slide",
+      "px": 0.15,
+      "py": 0.12,
+      "pw": 0.2,
+      "ph": 0.46,
+      "action": "play",
+      "description": "Wheee!",
+      "interactionText": "You zoom down the slide into the pool. WHEEE! SPLASH! 🛝",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "splash_bench",
+      "name": "Towel Bench",
+      "px": 0.8,
+      "py": 0.56,
+      "pw": 0.15,
+      "ph": 0.16,
+      "action": "sit",
+      "description": "Dry off here",
+      "interactionText": "You wrap up in a fluffy orange towel. Toasty!",
+      "items": [
+        {
+          "id": "sun_hat",
+          "name": "Sun Hat",
+          "emoji": "👒"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

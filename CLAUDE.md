@@ -76,6 +76,8 @@ Several changes are often made at once on separate branches, so:
 - [Ember's Sword Shop: the four swords you can buy](docs/sword-shop.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
+- [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)
+- [Armor and Shelly's Armor Shop: the four kinds you can buy](docs/armor-shop.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.

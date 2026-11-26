@@ -1,0 +1,303 @@
+{
+  "name": "Swimming Pool",
+  "where": "at the Third Camp's Swimming Pool",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.6
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "pool_frog",
+      "name": "Lily",
+      "emoji": "🐸",
+      "color": "#43a047",
+      "size": 0.09,
+      "px": 0.6,
+      "py": 0.74,
+      "what": "a bouncy frog who is the lifeguard at the Third Camp's swimming pool",
+      "personality": "Bouncy, splashy and very proud of the giant water slide. Loves swimming and lily pads. Thinks the poison moat around the castle is the WORST pool ever and tells everyone to stay out of it.",
+      "localReplies": {
+        "hello": [
+          "Ribbit! Welcome to the pool, {name}! 🐸",
+          "Hop in, {name}! The slide is SO fast!",
+          "Ribbit ribbit! Hi, {name}!"
+        ],
+        "bye": [
+          "Hop along, {name}! Ribbit!",
+          "Bye! Stay out of the poison moat!",
+          "Come back for the slide, {name}!"
+        ],
+        "question": [
+          "Ribbit? I only know about water!",
+          "Hmm... ask me about slides!",
+          "Good question! *ribbit* No idea!"
+        ],
+        "any": [
+          "This pool is nice. The green moat by the castle is POISON! Don't swim there! ☠️",
+          "Try the slide! WHEEEE! 💦",
+          "Walk, don't hop! Well... hopping is OK.",
+          "If you stay in the poison moat too long, you get sent back to the Second Camp!"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "wall": {
+      "pattern": "planks",
+      "color": "#b3e5fc"
+    },
+    "floor": {
+      "from": 0.36,
+      "pattern": "tiles",
+      "color": "#f5f0e1",
+      "skirting": "#0288d1"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.04,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff59d",
+        "rotate": -3
+      },
+      {
+        "kind": "emoji",
+        "emoji": "☀️",
+        "px": 0.82,
+        "py": 0.02,
+        "pw": 0.08,
+        "ph": 0.13
+      },
+      {
+        "kind": "emoji",
+        "emoji": "☁️",
+        "px": 0.5,
+        "py": 0.04,
+        "pw": 0.09,
+        "ph": 0.1
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🌴",
+        "px": 0.13,
+        "py": 0.06,
+        "pw": 0.08,
+        "ph": 0.28
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🌴",
+        "px": 0.9,
+        "py": 0.08,
+        "pw": 0.08,
+        "ph": 0.26
+      },
+      {
+        "kind": "lifeguardChair",
+        "px": 0.79,
+        "py": 0.16,
+        "pw": 0.11,
+        "ph": 0.3
+      },
+      {
+        "kind": "sign",
+        "text": "NO\nRUNNING!",
+        "px": 0.25,
+        "py": 0.12,
+        "pw": 0.1,
+        "ph": 0.1,
+        "color": "#ffcdd2",
+        "rotate": 4
+      },
+      {
+        "kind": "pool",
+        "px": 0.28,
+        "py": 0.42,
+        "pw": 0.5,
+        "ph": 0.36,
+        "lanes": 3,
+        "floaties": [
+          "🛟",
+          "🏐"
+        ]
+      },
+      {
+        "kind": "shower",
+        "px": 0.03,
+        "py": 0.4,
+        "pw": 0.1,
+        "ph": 0.32
+      },
+      {
+        "kind": "bench",
+        "px": 0.82,
+        "py": 0.6,
+        "pw": 0.15,
+        "ph": 0.1,
+        "towel": "#ff7043"
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🩴",
+        "px": 0.16,
+        "py": 0.84,
+        "pw": 0.04,
+        "ph": 0.05
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🧴",
+        "px": 0.86,
+        "py": 0.84,
+        "pw": 0.03,
+        "ph": 0.06
+      },
+      {
+        "kind": "puddle",
+        "px": 0.2,
+        "py": 0.86,
+        "pw": 0.08,
+        "ph": 0.04
+      },
+      {
+        "kind": "waterSlide",
+        "px": 0.56,
+        "py": 0.12,
+        "pw": 0.16,
+        "ph": 0.42
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_gate",
+      "name": "Pool Gate",
+      "px": 0.0,
+      "py": 0.0,
+      "pw": 0.12,
+      "ph": 0.2,
+      "action": "enter",
+      "description": "Back out to the Third Camp",
+      "interactionText": "You climb back up the ladder.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level3.json",
+      "targetHotspot": "pool_gate",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.4
+      }
+    },
+    {
+      "id": "pool",
+      "name": "Swimming Pool",
+      "px": 0.28,
+      "py": 0.42,
+      "pw": 0.5,
+      "ph": 0.36,
+      "action": "swim",
+      "description": "Jump in!",
+      "interactionText": "SPLASH! You swim a lap, then float on your back and look at the clouds. Ahhh! 🏊",
+      "items": [
+        {
+          "id": "goggles_2_l3",
+          "name": "Swim Goggles",
+          "emoji": "🥽"
+        },
+        {
+          "id": "pool_noodle_l3",
+          "name": "Pool Noodle",
+          "emoji": "🪱"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "life_jacket",
+          "text": "You put on the life jacket and float like a happy cork! 🦺",
+          "animation": "swim"
+        },
+        {
+          "itemId": "rubber_duck",
+          "text": "You set the rubber duck in the pool. Lily salutes it! 🦆",
+          "animation": "play"
+        }
+      ]
+    },
+    {
+      "id": "water_slide",
+      "name": "Water Slide",
+      "px": 0.54,
+      "py": 0.1,
+      "pw": 0.2,
+      "ph": 0.42,
+      "action": "play",
+      "description": "The giant slide!",
+      "interactionText": "You climb allllll the way up... and WHEEEEEE! SPLOOSH! 💦",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "lifeguard_chair",
+      "name": "Lifeguard Chair",
+      "px": 0.79,
+      "py": 0.14,
+      "pw": 0.11,
+      "ph": 0.32,
+      "action": "explore",
+      "description": "Lily's lookout",
+      "interactionText": "You climb up the lifeguard chair. You can see the whole pool from up here!",
+      "items": [
+        {
+          "id": "whistle_l3",
+          "name": "Whistle",
+          "emoji": "📯"
+        },
+        {
+          "id": "sunscreen_l3",
+          "name": "Sunscreen",
+          "emoji": "🧴"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "towel_bench",
+      "name": "Towel Bench",
+      "px": 0.82,
+      "py": 0.56,
+      "pw": 0.15,
+      "ph": 0.16,
+      "action": "sit",
+      "description": "Dry off here",
+      "interactionText": "You wrap up in a warm towel and dry off in the sun. Cozy!",
+      "items": [
+        {
+          "id": "beach_towel_l3",
+          "name": "Beach Towel",
+          "emoji": "🏖️"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "pool_shower",
+      "name": "Pool Shower",
+      "px": 0.03,
+      "py": 0.4,
+      "pw": 0.1,
+      "ph": 0.32,
+      "action": "wash",
+      "description": "Rinse off before you swim",
+      "interactionText": "BRRR! The pool shower is COLD! You rinse off super fast. 🚿",
+      "items": [],
+      "uses": []
+    }
+  ]
+}

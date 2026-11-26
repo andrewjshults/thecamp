@@ -29,6 +29,10 @@ Lose a fight on the Second Camp (or run away) and you're sent back to the
 main map's cave, and the passage shuts (`lockLevel2`) until you beat the
 Blob again.
 
+The hole in the middle of the Blob Fight Zone (`blob_zone`) has a passage of
+its own, down to the Third Camp, that opens once you beat Mega Mallow at
+level 10 (see [level-three.md](level-three.md)).
+
 ## The map
 
 `assets/camp_level2.svg` is drawn by `node tools/make-level2-map.js`, from

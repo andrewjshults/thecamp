@@ -3,8 +3,9 @@
 // ============================================================
 // Press E while walking around a map to switch it on or off. While it's on:
 //   - the bosses (the Blob, the Marshmallows) leave you alone (foesOff)
-//   - the cave's secret passage to the Second Camp is open, even if you
-//     haven't beaten the Blob yet (level2Open isn't changed or saved)
+//   - the secret passages (the cave to the Second Camp, the Marshmallows'
+//     hole to the Third) are open, even if you haven't beaten the bosses yet
+//     (level2Open / level3Open aren't changed or saved)
 //   - a banner at the top of the screen says so
 // It isn't saved: every camper starts in the normal game.
 let exploreMode = false;
@@ -29,11 +30,13 @@ onGameEvent('camperChosen', () => { exploreMode = false; });
 
 // The secret passage, when it isn't open for real (level2.js handles that)
 registerHotspotKind({
-  match: obj => !!obj.passage && exploreMode && !level2Open,
+  match: obj => !!obj.passage && exploreMode && !passageOpen(obj),
   interact: obj => goThroughPassage(obj),
   hint: () => `🧭 ${actionKeyLabel()} Secret passage!`
 }, { first: true });
-registerMapLayer(21, () => { if (exploreMode && !level2Open) drawPassageGlow(); });
+registerMapLayer(21, () => {
+  if (exploreMode) for (const o of interactiveObjects) if (o.passage && !passageOpen(o)) drawPassageGlow(o);
+});
 
 // The banner at the top of the screen (only while it's on)
 function drawExploreBanner() {

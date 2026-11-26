@@ -12,18 +12,24 @@ for looking around every level without being chased. While it's on
   mode tells them with `registerFoesOff` (in `src/core/hooks.js`), and each foe
   checks `foesOff()`: `updateMapBoss`, `engageBoss`, `mapBossVisible` and the
   eyes in the cave (`drawBossCave`) for the Blob; `updateMallows`,
-  `engageMallow` and `drawMallowLair` for the Marshmallows. A boss that was
+  `engageMallow` and `drawMallowLair` for the Marshmallows; `updateBrick`,
+  `engageBrick` and `brickHere` for the Third Camp's Brick (it's hidden, and
+  its throne is empty). A boss that was
   already yelling at you is called off (`cancelBossEngage`).
   - On your own, the Blob stays in its cave, and comes out again a while after
     the mode is switched off. The Marshmallows start over (with their usual
     few seconds' grace) once it's off.
   - In a multiplayer world the Blob is shared, so it carries on for your
     friends but ignores you.
-- **You can move between the levels.** The cave's secret passage to the
-  Second Camp is open even if you haven't beaten the Blob (a hotspot kind of
-  its own, with the purple glow, `drawPassageGlow`). `level2Open` isn't
-  changed, so switching the mode off puts things back as they were. The
-  Second Camp's `cave_exit` always leads back.
+- **You can move between the levels.** The secret passages are open even if
+  you haven't beaten the bosses: the cave to the Second Camp, and the
+  Marshmallows' hole down to the Third Camp (a hotspot kind of its own for
+  any passage that isn't open, `!passageOpen(obj)`, with the purple glow,
+  `drawPassageGlow`). `level2Open` and `level3Open` aren't changed, so
+  switching the mode off puts things back as they were. The Second Camp's
+  `cave_exit` and the Third Camp's `hole_back` always lead back.
+- **The Third Camp's poison moat still works**: it isn't a boss (see
+  [level-three.md](level-three.md)).
 - **A green banner at the top of the screen** says "🧭 EXPLORATION MODE"
   (`drawExploreBanner`, below the kitchen's recipe counter in a kitchen). It
   isn't shown in the normal game.

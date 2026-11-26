@@ -37,7 +37,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
-| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `sword-shop/`, `explore/`, `sword.js` |
+| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `sword.js` |
 | `src/mp/` | The start menu and multiplayer over PubNub |
 | `src/tools/` | Dev mode (the hotspot editor) |
 | `src/main.js` | The game loop and start-up (loads last) |
@@ -45,6 +45,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `tests/smoke.js` | The smoke test |
 | `tools/fight-sim.js` | Boss fight simulator (paste into the console) |
 | `tools/make-level2-map.js` | Draws the Second Camp's map, `assets/camp_level2.svg` |
+| `tools/make-level3-map.js` | Draws the Third Camp's map, `assets/camp_level3.svg` |
 
 ## Plug-in points (`src/core/hooks.js`)
 
@@ -63,6 +64,9 @@ functions. Each shared function loops over what's registered:
 | `registerScreenLayer(z, draw)` | `drawGame` | Drawn over people, under the HUD (screen coordinates) |
 | `registerFrameUpdate(z, fn)` | the game loop | Runs every frame, whatever's on screen |
 | `registerMapUpdate(z, fn)` | `update()` | Runs every frame while walking around a map |
+| `registerPlayerHitGuard(fn)` | `resolveHit` | Stopping a boss's hit just before it lands on you (armor): `fn(fight, now)` returns true |
+| `registerFightLayer(z, draw)` | `drawFight` | Drawn in the fight view: `z` < 50 over the fighters, `z` >= 50 over the HUD |
+| `registerHudBadge(draw)` | `drawHUD` | A badge in the map HUD's top row, after your sword: `draw(x, y)` returns its width |
 | `registerMpMessage(t, fn, { othersOnly })` | `mpOnMessage` | A multiplayer message type (see [multiplayer.md](multiplayer.md)) |
 | `registerSceneProps({ kind(pen, box, prop) })` | `buildSceneSvg` | Props a `scene` room can use (see [maps.md](maps.md)) |
 | `onGameEvent(name, fn)` | `emitGameEvent` | `camperChosen`, `playStart`, `mapLeave`, `mapArrive`, `fightOver` |

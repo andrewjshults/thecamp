@@ -265,3 +265,41 @@ canvas {
 #shopSwords .shopPrice { color: #FFF59D; white-space: nowrap; }
 #shopSwords button.tooPricey { background: #8d6e63; }
 @media (max-width: 560px) { #shopSwords { grid-template-columns: 1fr; } }
+
+/* --- Armor shop pop-up: one button per kind of armor --- */
+#armorShopModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#armorShopModal[hidden] { display: none !important; }
+#armorShopModal .menuPanel { max-height: 94vh; overflow-y: auto; }
+#armorShopModal h2 { font-size: 28px; color: #81D4FA; }
+#armorKeeper { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
+#armorKeeperFace {
+  flex: none;
+  font-size: 54px;
+  line-height: 1;
+  animation: bankBob 1.6s ease-in-out infinite;
+}
+#armorSays {
+  flex: 1;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #E1F5FE;
+  color: #263238;
+  font-size: 17px;
+}
+#armorWallet, #armorWearing { font-size: 15px; color: #CFD8DC; margin: 4px 0; }
+#armorKinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#armorKinds button { text-align: left; }
+#armorKinds .shopName { display: block; }
+#armorKinds .shopPrice { color: #FFF59D; white-space: nowrap; }
+#armorKinds button.tooPricey { background: #78909c; }
+@media (max-width: 560px) { #armorKinds { grid-template-columns: 1fr; } }

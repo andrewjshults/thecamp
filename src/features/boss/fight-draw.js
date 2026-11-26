@@ -435,7 +435,7 @@ function drawFightHud(v, f, now) {
 // green when one comes back. The thin line underneath fills up to the next +1.
 // Map HUD: your sword's rating (or that you need a new one)
 function drawSwordBadge(x, y) {
-  if (!mapConfig) return;
+  if (!mapConfig) return 0;
   const spare = hasSpareSword() ? ' +1' : '';
   const text = swordRating > 0 ? `${swordKindDef().emoji} ${swordRating}${spare}` : hasSpareSword() ? '🗡️ 0 +1' : '🗡️ Find a sword!';
   ctx.save();
@@ -449,6 +449,7 @@ function drawSwordBadge(x, y) {
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x + 11, y + 19);
   ctx.restore();
+  return w;
 }
 
 // Fight HUD: your sword's rating as a thin bar under your strength
@@ -653,6 +654,7 @@ function drawFight() {
   f.foe.draw(v, f, now);
   drawFightPlayer(v, f.p, now);
   if (f.s) drawTeamGuard(v, f, now);
+  drawFightLayers(v, f, now, -Infinity, 50);
   drawFightFx(v, f, now);
   ctx.restore();
   // the Blob's yelling, above its head
@@ -663,6 +665,7 @@ function drawFight() {
       Math.max(16, Math.min(30, 30 * v.scale)));
   }
   drawFightHud(v, f, now);
+  drawFightLayers(v, f, now, 50, Infinity);
   if (isTouchDevice() && f.phase === 'fight') drawFightButtons();
   drawFightOverlay(v, f, now);
 }
