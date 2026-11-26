@@ -68,6 +68,9 @@
   #talkSay { background: #4CAF50; }
   #talkSay:disabled { background: #9E9E9E; cursor: default; }
   #talkBye { background: #E57373; }
+  #talkSidekick { background: #7E57C2; }
+  #talkSidekick.dismiss { background: #8D6E63; }
+  #talkSidekick:disabled { background: #9E9E9E; cursor: default; }
 
   /* --- Start menu (single / multi player, create / join a world) --- */
   #menu {
@@ -255,6 +258,7 @@
   <div id="talkTo"></div>
   <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
   <button id="talkSay" type="submit">Say it 💬</button>
+  <button id="talkSidekick" type="button" hidden>🤝 Be my sidekick!</button>
   <button id="talkBye" type="button">Bye 👋</button>
 </form>
 
@@ -410,6 +414,8 @@ function switchMap(targetPath, targetHotspotId) {
           player.x = scaledMapW * config.playerStart.px;
           player.y = scaledMapH * config.playerStart.py;
         }
+        placeSidekickBeside();
+        npcLeavers   = [];
         nearbyObject = null;
         nearbyNpc    = null;
         speechBubbles = [];
@@ -1907,6 +1913,8 @@ function selectCharacter(index) {
   }
   player.character = characters[index];
   heldItem = null;
+  sidekick = null;
+  npcLeavers = [];
   resetMapBoss();
   // Friends don't remember chats with a different character
   for (const k of Object.keys(conversations)) delete conversations[k];
@@ -2669,21 +2677,28 @@ function critterSize(npc) {
 }
 
 // Camper NPCs step aside when a real person (you, or a friend in a
-// multiplayer world) is playing as that character.
+// multiplayer world) is playing as that character. An NPC that's off being
+// someone's sidekick (yours or a friend's), or walking home after, isn't at
+// its spot either.
 function currentNpcs() {
   if (!mapConfig || !Array.isArray(mapConfig.npcs)) return [];
-  return mapConfig.npcs.filter(n => isCritter(n) ||
+  return mapConfig.npcs.filter(n => (isCritter(n) ||
     (characterByName(n.character) &&
      (!player.character || n.character !== player.character.name) &&
-     !mpCharacterTaken(n.character)));
+     !mpCharacterTaken(n.character))) &&
+    !npcAway(n.id));
 }
 
-// Everyone on this map you can walk up to and talk with: NPCs + friends
+// Everyone on this map you can walk up to and talk with: NPCs + your
+// sidekick + friends
 function talkablesHere() {
-  return [...currentNpcs(), ...mpPlayersHere()];
+  return [...currentNpcs(), ...(sidekick ? [sidekick.npc] : []), ...mpPlayersHere()];
 }
 
+// Feet position in map px: where they've walked to, else their spot in the JSON
 function npcPos(npc) {
+  const m = npcMover(npc);
+  if (m) return { x: m.x, y: m.y };
   return { x: npc.px * scaledMapW, y: npc.py * scaledMapH };
 }
 
@@ -2744,6 +2759,7 @@ function startConversation(npc) {
   talkInput.value = '';
   talkBar.hidden = false;
   setTalkEnabled(true);
+  updateSidekickButton();
 }
 
 function endConversation() {
@@ -2755,6 +2771,7 @@ function endConversation() {
   pendingReply = null;
   npcThinking = null;
   talkBar.hidden = true;
+  talkSidekick.hidden = true;
   talkInput.blur();
   // Let the last words linger for a moment, then fade away
   const fadeAt = performance.now() + 1500;
@@ -2765,6 +2782,7 @@ function setTalkEnabled(on) {
   talkInput.disabled = !on;
   talkSay.disabled = !on;
   if (on) talkInput.focus();
+  updateSidekickButton();
 }
 
 talkBar.addEventListener('submit', (e) => {
@@ -2846,7 +2864,8 @@ async function fetchNpcReply(npc, history) {
           name: npcName(npc),
           what: npc.what || '',                 // critters: what kind of creature they are
           desc: ch ? ch.desc : '',
-          personality: npc.personality || ''
+          personality: npc.personality || '',
+          sidekick: isSidekick(npc)             // following you around, ready to help fight the Blob
         },
         playerName: player.character ? player.character.name : 'a friend',
         mapName: mapConfig ? mapConfig.name : 'The Camp',
@@ -3147,6 +3166,354 @@ function drawSpeechBubbles() {
   if (npcThinking) drawThinkingBubble(npcThinking.npc, now);
 }
 
+// ============================================================
+// --- NPCs on the move: wandering, and your sidekick ---
+// ============================================================
+// Camper NPCs stroll around their spot in the map JSON (`px`/`py`), within
+// NPC_WANDER_RX / RY of it (`"wander": false` keeps one still). Where they're
+// headed comes from the clock (Date.now()) and their id, so every computer in
+// a multiplayer world sees them in the same place without sending anything.
+// They stop when you're close, so they're easy to talk to.
+//
+// Ask a camper NPC to "be my sidekick" (button in the talk bar) and they
+// follow you around (`sidekick`), through doors to other maps too, and help
+// you fight the Blob. When the fight is over (or you say they can go) they
+// walk home: across the map if this is their map, else out the nearest door
+// that leads home (`npcLeavers`), and then they wander about at their spot again.
+const NPC_WANDER_RX = 0.045;       // how far from their spot they stroll (fractions of the map)
+const NPC_WANDER_RY = 0.03;
+const NPC_WANDER_SEG_MS = 9000;    // one stroll (with a pause) every 9s
+const NPC_WANDER_MS_PER_H = 16000; // walking one map-height takes this long
+const npcRt = {};                  // npc id → mover on its home map: { map, x, y, facing, walking, frame, frameTimer, seen }
+let sidekick = null;               // { npc, home, char, x, y, facing, walking, frame, frameTimer, trail, lastMoveAt }
+let npcLeavers = [];               // ex-sidekicks walking out of a map: { npc, char, x, y, tx, ty, ..., goneAt }
+
+function isSidekick(npc) { return !!(sidekick && npc && npc !== 'player' && !npc.remote && npc.id === sidekick.npc.id); }
+function canBeSidekick(npc) { return !!(npc && npc !== 'player' && !npc.remote && !isCritter(npc) && characterByName(npc.character)); }
+function npcWanders(npc) { return !isCritter(npc) && npc.wander !== false; }
+
+// Not standing at their spot right now: your sidekick, walking home, or a friend's sidekick
+function npcAway(id) {
+  if (sidekick && sidekick.npc.id === id) return true;
+  if (npcLeavers.some(l => l.npc.id === id)) return true;
+  return mpSidekickTaken(id);
+}
+
+// Whatever is moving this NPC around on the current map (or null: they're at their spot)
+function npcMover(npc) {
+  if (!npc || npc === 'player' || npc.remote) return null;
+  if (sidekick && sidekick.npc.id === npc.id) return sidekick;
+  const l = npcLeavers.find(l => l.npc.id === npc.id);
+  if (l) return l;
+  const rt = npcRt[npc.id];
+  return rt && rt.map === currentMapPath ? rt : null;
+}
+
+// The NPC's def as the current map knows it (the map JSON is re-fetched on
+// every map switch, so the same NPC can be a different object later)
+function npcOnThisMap(id) {
+  return (mapConfig && Array.isArray(mapConfig.npcs) && mapConfig.npcs.find(n => n.id === id)) || null;
+}
+
+// Repeatable "random" 0–1 from an NPC id and a number
+function npcHash(id, n) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  const x = Math.sin((h % 100000) * 0.0137 + n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Stroll k's destination: every third one is their own spot, so they don't drift
+function wanderPoint(npc, k) {
+  if (npcHash(npc.id, k) < 0.33) return { fx: npc.px, fy: npc.py };
+  return {
+    fx: clamp(npc.px + (npcHash(npc.id, k + 0.31) * 2 - 1) * NPC_WANDER_RX, 0.03, 0.97),
+    fy: clamp(npc.py + (npcHash(npc.id, k + 0.67) * 2 - 1) * NPC_WANDER_RY, 0.06, 0.98)
+  };
+}
+
+// Where the wander schedule says they are at time t (fractions of the map)
+function wanderTarget(npc, t) {
+  const k = Math.floor(t / NPC_WANDER_SEG_MS);
+  const a = wanderPoint(npc, k), b = wanderPoint(npc, k + 1);
+  const aspect = mapImage ? mapImage.naturalWidth / mapImage.naturalHeight : 1;
+  const walkMs = Math.max(600, Math.hypot((b.fx - a.fx) * aspect, b.fy - a.fy) * NPC_WANDER_MS_PER_H);
+  const pause = NPC_WANDER_SEG_MS * (0.25 + 0.35 * npcHash(npc.id, k + 0.5));
+  const u = clamp((t - k * NPC_WANDER_SEG_MS - pause) / walkMs, 0, 1);
+  const e = u * u * (3 - 2 * u);
+  return { fx: lerp(a.fx, b.fx, e), fy: lerp(a.fy, b.fy, e) };
+}
+
+// Walk a mover up to `speed` px toward (tx, ty), animating their legs.
+// Returns how far they still have to go.
+function stepMover(m, tx, ty, speed) {
+  const dx = tx - m.x, dy = ty - m.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 1.5) {
+    m.walking = false;
+  } else {
+    const st = Math.min(d, speed);
+    m.x += dx / d * st;
+    m.y += dy / d * st;
+    m.walking = st > 0.4;
+    if (Math.abs(dx) > 0.5) m.facing = dx < 0 ? 'left' : 'right';
+  }
+  if (m.walking) {
+    if (++m.frameTimer > 8) { m.frame = (m.frame + 1) % 4; m.frameTimer = 0; }
+  } else {
+    m.frame = 0;
+    m.frameTimer = 0;
+  }
+  return Math.max(0, d - speed);
+}
+
+function newMover(x, y, facing) {
+  return { x, y, facing: facing || 'right', walking: false, frame: 0, frameTimer: 0 };
+}
+
+// Called every frame (except in a fight)
+function updateNpcs() {
+  if (!player.character || !mapImage || !scaledMapW || devMode) return;
+  if (state === GameState.FIGHTING || state === GameState.LOADING) return;
+  const now = Date.now();
+  const pnow = performance.now();
+  const k = SPRITE_SCALE / BASE_SPRITE_SCALE;
+  const stroll = player.speed * 0.6;
+  for (const npc of currentNpcs()) {
+    if (!npcWanders(npc)) continue;
+    let rt = npcRt[npc.id];
+    if (!rt || rt.map !== currentMapPath || pnow - rt.seen > 1000) {
+      // Just came into view: they're wherever their stroll has got to by now
+      // (an ex-sidekick walking home keeps walking from where they are)
+      const w = wanderTarget(npc, now);
+      const keep = rt && rt.map === currentMapPath && rt.walkingHome;
+      rt = npcRt[npc.id] = Object.assign(keep ? rt : newMover(w.fx * scaledMapW, w.fy * scaledMapH, npcFacing[npc.id]), { map: currentMapPath });
+    }
+    rt.seen = pnow;
+    // Hold still for a chat, or when you're right next to them
+    const close = Math.hypot(rt.x - player.x, rt.y - player.y) < Math.max(NPC_TALK_RANGE * k, player.width * 1.4);
+    // (an ex-sidekick heading home doesn't wait for you to step away)
+    const busy = (talkingTo && talkingTo.id === npc.id) || (close && !rt.walkingHome) || bossEngage || doorOpening;
+    if (busy) { stepMover(rt, rt.x, rt.y, 0); continue; }
+    const w = wanderTarget(npc, now);
+    const left = stepMover(rt, w.fx * scaledMapW, w.fy * scaledMapH, rt.walkingHome ? player.speed * 0.8 : stroll);
+    if (left < 2) rt.walkingHome = false;
+    if (rt.walking) npcFacing[npc.id] = rt.facing;
+  }
+  updateSidekick(pnow, k);
+  updateLeavers(pnow);
+}
+
+// --- Your sidekick ---
+const SIDEKICK_TRAIL_GAP = 165;   // map px (× sprite size) behind you along your path while walking
+const SIDEKICK_LINES = {
+  ask:    ['Will you be my sidekick?', 'Want to be my sidekick?', 'Be my sidekick? Pleeease?'],
+  yes:    ['YES! Sidekicks forever! 🤝 Lead the way!', 'Ooh, an adventure! I\'m right behind you! 🤝',
+           'Sure! I\'ve got my sword ready, just in case! ⚔️', 'Yay! Where are we going first? 🤝'],
+  dismiss: ['Thanks for being my sidekick! You can go home now.', 'That was fun! You can go home now.'],
+  bye:    ['Okay! That was so fun! See you later! 👋', 'Aww, okay! Call me if you need help! 👋',
+           'Bye! Best adventure ever! 👋'],
+  won:    ['WE DID IT! Great teamwork! 🏆 See you around!', 'Woo-hoo! We beat the Blob! 🏆 Bye for now!'],
+  lost:   ['Aww, that Blob is tough! We\'ll get it next time! 👋', 'Phew! Let\'s rest up. See you later! 👋'],
+  fled:   ['Run, run! Phew... that was close! See you later! 👋'],
+  hit:    ['Take that!', 'Ha-HA!', 'Got it!', 'Hi-yah!', 'Yeah!'],
+  block:  ['I got you!', 'Watch out!', 'Not today!', 'Shields up!']
+};
+
+function sidekickName() { return sidekick ? npcName(sidekick.npc) : ''; }
+
+// `npc` (a camper NPC on this map) joins you
+function makeSidekick(npc) {
+  if (!canBeSidekick(npc)) return;
+  if (sidekick && sidekick.npc.id !== npc.id) releaseSidekick();
+  const p = npcPos(npc);
+  delete npcRt[npc.id];
+  npcLeavers = npcLeavers.filter(l => l.npc.id !== npc.id);
+  sidekick = Object.assign(newMover(p.x, p.y, npcFacing[npc.id]), {
+    npc, home: currentMapPath, char: characterByName(npc.character),
+    trail: [], lastMoveAt: 0
+  });
+  mpSendPos(true);
+}
+
+// Where to stand beside you (not on top of you): left or right, whichever
+// side they're already on, unless that's off the map
+function sidekickSpot() {
+  const gap = player.width * 1.55;
+  let side = sidekick.x <= player.x ? -1 : 1;
+  const x = player.x + side * gap;
+  if (x < 20 || x > scaledMapW - 20) side = -side;
+  return { x: clamp(player.x + side * gap, 20, scaledMapW - 20), y: player.y };
+}
+
+// The point `dist` px back along the path you walked
+function trailPoint(dist) {
+  const tr = sidekick.trail;
+  let px = player.x, py = player.y, left = dist;
+  for (let i = tr.length - 1; i >= 0; i--) {
+    const seg = Math.hypot(px - tr[i].x, py - tr[i].y);
+    if (seg >= left) {
+      const u = left / seg;
+      return { x: px + (tr[i].x - px) * u, y: py + (tr[i].y - py) * u };
+    }
+    left -= seg;
+    px = tr[i].x;
+    py = tr[i].y;
+  }
+  return { x: px, y: py };
+}
+
+function updateSidekick(now, k) {
+  const sk = sidekick;
+  if (!sk) return;
+  // Someone joined the world as this very character: they're a person now
+  if (mpCharacterTaken(sk.char.name)) {
+    sidekick = null;
+    mpToast(`${sk.char.name} is being played by a friend now!`);
+    return;
+  }
+  // Remember where you've walked, for them to follow
+  const last = sk.trail[sk.trail.length - 1];
+  if (!last || Math.hypot(player.x - last.x, player.y - last.y) > 6) {
+    sk.trail.push({ x: player.x, y: player.y });
+    if (sk.trail.length > 160) sk.trail.shift();
+  }
+  if (player.walking) sk.lastMoveAt = now;
+  if (talkingTo && talkingTo.id === sk.npc.id) { stepMover(sk, sk.x, sk.y, 0); return; }
+  const target = now - sk.lastMoveAt < 350 ? trailPoint(SIDEKICK_TRAIL_GAP * k) : sidekickSpot();
+  const far = Math.hypot(target.x - sk.x, target.y - sk.y);
+  stepMover(sk, target.x, target.y, player.speed * (far > 260 * k ? 1.5 : 1.08));
+  if (!sk.walking) sk.facing = player.x < sk.x ? 'left' : 'right';   // keep an eye on you
+  npcFacing[sk.npc.id] = sk.facing;
+}
+
+// Going through a door: they come too, and pop up beside you
+function placeSidekickBeside() {
+  if (!sidekick) return;
+  const behind = player.facing === 'left' ? 1 : -1;
+  const gap = player.width * 1.55;
+  let x = player.x + behind * gap;
+  if (x < 20 || x > scaledMapW - 20) x = player.x - behind * gap;
+  sidekick.x = clamp(x, 20, scaledMapW - 20);
+  sidekick.y = player.y;
+  sidekick.trail = [];
+  sidekick.walking = false;
+  sidekick.facing = player.facing;
+  sidekick.lastMoveAt = 0;
+}
+
+// A speech bubble that fades away on its own (not part of a conversation)
+function sayAndFade(owner, text, partner, linger) {
+  say(owner, text, partner);
+  const b = speechBubbles[speechBubbles.length - 1];
+  b.fadeStart = b.start + b.duration + (linger || 2500);
+  mpSay(text, partner || 'player', owner === 'player' ? null : owner);
+}
+
+// They stop being your sidekick (optionally saying `line`) and head home
+function releaseSidekick(line) {
+  const sk = sidekick;
+  if (!sk) return;
+  sidekick = null;
+  const id = sk.npc.id;
+  if (sk.home === currentMapPath) {
+    // Their own map: walk back to where they like to hang out
+    const npc = npcOnThisMap(id) || sk.npc;
+    npcRt[id] = Object.assign(newMover(sk.x, sk.y, sk.facing), {
+      map: currentMapPath, seen: performance.now(), walkingHome: true
+    });
+    if (talkingTo && talkingTo.id === id) talkingTo = npc;
+    for (const b of speechBubbles) {
+      if (b.owner && b.owner.id === id) b.owner = npc;
+      if (b.partner && b.partner.id === id) b.partner = npc;
+    }
+    if (line) sayAndFade(npc, line, 'player');
+  } else {
+    // Another map: out the door that leads home
+    const door = exitTowards(sk.home);
+    const leaver = Object.assign(newMover(sk.x, sk.y, sk.facing), {
+      npc: sk.npc, char: sk.char, home: sk.home,
+      tx: door ? door.x : sk.x, ty: door ? door.y : sk.y, goneAt: 0,
+      seen: performance.now()
+    });
+    npcLeavers.push(leaver);
+    if (line) sayAndFade(sk.npc, line, 'player');
+  }
+  mpSendPos(true);
+}
+
+// Where to walk to leave this map for `homePath`: a door straight there, else
+// one back to the main camp (every room is reached from there), else any door
+function exitTowards(homePath) {
+  const portals = interactiveObjects.filter(o => o.targetMap);
+  const pick = portals.find(o => o.targetMap === homePath)
+    || portals.find(o => o.targetMap === MP_MAIN_MAP)
+    || portals[0];
+  if (!pick) return null;
+  const d = pick.door;
+  if (d) return { x: (d.px + d.pw / 2) * scaledMapW, y: (d.py + d.ph) * scaledMapH };
+  return { x: pick.x + pick.width / 2, y: pick.y + pick.height * 0.8 };
+}
+
+function updateLeavers(now) {
+  const LEAVE_FADE_MS = 500;
+  for (const l of npcLeavers) {
+    if (l.goneAt) continue;
+    if (talkingTo && talkingTo.id === l.npc.id) { stepMover(l, l.x, l.y, 0); continue; }
+    if (stepMover(l, l.tx, l.ty, player.speed * 0.85) < 2) l.goneAt = now;
+    npcFacing[l.npc.id] = l.facing;
+  }
+  // Through the door: they're home (and wander there when you visit)
+  npcLeavers = npcLeavers.filter(l => !l.goneAt || now - l.goneAt < LEAVE_FADE_MS);
+}
+
+function leaverAlpha(l) {
+  return l.goneAt ? clamp(1 - (performance.now() - l.goneAt) / 500, 0, 1) : 1;
+}
+
+// --- The talk bar's sidekick button ---
+const talkSidekick = document.getElementById('talkSidekick');
+
+function updateSidekickButton() {
+  const show = !!talkingTo && canBeSidekick(talkingTo) && !npcLeavers.some(l => l.npc.id === talkingTo.id);
+  talkSidekick.hidden = !show;
+  if (!show) return;
+  talkSidekick.textContent = isSidekick(talkingTo) ? '👋 You can go home' : '🤝 Be my sidekick!';
+  talkSidekick.classList.toggle('dismiss', isSidekick(talkingTo));
+  talkSidekick.disabled = talkPhase !== 'input';
+}
+
+talkSidekick.addEventListener('click', () => {
+  const npc = talkingTo;
+  if (!npc || talkPhase !== 'input' || !canBeSidekick(npc)) return;
+  const joining = !isSidekick(npc);
+  const ask = pickOne(joining ? SIDEKICK_LINES.ask : SIDEKICK_LINES.dismiss);
+  const answer = pickOne(joining ? SIDEKICK_LINES.yes : SIDEKICK_LINES.bye);
+  talkInput.value = '';
+  setTalkEnabled(false);
+  say('player', ask, npc);
+  mpSay(ask, npc);
+  talkPhase = 'playerSpeaking';
+  const history = conversations[npcName(npc)] || (conversations[npcName(npc)] = []);
+  history.push({ speaker: 'player', text: ask });
+  if (joining) makeSidekick(npc);
+  else releaseSidekick();                    // (on their own map, talkingTo is now this map's copy)
+  pendingReply = { npc: talkingTo, text: answer };   // shown once you've finished asking
+  updateSidekickButton();
+});
+
+// --- Friends' sidekicks (multiplayer) ---
+// A friend's `pos` carries `sk` when they have a sidekick; we draw that NPC
+// following them, and nobody else can take it.
+function mpSidekickTaken(id) {
+  if (!mp.active) return false;
+  for (const rp of mp.players.values()) if (rp.sk && rp.sk.npcId === id) return true;
+  return false;
+}
+function mpSidekicksHere() {
+  return mpPlayersHere().filter(rp => rp.sk).map(rp => rp.sk);
+}
+
 // --- Drawing people on the map (player + NPCs, sorted so lower = in front) ---
 function drawPlayerSprite() {
   const mouth = mouthOpenFor('player');
@@ -3208,6 +3575,7 @@ function drawCritterSprite(npc) {
 function drawNpcSprite(npc) {
   if (isCritter(npc)) { drawCritterSprite(npc); return; }
   const p = npcPos(npc);
+  const m = npcMover(npc);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
   ctx.beginPath();
   const k = SPRITE_SCALE / BASE_SPRITE_SCALE;
@@ -3217,11 +3585,43 @@ function drawNpcSprite(npc) {
     p.x - player.width / 2,
     p.y - player.height,
     characterByName(npc.character),
-    0,
+    m ? m.frame : 0,
     npcFacing[npc.id] || 'right',
     SPRITE_SCALE,
     mouthOpenFor(npc)
   );
+}
+
+// An ex-sidekick walking out the door (fading as they go through)
+function drawLeaver(l) {
+  ctx.save();
+  ctx.globalAlpha = leaverAlpha(l);
+  drawNpcSprite(l.npc);
+  ctx.restore();
+}
+
+// A friend's sidekick, following them around (see mpOnPos)
+function drawFriendSidekick(sk) {
+  const k = SPRITE_SCALE / BASE_SPRITE_SCALE;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(sk.x + 9 * k, sk.y + 2, 42 * k, 15 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+  drawCharacterSprite(sk.x - player.width / 2, sk.y - player.height, sk.char, sk.frame,
+    sk.facing, SPRITE_SCALE, mouthOpenFor(sk));
+}
+
+// "🤝 Sidekick" over your sidekick's head (and friends' sidekicks)
+function drawSidekickTag(owner, label) {
+  const head = speakerHead(owner);
+  ctx.font = 'bold 12px "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(label).width + 14;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  roundRect(head.x - w / 2, head.top - 30, w, 20, 6);
+  ctx.fill();
+  ctx.fillStyle = speakerColor(owner);
+  ctx.fillText(label, head.x, head.top - 16);
 }
 
 function drawNpcTalkHint(npc) {
@@ -3250,6 +3650,10 @@ function drawNpcTalkHint(npc) {
 
 function drawPeople() {
   const people = currentNpcs().map(npc => ({ y: npcPos(npc).y, draw: () => drawNpcSprite(npc) }));
+  if (sidekick) people.push({ y: sidekick.y, draw: () => drawNpcSprite(sidekick.npc) });
+  for (const l of npcLeavers) people.push({ y: l.y, draw: () => drawLeaver(l) });
+  const friendSidekicks = mpSidekicksHere();
+  for (const sk of friendSidekicks) people.push({ y: sk.y, draw: () => drawFriendSidekick(sk) });
   const friends = mpPlayersHere();
   for (const rp of friends) people.push({ y: rp.y, draw: () => drawRemotePlayer(rp) });
   people.push({ y: player.y, draw: drawPlayerSprite });
@@ -3260,6 +3664,8 @@ function drawPeople() {
   const showBossHint = state === GameState.PLAYING && nearBoss && !bossEngage;
   const hinting = state === GameState.PLAYING && !showBossHint ? nearbyNpc : null;
   for (const rp of friends) if (rp !== hinting) drawNameTag(rp);
+  if (sidekick && hinting !== sidekick.npc && state !== GameState.TALKING) drawSidekickTag(sidekick.npc, '🤝 Sidekick');
+  for (const sk of friendSidekicks) drawSidekickTag(sk, `🤝 ${sk.owner.name}'s sidekick`);
   if (showBossHint) drawMapBossHint();
   else if (hinting) drawNpcTalkHint(hinting);
 }
@@ -4993,6 +5399,7 @@ function drawHUD() {
   drawSwordBadge(176, 10);
 
   if (mp.active) drawMpHudBadge();
+  if (sidekick) drawSidekickHudBadge(mp.active ? 88 : 52);
 
   // Mini instructions
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
@@ -5007,6 +5414,19 @@ function drawHUD() {
 
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   ctx.fillText(instrText, canvas.width / 2, canvas.height - 18);
+}
+
+// "🤝 Red Scout is your sidekick" under the camper name
+function drawSidekickHudBadge(y) {
+  const text = `🤝 ${sidekickName()} is your sidekick`;
+  ctx.font = 'bold 14px "Comic Sans MS", cursive';
+  const w = ctx.measureText(text).width + 20;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  roundRect(10, y, w, 30, 8);
+  ctx.fill();
+  ctx.fillStyle = sidekick.char.color;
+  ctx.textAlign = 'left';
+  ctx.fillText(text, 20, y + 20);
 }
 
 function drawInteraction() {
@@ -5903,6 +6323,8 @@ function backToModeSelect() {
 // "Switch camper?" → Yes. In a world you stay connected, but friends stop seeing you.
 function goToCharacterSelect() {
   if (mp.active) mpSendBye();
+  sidekick = null;
+  npcLeavers = [];
   state = GameState.CHARACTER_SELECT;
   player.character = null;
 }
@@ -6182,7 +6604,20 @@ function mpSendPos(force) {
     fi: state === GameState.FIGHTING || bossEngage ? 1 : 0,
     sw: hasSword() ? 1 : 0
   };
-  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h, msg.fi, msg.sw].join('|');
+  if (sidekick) {
+    // My sidekick: which NPC (and who they are), and where they are on my map
+    msg.sk = {
+      id: sidekick.npc.id,
+      c: sidekick.char.name,
+      x: +(sidekick.x / scaledMapW).toFixed(4),
+      y: +(sidekick.y / scaledMapH).toFixed(4),
+      f: sidekick.facing,
+      w: sidekick.walking ? 1 : 0
+    };
+  }
+  const sk = msg.sk;
+  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h, msg.fi, msg.sw,
+    sk ? [sk.id, sk.x, sk.y, sk.f, sk.w].join(',') : ''].join('|');
   const due = force ||
     (key !== mp.lastPosKey && now - mp.lastPosAt >= MP_POS_EVERY_MS) ||
     now - mp.lastPosAt >= MP_HEARTBEAT_MS;
@@ -6474,6 +6909,7 @@ function mpOnPos(m, from) {
   });
   rp.x = rp.fx * scaledMapW;
   rp.y = rp.fy * scaledMapH;
+  mpOnFriendSidekick(rp, m.sk, isNew);
   if (rp.fighting && !mapBoss.busyWith && m.map === mpBossMap()) {
     mpOnBossFight({ on: true, map: m.map }, from);   // we joined while they were fighting
   } else if (!rp.fighting && mapBoss.busyWith === from && performance.now() - mapBoss.busySince > 2000) {
@@ -6482,11 +6918,37 @@ function mpOnPos(m, from) {
   if (isNew && mpInWorld()) mpToast(`👋 ${ch.name} joined the world!`);
 }
 
+// A friend's sidekick (pos.sk), drawn following them: a remote-style speaker
+// { remote, sidekickOf, npcId, char, name, color, tx/ty, fx/fy, x/y, facing, walking, frame }
+function mpOnFriendSidekick(rp, sk, isNew) {
+  const ch = sk && typeof sk === 'object' && typeof sk.id === 'string' && characterByName(sk.c);
+  if (!ch) { rp.sk = null; return; }
+  const x = clamp(Number(sk.x) || 0, 0, 1);
+  const y = clamp(Number(sk.y) || 0, 0, 1);
+  const npcId = sk.id.slice(0, 64);
+  if (!rp.sk || rp.sk.npcId !== npcId || rp.sk.map !== rp.map || isNew) {
+    rp.sk = { remote: true, sidekickOf: rp.id, owner: rp, npcId, id: npcId, map: rp.map, fx: x, fy: y, frame: 0, frameTimer: 0 };
+  }
+  Object.assign(rp.sk, {
+    char: ch, name: ch.name, color: ch.color, tx: x, ty: y,
+    facing: sk.f === 'left' ? 'left' : 'right', walking: !!sk.w
+  });
+  rp.sk.x = rp.sk.fx * scaledMapW;
+  rp.sk.y = rp.sk.fy * scaledMapH;
+  // Both of us asked the same NPC at once: the lower player id keeps them
+  if (sidekick && sidekick.npc.id === npcId && rp.id < mp.myId) {
+    const name = sidekickName();
+    sidekick = null;
+    mpToast(`${name} went off with ${rp.name}! 🤝`);
+  }
+}
+
 function mpRemovePlayer(id, why) {
   const rp = mp.players.get(id);
   if (!rp) return;
   mp.players.delete(id);
-  speechBubbles = speechBubbles.filter(b => b.owner !== rp && b.partner !== rp);
+  speechBubbles = speechBubbles.filter(b => b.owner !== rp && b.partner !== rp &&
+    !(rp.sk && (b.owner === rp.sk || b.partner === rp.sk)));
   if (talkingTo === rp) endConversation();
   if (nearbyNpc === rp) nearbyNpc = null;
   if (mapBoss.busyWith === id) mpBossGoHome();   // they left mid-fight
@@ -6514,7 +6976,8 @@ function mpOnSay(m, from) {
   let owner, partner;
   if (m.npc) {
     // An NPC answering a friend
-    owner = currentNpcs().find(n => n.id === m.npc);
+    owner = currentNpcs().find(n => n.id === m.npc) ||
+      (speaker.sk && speaker.sk.npcId === m.npc && speaker.sk.map === currentMapPath ? speaker.sk : null);
     if (!owner || owner === talkingTo) return;   // we're chatting with them ourselves
     partner = speaker;
   } else {
@@ -6541,12 +7004,20 @@ function mpTick() {
     rp.fy += (rp.ty - rp.fy) * 0.2;
     rp.x = rp.fx * scaledMapW;
     rp.y = rp.fy * scaledMapH;
-    const moving = rp.walking || Math.hypot(rp.tx - rp.fx, rp.ty - rp.fy) > 0.002;
-    if (moving) {
-      if (++rp.frameTimer > 8) { rp.frame = (rp.frame + 1) % 4; rp.frameTimer = 0; }
-    } else {
-      rp.frame = 0;
-      rp.frameTimer = 0;
+    for (const a of rp.sk ? [rp, rp.sk] : [rp]) {
+      if (a !== rp) {
+        a.fx += (a.tx - a.fx) * 0.2;
+        a.fy += (a.ty - a.fy) * 0.2;
+        a.x = a.fx * scaledMapW;
+        a.y = a.fy * scaledMapH;
+      }
+      const moving = a.walking || Math.hypot(a.tx - a.fx, a.ty - a.fy) > 0.002;
+      if (moving) {
+        if (++a.frameTimer > 8) { a.frame = (a.frame + 1) % 4; a.frameTimer = 0; }
+      } else {
+        a.frame = 0;
+        a.frameTimer = 0;
+      }
     }
   }
   // The friend you're chatting with walked off or went into another room
@@ -7875,7 +8346,96 @@ function startFight() {
   fight.p.strength = fight.p.maxStrength = STRENGTH_BASE + strengthBoost;
   fight.b.strength = fight.b.maxStrength = (def.strength || STRENGTH_BASE) + fight.tune.strength;
   fight.b.regenMs = STRENGTH_REGEN_MS * fight.tune.regen;
+  // Your sidekick fights beside you (in the lane just behind)
+  if (sidekick) {
+    fight.s = Object.assign(newFighter(200, 'right'), {
+      char: sidekick.char, name: sidekickName(),
+      strength: SIDEKICK_STRENGTH, maxStrength: SIDEKICK_STRENGTH,
+      nextSwingAt: now + 2600 + randBetween(...SIDEKICK_SWING_GAP_MS)
+    });
+  }
   state = GameState.FIGHTING;
+}
+
+// ---------- Your sidekick in the fight ----------
+// They stand in the lane just behind you (drawn a little smaller and higher),
+// a step back from you, and:
+//   • run in and swing their own sword now and then, then step back — their
+//     hits count toward YOUR score (and the Blob may block them, and
+//     counter-attack you!)
+//   • see the Blob winding up and often put their sword up. A block covers
+//     you both: the Blob's swing at you hits their guard instead.
+// Your block covers them too, but the Blob only ever goes after you, so the
+// sidekick never gets hurt and has no strength bar.
+// Tuned with tools/fight-sim.js (see CLAUDE.md): a sidekick helps a lot but
+// doesn't win the fight for you.
+const SIDEKICK_STRENGTH = 10;                // for their odds (strengthOdds) and speed
+const SIDEKICK_SWING_GAP_MS = [3800, 6000];  // between their swings
+const SIDEKICK_BLOCK_CHANCE = 0.3;           // they try to block this often...
+const SIDEKICK_REACT_MS = [320, 620];        // ...this long after the Blob starts its wind-up
+const SIDEKICK_LANE = 55;                    // arena units: how far "back" their lane is
+const SIDEKICK_BEHIND = 140;                 // they wait this far behind you
+const SIDEKICK_GUARD = 240;                  // their guard covers you if they're this close to you
+
+function sidekickGuarding(f) {
+  const s = f.s;
+  return !!s && (s.act === 'block' || s.act === 'blockstun') && Math.abs(s.x - f.p.x) <= SIDEKICK_GUARD;
+}
+
+function sidekickAI(f, now, dt) {
+  const s = f.s, p = f.p, b = f.b;
+  const t = now - s.actStart;
+  s.facing = b.x >= s.x ? 'right' : 'left';
+  if (s.act === 'attack') {
+    if (!s.hitChecked && t >= P_STARTUP) { s.hitChecked = true; resolveHit(f, s, b, 'sidekick'); }
+    if (s.act === 'attack' && t >= P_STARTUP + P_ACTIVE + P_RECOVER) {
+      s.act = 'idle';
+      s.charging = false;                      // step back behind you
+      s.nextSwingAt = now + randBetween(...SIDEKICK_SWING_GAP_MS);
+    }
+    return;
+  }
+  if (s.act === 'blockstun' && t > BLOCK_STUN) { s.act = 'block'; s.actStart = now; }
+  if (s.act === 'block') {
+    // Hold it until the Blob's swing is over
+    if (b.act !== 'windup' && b.act !== 'attack' && now - s.actStart > 250) s.act = 'idle';
+    else return;
+  }
+  // The Blob is winding up: maybe get the sword up in time
+  if (b.act === 'windup') {
+    if (s.reactTo !== b.actStart) {
+      s.reactTo = b.actStart;
+      s.blockAt = Math.random() < SIDEKICK_BLOCK_CHANCE ? b.actStart + randBetween(...SIDEKICK_REACT_MS) : 0;
+    }
+    if (s.blockAt && now >= s.blockAt) {
+      s.blockAt = 0;
+      s.act = 'block';
+      s.actStart = now;
+      if (Math.random() < 0.5) fightPop(f, pickOne(SIDEKICK_LINES.block), s.x, 300 + SIDEKICK_LANE, s.char.color, 0.55);
+      return;
+    }
+  }
+  // Time for a swing? Run in at the Blob (unless it's already reeling)
+  const side = p.x <= b.x ? -1 : 1;              // which side of the Blob you're both on
+  if (!s.charging && now >= s.nextSwingAt && b.act !== 'hit' && b.act !== 'ko') s.charging = true;
+  let rest = p.x + side * SIDEKICK_BEHIND;
+  if (rest < ARENA_MIN_X + 10 || rest > ARENA_MAX_X - 10) rest = p.x - side * SIDEKICK_BEHIND * 0.8;   // backed into the wall: just in front
+  const want = s.charging ? b.x + side * (P_REACH - 45) : clamp(rest, ARENA_MIN_X, ARENA_MAX_X);
+  const spd = strengthSpeed(s.strength);
+  if (Math.abs(want - s.x) > 14) {
+    s.x += Math.sign(want - s.x) * (s.charging ? 360 : 260) * spd * dt;
+    s.walk += dt * spd;
+    s.act = 'walk';
+  } else {
+    s.act = 'idle';
+  }
+  if (s.charging && Math.abs(s.x - b.x) <= P_REACH - 15) {
+    if (b.act === 'hit' || b.act === 'ko') { s.charging = false; s.nextSwingAt = now + 600; return; }
+    s.act = 'attack';
+    s.actStart = now;
+    s.hitChecked = false;
+    b.rolledBlock = bossMaybeBlock(f, now);
+  }
 }
 
 function fightBusy(a) { return a.act === 'attack' || a.act === 'hit' || a.act === 'blockstun' || a.act === 'ko'; }
@@ -7930,44 +8490,50 @@ function fightSay(f, text, dur) {
 function resolveHit(f, att, def, who) {
   const now = performance.now();
   const dist = Math.abs(att.x - def.x);
-  const reach = who === 'player' ? P_REACH : B_REACH;
+  const reach = who === 'boss' ? B_REACH : P_REACH;
   const away = def.x > att.x ? 1 : -1;
   const midX = (att.x + def.x) / 2;
   if (dist > reach) return;                                  // whiff
   // Back on its feet just in time? It might get its sword up
-  if (who === 'player' && !def.rolledBlock) bossMaybeBlock(f, now);
+  if (who !== 'boss' && !def.rolledBlock) bossMaybeBlock(f, now);
   def.rolledBlock = false;
+  // Whoever's guarding: you, or your sidekick's sword up in front of you both
+  const ownBlock = def.act === 'block' && def.y === 0;
+  const guard = ownBlock ? def : (who === 'boss' && sidekickGuarding(f) ? f.s : null);
+  const guardY = guard === f.s ? SIDEKICK_LANE : 0;
   if (who === 'boss' && def.y > 70) {                        // jumped right over it
     fightPop(f, 'MISSED!', def.x, def.y + 230, '#B3E5FC', 0.8);
     return;
   }
   if (def.act === 'windup' && def.armor) {               // counter-attacks can't be stopped
-    if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword
+    if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword (the sidekick has their own)
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
     fightPop(f, 'CLANG!', def.x - away * 40, 230, '#90CAF9', 0.9);
     f.shake = 4;
     return;
   }
   // A block only holds if the blocker is strong enough
-  const broke = def.act === 'block' && def.y === 0 && Math.random() > strengthOdds(def.strength);
+  const broke = !!guard && Math.random() > strengthOdds(guard.strength);
   if (broke) {
-    f.sparks.push({ x: def.x - away * 70, y: 140, color: '#FF8A65', start: now });
-    fightPop(f, 'BLOCK BROKEN!', def.x - away * 40, 300, '#FF8A65', 0.8);
-  } else if (def.act === 'block' && def.y === 0) {
+    f.sparks.push({ x: guard.x - away * 70, y: 140 + guardY, color: '#FF8A65', start: now });
+    fightPop(f, 'BLOCK BROKEN!', guard.x - away * 40, 300 + guardY, '#FF8A65', 0.8);
+  } else if (guard) {
     if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword
-    def.act = 'blockstun';
-    def.actStart = now;
-    if (who === 'player') def.counter = true;     // the Blob hits right back!
-    def.pushV = 260 * away;
-    f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
-    fightPop(f, pickOne(['BLOCKED!', 'CLANG!', 'TINK!']), def.x - away * 40, 230, '#90CAF9', 0.9);
+    guard.act = 'blockstun';
+    guard.actStart = now;
+    if (who !== 'boss') def.counter = true;       // the Blob hits right back!
+    guard.pushV = 260 * away;
+    if (guard !== def) def.pushV = 200 * away;   // the sidekick's guard shoves you both back
+    f.sparks.push({ x: guard.x - away * 70, y: 140 + guardY, color: '#90CAF9', start: now });
+    fightPop(f, guard === def ? pickOne(['BLOCKED!', 'CLANG!', 'TINK!']) : `🤝 ${pickOne(['BLOCKED!', 'SAVED YOU!', 'CLANG!'])}`,
+      guard.x - away * 40, 230 + guardY, guard === def ? '#90CAF9' : guard.char.color, 0.9);
     f.shake = 4;
     return;
   }
   // A swing only lands if the swinger is strong enough — otherwise it gets dodged
   if (!broke && Math.random() > strengthOdds(att.strength)) {
     def.pushV = 380 * away;
-    if (who === 'player') {
+    if (who !== 'boss') {
       fightPop(f, pickOne(['DODGED!', 'TOO WEAK!', 'WIGGLED AWAY!']), def.x, 250, '#B3E5FC', 0.9);
       if (f.def && f.def.dodgePhrases && Math.random() < 0.6) fightSay(f, bossSays('dodgePhrases'), 900);
     } else {
@@ -7976,32 +8542,35 @@ function resolveHit(f, att, def, who) {
     }
     return;
   }
-  // HIT! One point.
+  // HIT! One point (your sidekick's hits count for you).
   if (who === 'player') wearSword(f, SWORD_HIT_WEAR);
-  att.score++;
-  if (who === 'player') f.pPulse = now; else f.bPulse = now;
+  const scorer = who === 'sidekick' ? f.p : att;
+  scorer.score++;
+  if (who !== 'boss') f.pPulse = now; else f.bPulse = now;
   def.act = 'hit';
   def.actStart = now;
   def.pushV = 950 * away;         // knocked back out of reach: step in again
   def.lastHit = now;
   f.sparks.push({ x: midX + away * 50, y: 130 + def.y, color: '#FFEB3B', start: now });
   fightPop(f, pickOne(['POW!', 'BONK!', 'SMACK!', 'WHACK!', 'THWACK!', 'BOOF!']), def.x, 250 + def.y, '#FFEB3B', 1.1);
-  fightPop(f, '+1', att.x, 260, who === 'player' ? player.character.color : '#FF9E5E', 0.8);
+  const popColor = who === 'player' ? player.character.color : who === 'sidekick' ? att.char.color : '#FF9E5E';
+  fightPop(f, '+1', att.x, 260 + (who === 'sidekick' ? SIDEKICK_LANE : 0), popColor, 0.8);
+  if (who === 'sidekick' && Math.random() < 0.5) fightPop(f, pickOne(SIDEKICK_LINES.hit), att.x, 330 + SIDEKICK_LANE, popColor, 0.55);
   f.shake = 10;
   loseStrength(f, def, now);
   if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
   else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
   else f.shout = null;
-  if (att.score >= f.toWin) {
+  if (scorer.score >= f.toWin) {
     f.phase = 'ko';
     f.phaseStart = now;
-    f.winner = who;
+    f.winner = who === 'boss' ? 'boss' : 'player';
     def.act = 'ko';
   }
 }
 
 function fightPhysics(f, dt) {
-  for (const a of [f.p, f.b]) {
+  for (const a of f.s ? [f.p, f.b, f.s] : [f.p, f.b]) {
     if (a.y > 0 || a.vy > 0) {
       a.y += a.vy * dt;
       a.vy -= GRAVITY * dt;
@@ -8025,6 +8594,12 @@ function fightPhysics(f, dt) {
       if (p.x <= ARENA_MIN_X || p.x >= ARENA_MAX_X) b.x = p.x + dir * FIGHT_MIN_GAP;
       else p.x = b.x - dir * FIGHT_MIN_GAP;
     }
+  }
+  // Your sidekick doesn't walk into the Blob either (it just steps back)
+  if (f.s) {
+    const s = f.s;
+    const sdir = s.x <= b.x ? -1 : 1;
+    if (Math.abs(s.x - b.x) < FIGHT_MIN_GAP) s.x = clamp(b.x + sdir * FIGHT_MIN_GAP, ARENA_MIN_X, ARENA_MAX_X);
   }
 }
 
@@ -8118,7 +8693,8 @@ function updateFight() {
     return;
   }
   if (f.phase === 'ko') {
-    for (const a of [f.p, f.b]) {
+    for (const a of f.s ? [f.p, f.b, f.s] : [f.p, f.b]) {
+      if (a.act === 'block' && a === f.s) a.act = 'idle';
       if (a.act === 'attack' && now - a.actStart > 700) a.act = 'idle';
       if ((a.act === 'hit' || a.act === 'blockstun' || a.act === 'windup') && now - a.actStart > HIT_STUN) a.act = 'idle';
     }
@@ -8160,6 +8736,7 @@ function updateFight() {
     }
   }
 
+  if (f.s) sidekickAI(f, now, dt);
   if (f.phase === 'fight') bossAI(f, now, dt);
   fightPhysics(f, dt);
 }
@@ -8217,6 +8794,10 @@ function finishFight(fled) {
       color: '#FFE082'
     });
   }
+  if (f.s) {
+    f.sidekickLine = pickOne(won ? SIDEKICK_LINES.won : fled ? SIDEKICK_LINES.fled : SIDEKICK_LINES.lost);
+    res.lines.push({ text: `🤝 ${f.s.name}: "${f.sidekickLine}"`, color: f.s.char.color });
+  }
   writeSave();
   f.phase = 'result';
   f.phaseStart = performance.now();
@@ -8232,7 +8813,10 @@ function finishFight(fled) {
 function endFight() {
   if (!fight) return;
   const won = fight.result && fight.result.won;
+  const sidekickLine = fight.s ? fight.sidekickLine : null;
   fight = null;
+  // The fight's over, so your sidekick heads home
+  if (sidekickLine) releaseSidekick(sidekickLine);
   fightTouch = { left: false, right: false, block: false };
   resetMapBoss(bossRestMs(won));
   mpBossFight(false, won);
@@ -8408,17 +8992,20 @@ function playerSwordPose(p, now) {
   return mix(out, rest, clamp((t - P_STARTUP - P_ACTIVE) / (p.recover || P_RECOVER), 0, 1));
 }
 
-function drawFightPlayer(v, p, now) {
-  const H = 200 * v.scale;
+// You, or (with `ch` and `lane`) your sidekick in the lane just behind:
+// a little smaller and higher up the floor
+function drawFightPlayer(v, p, now, ch, lane) {
+  ch = ch || player.character;
+  lane = lane || 0;
+  const H = 200 * v.scale * (lane ? 0.86 : 1);
   const s = H / 48;
   const cx = v.sx(p.x);
-  const feet = v.sy(p.y);
-  const ch = player.character;
+  const feet = v.sy(p.y + lane);
   // shadow stays on the floor (smaller while jumping)
-  const sh = 1 - Math.min(0.6, p.y / 300);
+  const sh = (1 - Math.min(0.6, p.y / 300)) * (lane ? 0.86 : 1);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.beginPath();
-  ctx.ellipse(cx, v.groundY, 65 * v.scale * sh, 9 * v.scale * sh, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, v.sy(lane), 65 * v.scale * sh, 9 * v.scale * sh, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.save();
@@ -8474,6 +9061,46 @@ function drawFightPlayer(v, p, now) {
     ctx.stroke();
   }
   if (p.act === 'hit' || p.act === 'ko') drawDizzyStars(x0 + 15 * s, y0 - 4 * s, 10 * s, now);
+  ctx.restore();
+}
+
+// With a sidekick, one of you blocking guards you both: a big shimmery
+// shield in front of whoever is closer to the Blob, tall enough for two
+function drawTeamGuard(v, f, now) {
+  const s = f.s, p = f.p, b = f.b;
+  const pBlock = p.act === 'block' || p.act === 'blockstun';
+  const sBlock = sidekickGuarding(f);
+  if (!pBlock && !sBlock) return;
+  const front = Math.abs(s.x - b.x) < Math.abs(p.x - b.x) ? s : p;
+  const dir = b.x >= front.x ? 1 : -1;
+  const x = v.sx(front.x + dir * 85);
+  const y = v.sy(115 + SIDEKICK_LANE / 2);
+  const r = 150 * v.scale;
+  const color = sBlock && !pBlock ? s.char.color : player.character.color;
+  ctx.save();
+  ctx.translate(x, y);
+  if (dir < 0) ctx.scale(-1, 1);
+  const a = 0.35 + Math.sin(now / 90) * 0.12;
+  const g = ctx.createRadialGradient(-r * 0.6, 0, r * 0.5, -r * 0.6, 0, r * 1.05);
+  g.addColorStop(0, 'rgba(144, 202, 249, 0)');
+  g.addColorStop(1, `rgba(144, 202, 249, ${a * 0.6})`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(-r * 0.6, 0, r, -1.0, 1.0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.lineWidth = Math.max(3, 7 * v.scale);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = `rgba(187, 222, 251, ${a + 0.25})`;
+  ctx.beginPath();
+  ctx.arc(-r * 0.6, 0, r, -1.0, 1.0);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(2, 3 * v.scale);
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.arc(-r * 0.6, 0, r * 0.93, -0.9, 0.9);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -8609,7 +9236,7 @@ function drawFightHud(v, f, now) {
       ctx.fillText(sub, tx, pad + 42);
     }
   };
-  plate(pad, ch.name.toUpperCase(), ch.color, null, 'left');
+  plate(pad, ch.name.toUpperCase(), ch.color, f.s ? `🤝 with your sidekick ${f.s.name}` : null, 'left');
   drawStrengthMeter(f.p, pad, pad + plateH + 6, plateW, now, f.boost ? '#F48FB1' : null);
   drawSwordMeter(f, pad, pad + plateH + 6 + 22 + 5, plateW, now);
   drawStrengthMeter(f.b, W - pad - plateW, pad + plateH + 6, plateW, now, '#FF9E5E');
@@ -8824,7 +9451,8 @@ function drawFightOverlay(v, f, now) {
       bigText('READY...', W / 2, Hc * 0.3 + big * 1.1, big * 0.5, '#fff');
       let ly = Hc * 0.3 + big * 1.65;
       if (f.level) { bigText(`⭐ Level ${f.level} Blob: it's tougher now!`, W / 2, ly, big * 0.3, '#B3E5FC'); ly += big * 0.45; }
-      if (f.boost) bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, ly, big * 0.3, '#F8BBD0');
+      if (f.boost) { bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, ly, big * 0.3, '#F8BBD0'); ly += big * 0.45; }
+      if (f.s) bigText(`🤝 ${f.s.name} is here to help!`, W / 2, ly, big * 0.3, f.s.char.color);
       ctx.restore();
     } else {
       const u = clamp((t - 1200) / 250, 0, 1);
@@ -8894,8 +9522,10 @@ function drawFight() {
   ctx.save();
   if (f.shake > 0) ctx.translate((Math.random() - 0.5) * f.shake, (Math.random() - 0.5) * f.shake);
   drawCaveArena(v, now);
+  if (f.s) drawFightPlayer(v, f.s, now, f.s.char, SIDEKICK_LANE);
   drawFightBoss(v, f, now);
   drawFightPlayer(v, f.p, now);
+  if (f.s) drawTeamGuard(v, f, now);
   drawFightFx(v, f, now);
   ctx.restore();
   // the Blob's yelling, above its head
@@ -8913,6 +9543,7 @@ function drawFight() {
 // --- Main Game Loop ---
 function gameLoop() {
   update();
+  updateNpcs();
   mpTick();
   updateConversation();
 
