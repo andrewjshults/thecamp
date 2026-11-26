@@ -1,5 +1,6 @@
 {
   "name": "The Camp",
+  "where": "out at the camp",
   "image": "assets/game_design.jpg",
   "playerStart": { "px": 0.45, "py": 0.85 },
   "hotspots": [

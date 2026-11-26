@@ -1,5 +1,6 @@
 {
   "name": "Inside the House",
+  "where": "inside the house",
   "image": "assets/inside_house.jpg",
   "playerStart": {
     "px": 0.5,

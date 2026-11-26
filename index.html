@@ -1602,6 +1602,7 @@ function writeSave() {
     dishesMade,
     customRecipes,
     strengthBoost,
+    swordRating,
     maps: {
       ...allMapSaves,
       [currentMapPath]: { hotspots: hotspotItems }
@@ -1641,6 +1642,7 @@ function initFreshSave() {
   customRecipes = [];
   resetDraftRecipe();
   strengthBoost = 0;
+  swordRating = SWORD_MAX;
   allMapSaves = {};
   writeSave();
 }
@@ -1651,6 +1653,7 @@ function applySave(save) {
   customRecipes = cleanCustomRecipes(save.customRecipes);
   resetDraftRecipe();
   strengthBoost = clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX);
+  swordRating   = savedSwordRating(save);
   // v2: maps object keyed by map path
   if (save.maps) {
     allMapSaves = {};
@@ -1921,6 +1924,7 @@ function selectCharacter(index) {
   } else {
     initFreshSave();
     state = GameState.PLAYING;
+    checkSwordSoon();
   }
 }
 
@@ -1931,6 +1935,7 @@ function resumePendingSave() {
 
   // Apply global state (backpack, journal, per-map hotspot caches)
   applySave(save);
+  checkSwordSoon();
 
   const savedMap = save.currentMap || 'assets/game_design.json';
   if (savedMap !== currentMapPath) {
@@ -1949,6 +1954,7 @@ function startFreshSave() {
   initFreshSave();
   pendingResumeSave = null;
   state = GameState.PLAYING;
+  checkSwordSoon();
 }
 
 // --- Developer Mode functions ---
@@ -2522,6 +2528,7 @@ function pickUpHotspotItem(hotspotId, index) {
     backpack.push(item);
   }
   writeSave();
+  if (item && item.id === SWORD_ITEM.id) onSwordPickedUp(currentMapPath, hotspotId);
   return true;
 }
 
@@ -3769,6 +3776,11 @@ function resetDraftRecipe() {
     if (S.draft) { S.plate = []; S.draft = false; }
   }
 }
+// Older saves have no sword yet: they start with a new one
+function savedSwordRating(save) {
+  const n = save && Number(save.swordRating);
+  return Number.isFinite(n) ? clamp(Math.round(n), 0, SWORD_MAX) : SWORD_MAX;
+}
 function cleanCustomRecipes(arr) {
   return Array.isArray(arr)
     ? arr.filter(r => r && typeof r.id === 'string' && typeof r.name === 'string' && Array.isArray(r.needs) && typeof r.map === 'string')
@@ -4974,6 +4986,7 @@ function drawHUD() {
   ctx.font = 'bold 16px "Comic Sans MS", cursive';
   ctx.textAlign = 'left';
   ctx.fillText('♦ ' + player.character.name, 20, 34);
+  drawSwordBadge(176, 10);
 
   if (mp.active) drawMpHudBadge();
 
@@ -6013,6 +6026,7 @@ function mpStartPlaying() {
   customRecipes = cleanCustomRecipes(save && save.customRecipes);
   resetDraftRecipe();
   strengthBoost = save ? clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX) : 0;
+  swordRating   = savedSwordRating(save);
   allMapSaves = {};
   hotspotItems = mpItemsFor(currentMapPath, mapConfig);
   // Arrive beside (not on top of) any friends standing at the start
@@ -6033,6 +6047,7 @@ function mpStartPlaying() {
     age: 0
   };
   writeSave();
+  checkSwordSoon();
   if (save && save.currentMap && save.currentMap !== currentMapPath && mp.items[save.currentMap]) {
     switchMap(save.currentMap, null);
   }
@@ -6085,7 +6100,7 @@ function mpLoadSave() {
 function mpWriteSave() {
   try {
     localStorage.setItem(mpSaveKey(), JSON.stringify({
-      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost, swordRating
     }));
   } catch (e) { console.warn('Failed to write save', e); }
 }
@@ -6142,9 +6157,10 @@ function mpSendPos(force) {
     w: player.walking ? 1 : 0,
     r: player.rotation,
     h: heldItem ? heldItem.emoji : null,
-    fi: state === GameState.FIGHTING || bossEngage ? 1 : 0
+    fi: state === GameState.FIGHTING || bossEngage ? 1 : 0,
+    sw: hasSword() ? 1 : 0
   };
-  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h, msg.fi].join('|');
+  const key = [msg.char, msg.map, msg.x, msg.y, msg.f, msg.w, msg.r, msg.h, msg.fi, msg.sw].join('|');
   const due = force ||
     (key !== mp.lastPosKey && now - mp.lastPosAt >= MP_POS_EVERY_MS) ||
     now - mp.lastPosAt >= MP_HEARTBEAT_MS;
@@ -6351,6 +6367,7 @@ function mpOwnTakeResult(m, item) {
       item.pickedUpFrom = m.hs;   // record origin so it can't be used there
       backpack.push(item);
       writeSave();
+      if (item.id === SWORD_ITEM.id) onSwordPickedUp(m.map, m.hs);
     } else {
       mpRequestDrop(m.hs, item, m.map);   // no room after all: put it back
     }
@@ -6430,6 +6447,7 @@ function mpOnPos(m, from) {
     rotation: [0, 90, 180, 270].includes(m.r) ? m.r : 0,
     held: typeof m.h === 'string' ? m.h.slice(0, 12) : null,
     fighting: !!m.fi,
+    sword: m.sw !== 0,          // the Blob doesn't chase campers without one
     lastSeen: performance.now()
   });
   rp.x = rp.fx * scaledMapW;
@@ -6626,7 +6644,7 @@ function mpBossCatchCheck() {
   const pos = mapBossPos();
   const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
   nearBoss = dist < 190 * k;
-  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss();
+  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss(true);
 }
 
 // I'm starting (on) or finished (off) a fight with the Blob
@@ -6820,6 +6838,188 @@ function bossRestMs(beaten) {
   const [lo, hi] = beaten ? BOSS_REST_BEATEN_MS : BOSS_REST_MS;
   return randBetween(lo, hi);
 }
+// --- Your sword ---
+// You fight the Blob with a sword rated 0–100 (`swordRating`, saved). Every
+// swing wears it by 1, and every swing that touches the Blob (or its sword) by
+// 4 more. At 0 it still works until the fight ends, but then it's done: a new
+// 🗡️ Sword is dropped at a random spot on a random map, and you need to pick it
+// up before you can fight again. Until then the Blob ignores you (it won't
+// chase or catch you), and trying to fight it tells you which map to search.
+// A sword picked up while yours still works waits in the backpack as a spare.
+// There's always at least one sword lying somewhere in the world (so in a
+// multiplayer world there's one for whoever needs it): one is dropped when a
+// game starts if there isn't, and picking one up drops another somewhere else.
+const SWORD_MAX = 100;
+const SWORD_SWING_WEAR = 1;
+const SWORD_HIT_WEAR = 4;
+const SWORD_ITEM = { id: 'sword', name: 'Sword', emoji: '🗡️' };
+let swordRating = SWORD_MAX;
+let swordSearch = null;      // the find-or-drop in progress (it may fetch map files)
+let lastSwordDrop = null;    // { path, hs, at } — a multiplayer drop takes a moment to arrive
+const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from allMapConfigs, which the journal counts)
+
+function hasSpareSword() { return backpack.some(it => it.id === SWORD_ITEM.id); }
+function hasSword() { return swordRating > 0 || hasSpareSword(); }
+
+// Use the spare sword from the backpack (when yours is worn out)
+function equipSpareSword() {
+  const i = backpack.findIndex(it => it.id === SWORD_ITEM.id);
+  if (i < 0 || swordRating > 0) return false;
+  backpack.splice(i, 1);
+  swordRating = SWORD_MAX;
+  writeSave();
+  return true;
+}
+
+// A sword just went into the backpack (from hotspot `hs` on map `path`): if
+// yours is worn out, it's your new one. Either way another one turns up
+// somewhere else, so there's still one lying around for the next camper.
+function onSwordPickedUp(path, hs) {
+  lastSwordDrop = null;
+  const wait = swordSearch || Promise.resolve();
+  wait.then(() => findOrDropSword({ path, hs }));
+  if (!equipSpareSword()) return;
+  const msg = `🗡️ You found a new sword! It's as good as new (${SWORD_MAX}). Now you can fight the Blob again!`;
+  if (state === GameState.INTERACTING) interactionHintText = msg;
+  else useToast = { text: msg, age: 0 };
+}
+
+// Where a map is, for hints ("out at the camp", "in the Camp Kitchen")
+function mapWhere(cfg) {
+  return cfg.where || `in the ${cfg.name}`;
+}
+
+// Every map, found by following portals from the main map
+async function crawlMapConfigs() {
+  if (mp.active && Object.keys(mp.mapConfigs).length) return mp.mapConfigs;
+  const queue = [MP_MAIN_MAP], seen = new Set(queue), out = {};
+  while (queue.length) {
+    const path = queue.shift();
+    let cfg = allMapConfigs[path] || swordMapConfigs[path];
+    if (!cfg) {
+      try {
+        cfg = await (await fetch(path)).json();
+        swordMapConfigs[path] = cfg;
+      } catch (_) { continue; }
+    }
+    out[path] = cfg;
+    for (const h of cfg.hotspots || []) {
+      if (h.targetMap && !seen.has(h.targetMap)) { seen.add(h.targetMap); queue.push(h.targetMap); }
+    }
+  }
+  return out;
+}
+
+// The items at every hotspot of a map, as they are right now
+function worldItemsFor(path, cfg) {
+  if (mp.active) return mpItemsFor(path, cfg);
+  if (path === currentMapPath) return hotspotItems;
+  return restoreOrDefaultHotspots(cfg, allMapSaves[path] || {});
+}
+
+function findSword(configs) {
+  for (const [path, cfg] of Object.entries(configs)) {
+    const items = worldItemsFor(path, cfg);
+    for (const [hs, list] of Object.entries(items)) {
+      if ((list || []).some(it => it.id === SWORD_ITEM.id)) return { path, hs };
+    }
+  }
+  if (lastSwordDrop && performance.now() - lastSwordDrop.at < 10000) return lastSwordDrop;
+  return null;
+}
+
+// Put a new sword at a random spot (one you can open and pick things up from).
+// `avoid` ({ path, hs }): where one was just picked up — try another map.
+function dropSword(configs, avoid) {
+  const spots = {};
+  for (const [path, cfg] of Object.entries(configs)) {
+    const items = worldItemsFor(path, cfg);
+    const cave = cfg.boss && cfg.boss.cave;
+    const ok = (cfg.hotspots || []).filter(h => !h.targetMap && !h.station && h.id !== cave &&
+      !(avoid && avoid.path === path && avoid.hs === h.id) &&
+      (items[h.id] || []).length < HOTSPOT_CAPACITY);
+    if (ok.length) spots[path] = ok.map(h => h.id);
+  }
+  let paths = Object.keys(spots);
+  if (avoid && paths.length > 1) paths = paths.filter(p => p !== avoid.path);
+  if (!paths.length) return null;
+  const path = pickOne(paths), hs = pickOne(spots[path]);
+  if (mp.active) {
+    mpRequestDrop(hs, { ...SWORD_ITEM }, path);     // everyone sees it appear
+  } else if (path === currentMapPath) {
+    (hotspotItems[hs] || (hotspotItems[hs] = [])).push({ ...SWORD_ITEM });
+  } else {
+    const ms = allMapSaves[path] || (allMapSaves[path] = {});
+    ms.hotspots = restoreOrDefaultHotspots(configs[path], ms);
+    ms.hotspots[hs].push({ ...SWORD_ITEM });
+  }
+  writeSave();
+  lastSwordDrop = { path, hs, at: performance.now() };
+  return lastSwordDrop;
+}
+
+// Where's a sword I can pick up? Drops a new one if there isn't one anywhere.
+function findOrDropSword(avoid) {
+  if (!swordSearch) {
+    swordSearch = crawlMapConfigs()
+      .then(configs => {
+        if (!swordWorldReady()) return null;     // changed maps / left while loading: next check will do it
+        const at = findSword(configs) || dropSword(configs, avoid);
+        return at ? { ...at, cfg: configs[at.path] } : null;
+      })
+      .finally(() => { swordSearch = null; });
+  }
+  return swordSearch;
+}
+
+// Is everything loaded enough to look for (and drop) a sword?
+function swordWorldReady() {
+  return !!player.character && mpInWorld() && (!mp.active || mp.synced);
+}
+
+// A game just started: make sure a sword is lying somewhere (once things load)
+function checkSwordSoon() {
+  let tries = 0;
+  const go = () => {
+    if (swordWorldReady()) findOrDropSword();
+    else if (++tries < 30) setTimeout(go, 500);
+  };
+  setTimeout(go, 500);
+}
+
+// And keep checking, in case one went missing (a friend left before dropping
+// the next one...). In a multiplayer world only one computer checks — the
+// lowest player id — and only after two misses in a row, so a sword that's on
+// its way from a friend isn't doubled up.
+let swordCheckMisses = 0;
+setInterval(() => {
+  if (!swordWorldReady() || swordSearch) return;
+  if (mp.active && [...mp.players.keys()].some(id => id < mp.myId)) return;
+  crawlMapConfigs().then(configs => {
+    if (findSword(configs)) { swordCheckMisses = 0; return; }
+    if (!mp.active || ++swordCheckMisses >= 2) { swordCheckMisses = 0; findOrDropSword(); }
+  });
+}, 15000);
+
+// Tried to fight the Blob with no sword: say where to look
+function swordNeededHint() {
+  kitchenToast('🗡️ You need a sword to fight the Blob! Looking for one...');
+  findOrDropSword().then(at => {
+    if (!at) { kitchenToast('🗡️ You need a sword to fight the Blob!'); return; }
+    kitchenToast(at.path === currentMapPath
+      ? `🗡️ You need a sword to fight the Blob! There's one right here ${mapWhere(at.cfg)}. Look around!`
+      : `🗡️ You need a sword to fight the Blob! I think there's one ${mapWhere(at.cfg)}.`);
+  });
+}
+
+// One swing (n = SWORD_SWING_WEAR) or one hit (n = SWORD_HIT_WEAR)
+function wearSword(f, n) {
+  if (swordRating <= 0) return;
+  swordRating = Math.max(0, swordRating - n);
+  f.swordWornAt = performance.now();
+  if (swordRating === 0) fightPop(f, 'SWORD WORN OUT! 🗡️', f.p.x, 400, '#FFAB91', 0.9);
+}
+
 let bossEngage = null;  // { start } — the Blob is shouting; the fight view opens next
 let nearBoss = false;   // close enough to pick a fight
 
@@ -6885,10 +7085,11 @@ function updateMapBoss() {
   const pos = mapBossPos();
   const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
   // In a multiplayer world it chases whichever camper is closest
-  const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING ? dist : Infinity };
+  // (campers without a sword aren't worth chasing)
+  const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING && hasSword() ? dist : Infinity };
   for (const rp of mpPlayersHere()) {
     const d = Math.hypot(rp.x - pos.x, rp.y - pos.y);
-    if (!rp.fighting && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
+    if (!rp.fighting && rp.sword !== false && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
   }
   if (mapBoss.where === 'out' && now > mapBoss.outUntil) mapBoss.where = 'returning';
 
@@ -6929,12 +7130,17 @@ function updateMapBoss() {
 
   nearBoss = dist < 190 * k;
   // Caught you! (Not while it's heading home for a rest.)
-  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss();
+  if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss(true);
 }
 
 // The Blob yells something, then the fight view opens (see update())
-function engageBoss() {
+// `auto`: the Blob caught you (rather than you picking the fight)
+function engageBoss(auto) {
   if (state !== GameState.PLAYING || bossEngage || doorOpening || !bossCave()) return;
+  if (swordRating <= 0 && !equipSpareSword()) {
+    if (!auto) swordNeededHint();     // no sword: the Blob leaves you alone
+    return;
+  }
   if (mp.active && mapBoss.busyWith && mapBoss.busyWith !== mp.myId) {
     kitchenToast(`The Blob is busy fighting ${mpBossFighterName()}! 👀`);
     return;
@@ -6983,7 +7189,8 @@ function drawMapBossHint() {
   ctx.fill();
   ctx.fillStyle = '#FF9E5E';
   ctx.fillText(label, x, y + 2);
-  const hint = isTouchDevice() ? '⚔️ [ TAP ME ] Fight!' : '⚔️ [ SPACE ] Fight!';
+  const hint = !hasSword() ? '🗡️ Find a sword first!'
+    : isTouchDevice() ? '⚔️ [ TAP ME ] Fight!' : '⚔️ [ SPACE ] Fight!';
   ctx.font = '11px "Comic Sans MS", cursive';
   const hw = ctx.measureText(hint).width + 12;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -7585,6 +7792,7 @@ function fightAttack() {
   p.lastAttack = now;
   p.hitChecked = false;
   p.recover = P_RECOVER / strengthSpeed(p.strength);   // tired arms swing slower
+  wearSword(f, SWORD_SWING_WEAR);
   // Sometimes the Blob sees it coming and puts its sword up
   b.rolledBlock = Math.abs(p.x - b.x) < P_REACH + 60 && bossMaybeBlock(f, now);
 }
@@ -7635,6 +7843,7 @@ function resolveHit(f, att, def, who) {
     return;
   }
   if (def.act === 'windup' && def.armor) {               // counter-attacks can't be stopped
+    if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
     fightPop(f, 'CLANG!', def.x - away * 40, 230, '#90CAF9', 0.9);
     f.shake = 4;
@@ -7646,6 +7855,7 @@ function resolveHit(f, att, def, who) {
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#FF8A65', start: now });
     fightPop(f, 'BLOCK BROKEN!', def.x - away * 40, 300, '#FF8A65', 0.8);
   } else if (def.act === 'block' && def.y === 0) {
+    if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword
     def.act = 'blockstun';
     def.actStart = now;
     if (who === 'player') def.counter = true;     // the Blob hits right back!
@@ -7668,6 +7878,7 @@ function resolveHit(f, att, def, who) {
     return;
   }
   // HIT! One point.
+  if (who === 'player') wearSword(f, SWORD_HIT_WEAR);
   att.score++;
   if (who === 'player') f.pPulse = now; else f.bPulse = now;
   def.act = 'hit';
@@ -7889,6 +8100,11 @@ function finishFight(fled) {
       res.lines.push('Phew! 😅');
     }
   }
+  if (swordRating <= 0) {
+    res.lines.push(hasSpareSword()
+      ? 'Your sword is worn out, so you grab the spare from your backpack. 🗡️'
+      : 'Your sword is worn out! 🗡️ Find a new one before you fight again.');
+  }
   writeSave();
   f.phase = 'result';
   f.phaseStart = performance.now();
@@ -7906,6 +8122,8 @@ function endFight() {
   resetMapBoss(bossRestMs(won));
   mpBossFight(false, won);
   state = GameState.PLAYING;
+  // A worn-out sword: use the spare, or a new one turns up somewhere
+  if (swordRating <= 0 && !equipSpareSword()) findOrDropSword();
   kitchenToast(won ? 'The Blob runs home to its cave, sniffling. 🏆' : 'The Blob waddles home to its cave, full and happy. 😋');
 }
 
@@ -8260,6 +8478,7 @@ function drawFightHud(v, f, now) {
   };
   plate(pad, ch.name.toUpperCase(), ch.color, null, 'left');
   drawStrengthMeter(f.p, pad, pad + plateH + 6, plateW, now, f.boost ? '#F48FB1' : null);
+  drawSwordMeter(f, pad, pad + plateH + 6 + 22 + 5, plateW, now);
   drawStrengthMeter(f.b, W - pad - plateW, pad + plateH + 6, plateW, now, '#FF9E5E');
   plate(W - pad - plateW, bossName().toUpperCase(), '#FF9E5E', def.aka ? `a.k.a. the ${def.aka}` : null, 'right');
   bigText('VS', W / 2, pad + plateH / 2, 26, '#FFD54F');
@@ -8327,6 +8546,58 @@ function drawFightHud(v, f, now) {
 
 // 💪 bar: one notch per point of strength, flashes red when one is lost and
 // green when one comes back. The thin line underneath fills up to the next +1.
+// Map HUD: your sword's rating (or that you need a new one)
+function drawSwordBadge(x, y) {
+  if (!mapConfig) return;
+  const spare = hasSpareSword() ? ' +1' : '';
+  const text = swordRating > 0 ? `🗡️ ${swordRating}${spare}` : hasSpareSword() ? '🗡️ 0 +1' : '🗡️ Find a sword!';
+  ctx.save();
+  ctx.font = 'bold 15px "Comic Sans MS", cursive';
+  const w = ctx.measureText(text).width + 22;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  roundRect(x, y, w, 36, 8);
+  ctx.fill();
+  ctx.fillStyle = swordRating > 30 ? '#E0E0E0' : swordRating > 0 ? '#FFCA28' : '#FF8A80';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + 11, y + 19);
+  ctx.restore();
+}
+
+// Fight HUD: your sword's rating as a thin bar under your strength
+function drawSwordMeter(f, x, y, w, now) {
+  const h = 18, frac = swordRating / SWORD_MAX;
+  const flash = Math.max(0, 1 - (now - (f.swordWornAt || 0)) / 300);
+  ctx.save();
+  ctx.fillStyle = 'rgba(20, 12, 6, 0.8)';
+  roundRect(x, y, w, h, 7);
+  ctx.fill();
+  const ix = x + 30, iw = w - 36 - 44, iy = y + 4, ih = h - 8;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  roundRect(ix, iy, iw, ih, 4);
+  ctx.fill();
+  if (frac > 0) {
+    ctx.fillStyle = frac > 0.3 ? '#B0BEC5' : '#FFCA28';
+    roundRect(ix, iy, iw * frac, ih, 4);
+    ctx.fill();
+  }
+  if (flash > 0) {
+    ctx.fillStyle = `rgba(255, 171, 145, ${flash * 0.5})`;
+    roundRect(x, y, w, h, 7);
+    ctx.fill();
+  }
+  ctx.font = `12px ${SCENE_EMOJI_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';
+  ctx.fillText('🗡️', x + 15, y + h / 2 + 1);
+  ctx.font = 'bold 12px "Comic Sans MS", cursive';
+  ctx.fillStyle = swordRating > 0 ? '#ECEFF1' : '#FF8A80';
+  ctx.textAlign = 'right';
+  ctx.fillText(swordRating > 0 ? String(swordRating) : 'WORN', x + w - 8, y + h / 2 + 1);
+  ctx.restore();
+}
+
 function drawStrengthMeter(p, x, y, w, now, edge) {
   const max = p.maxStrength || STRENGTH_BASE;
   const h = 22, frac = clamp(p.strength / max, 0, 1);

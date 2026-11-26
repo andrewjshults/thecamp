@@ -1,5 +1,6 @@
 {
   "name": "Stall 1",
+  "where": "in Stall 1 of the Camp Bathroom",
   "playerStart": { "px": 0.3, "py": 0.86 },
   "spriteScale": 2.5,
   "scene": {

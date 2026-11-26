@@ -25,6 +25,8 @@ This runs `server.js` (zero npm dependencies — pure Node built-ins) which:
 1. Drop the image into `assets/` (e.g. `assets/map2.jpg`).
 2. Create `assets/map2.json` following the same schema as `game_design.json`:
    - `name` — display name shown on the character-select screen
+   - `where` — optional, how hints say where something is on this map
+     (e.g. `"out at the camp"`); default `"in the <name>"`
    - `image` — path to the image (e.g. `"assets/map2.jpg"`), **or** a `scene` (see below)
    - `playerStart` — `{ "px": 0–1, "py": 0–1 }` fractional spawn point
    - `hotspots` — array of hotspot objects (see schema below)
@@ -222,6 +224,29 @@ recovery too) and the odds that an unblocked swing lands or a block holds
 fights: they last ~20–30s, so 15s regen gave back only ~1 point, 8s gives 2–3,
 and 5s or faster cancels most of the damage.
 
+**Your sword wears out.** You fight with a sword rated 0–100 (`swordRating`,
+saved per camper; older saves start at 100). Each swing costs
+`SWORD_SWING_WEAR` (1). A swing that touches the Blob or its sword costs
+`SWORD_HIT_WEAR` (4) more: a hit, a blocked swing, or a CLANG on its
+counter-attack, but not a dodge. At 0 it shows "SWORD WORN OUT!" and still
+works until the fight ends. Then you need to find a 🗡️ Sword item
+(`SWORD_ITEM`). There's always at least one lying somewhere in the world.
+`checkSwordSoon` drops one when a game starts or a world finishes syncing, if
+there isn't one. Picking one up drops another at a random spot, on a different
+map when possible (`findOrDropSword` → `dropSword`). These follow portals from
+the main map and skip portals, kitchen stations and the cave. In multiplayer
+the camper who picked it up drops the replacement as a normal `drop`. Every 15s
+a check drops one if none is left (in multiplayer only the lowest player id
+checks, and only after two misses in a row). Picking a sword up re-arms you at
+100 (`onSwordPickedUp`). A
+sword picked up while yours still works stays in the backpack as a spare, and
+it's used automatically when yours wears out. Until you have a sword, the Blob
+won't chase you or start a fight by catching you. Pressing Space at the cave or
+the Blob says which map to search, using the map's `where` phrase (e.g. "out at
+the camp"; default "in the <name>"), and drops a new sword if none is left
+anywhere. The map HUD shows "🗡️ 63" (or "Find a sword!"), and the fight HUD has
+a sword bar under your 💪 bar.
+
 ### Items / backpack
 Each hotspot owns up to 3 items by default (`HOTSPOT_CAPACITY` in `index.html`).
 The player has a 10-slot backpack (`BACKPACK_CAPACITY`). The `items` array in
@@ -247,7 +272,7 @@ carry `from`, the sender's per-tab player id):
 
 | `t`     | fields | meaning |
 |---------|--------|---------|
-| `pos`   | `char, map, x, y, f, w, r, h, fi` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji, `fi` = fighting the Blob. ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
+| `pos`   | `char, map, x, y, f, w, r, h, fi, sw` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji, `fi` = fighting the Blob, `sw` = has a sword (the Blob only chases campers with one). ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
 | `hello` | — | I just joined: others reply with `pos`, and one synced player replies with `snap` |
 | `snap`  | `to, at, items` | the whole world's items, `{ mapPath: { hotspotId: [item] } }`, as of op timetoken `at` |
 | `take`  | `map, hs, item` (item id) | take an item from a hotspot |
