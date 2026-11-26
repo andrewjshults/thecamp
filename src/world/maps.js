@@ -120,6 +120,44 @@ async function crawlMapConfigs() {
   }
   return out;
 }
+// The maps on the same level as `path` (the first camp, the Second Camp...),
+// out of `configs` (from crawlMapConfigs). Each level has a main map: the
+// first camp's, and every map a `passage` leads to. A level is its main map
+// plus every room you can walk to from it through doors (`targetMap`) without
+// walking into another level's main map. A room shared by two levels (the
+// bank) is on both; a map's own level is the one its doors lead back to.
+function levelMapPaths(configs, path) {
+  const mains = new Set([MP_MAIN_MAP]);
+  for (const cfg of Object.values(configs)) {
+    for (const h of cfg.hotspots || []) if (h.passage && h.passage.targetMap) mains.add(h.passage.targetMap);
+  }
+  const doors = p => ((configs[p] && configs[p].hotspots) || []).map(h => h.targetMap).filter(Boolean);
+  // Walk through doors from `start` until `stop` says to stop at a map
+  const walk = (start, stop) => {
+    const seen = new Set([start]), queue = [start];
+    while (queue.length) {
+      const p = queue.shift();
+      if (p !== start && stop(p)) continue;
+      for (const next of doors(p)) if (!seen.has(next)) { seen.add(next); queue.push(next); }
+    }
+    return seen;
+  };
+  // This map's main map: itself, or the nearest one its doors lead to
+  let main = mains.has(path) ? path : null;
+  if (!main) {
+    const seen = new Set([path]), queue = [path];
+    while (queue.length && !main) {
+      for (const next of doors(queue.shift())) {
+        if (mains.has(next)) { main = next; break; }
+        if (!seen.has(next)) { seen.add(next); queue.push(next); }
+      }
+    }
+  }
+  if (!main) return new Set(Object.keys(configs));   // somewhere unexpected: don't hide anything
+  const level = walk(main, p => mains.has(p));
+  for (const m of mains) if (m !== main) level.delete(m);
+  return level;
+}
 // The items at every hotspot of a map, as they are right now
 function worldItemsFor(path, cfg) {
   if (mp.active) return mpItemsFor(path, cfg);

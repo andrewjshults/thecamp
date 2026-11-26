@@ -40,9 +40,14 @@ Claude. `itemQuestionReply()` in `src/people/item-questions.js` (checked first i
 `fetchNpcReply`) uses plain keyword matching: if the line looks like a question
 or search (`ITEM_QUESTION_RE`) and names an item by a word of its name or its
 emoji (`itemsMentioned`, roughly plural-insensitive), the NPC says where it is
-right now on every map (`crawlMapConfigs` + `worldItemsFor`): hotspots, kitchen
-`source`/`shop` stations, or your own backpack. If nobody's left a sword
-anywhere, it drops one first (`findOrDropSword`). Lines that don't name an item
+right now on the maps of the level you're on (`crawlMapConfigs` +
+`worldItemsFor`, narrowed by `levelMapPaths` in `src/world/maps.js`): hotspots,
+kitchen `source`/`shop` stations, or your own backpack. A level is its main map
+(the first camp's, or one a `passage` leads to) plus the rooms you can walk to
+from it through doors, so in the Second Camp you only hear about the Second
+Camp (and the bank, which both camps share). An item that's only on another
+level gets "haven't seen any". If nobody's left a sword anywhere, it drops one
+first (`findOrDropSword`), and says where only if that's on this level. Lines that don't name an item
 go to Claude / `localNpcReply()` as before.
 
 **Wandering.** Camper NPCs stroll around their `px`/`py` spot (within

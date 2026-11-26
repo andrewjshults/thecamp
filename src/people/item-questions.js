@@ -1,8 +1,9 @@
 // --- Item questions ("where is the sword?") ---
 // Plain keyword matching, no Claude: if the player's line looks like a
 // question / search and names an item (by a word of its name or its emoji),
-// the NPC says where that item is right now, across every map: hotspots,
-// kitchen stations you can grab or buy it from, and your own backpack.
+// the NPC says where that item is right now, on every map of the level you're
+// on (levelMapPaths): hotspots, kitchen stations you can grab or buy it from,
+// and your own backpack.
 const ITEM_QUESTION_RE = /\?|\b(where|wheres|find|found|seen|see|saw|look|looking|lost|locate|get|got|any|is there)\b/;
 const ITEM_WORD_SKIP = new Set(['the', 'and', 'toy', 'big', 'hot', 'pink', 'fancy', 'comfy', 'lonely', 'little']);
 
@@ -56,16 +57,21 @@ async function itemQuestionReply(history) {
     (spots.get(k) || spots.set(k, []).get(k)).push(phrase);
   };
   learn(SWORD_ITEM);
+  const level = levelMapPaths(configs, currentMapPath);
   for (const [path, cfg] of Object.entries(configs)) {
+    if (cfg.boss && cfg.boss.reward) learn(cfg.boss.reward);
+    const foods = (cfg.kitchen && cfg.kitchen.foods) || {};
+    for (const h of cfg.hotspots || []) {
+      for (const it of h.items || []) learn(it);
+      if (h.station) learn(foods[h.station.item]);
+    }
+    if (!level.has(path)) continue;   // only say where things are on this level
     const here = path === currentMapPath;
     const where = (h, verb = 'at') => here
       ? `right here, ${verb} ${theName(h.name)}`
       : `${verb} ${theName(h.name)} ${mapWhere(cfg)}`;
     const items = worldItemsFor(path, cfg) || {};
-    const foods = (cfg.kitchen && cfg.kitchen.foods) || {};
-    if (cfg.boss && cfg.boss.reward) learn(cfg.boss.reward);
     for (const h of cfg.hotspots || []) {
-      for (const it of h.items || []) learn(it);
       for (const it of items[h.id] || []) spot(it, where(h));
       const st = h.station, food = st && foods[st.item];
       if (food && st.type === 'source') spot(food, `to grab ${where(h, 'from')}`);
@@ -82,7 +88,7 @@ async function itemQuestionReply(history) {
   // Make sure there's a sword somewhere before saying where it is
   if (asked.some(it => it.id === SWORD_ITEM.id) && !spots.has('sword')) {
     const at = await findOrDropSword();
-    if (at) {
+    if (at && level.has(at.path)) {
       const h = (at.cfg.hotspots || []).find(x => x.id === at.hs);
       spot(SWORD_ITEM, at.path === currentMapPath
         ? `right here, at ${theName(h ? h.name : 'somewhere')}`
