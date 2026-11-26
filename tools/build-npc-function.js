@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regenerates the NPC/map table inside pubnub/npc-function.js from the map
-// JSONs in assets/ and the `characters` list in index.html.
+// JSONs in assets/ and the `characters` list in src/people/characters.js.
 // Run after changing an NPC, a map name or hotspots:  npm run build:npc
 // Then paste pubnub/npc-function.js into the PubNub Function again.
 'use strict';
@@ -12,12 +12,12 @@ const fnPath = path.join(root, 'pubnub', 'npc-function.js');
 const clip = (s, max) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max);
 
 // Characters: pull name/desc pairs out of the `const characters = [...]` block
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const block = (html.match(/const characters = \[([\s\S]*?)\n\];/) || [])[1];
-if (!block) throw new Error('could not find `const characters = [...]` in index.html');
+const charsFile = path.join(root, 'src', 'people', 'characters.js');
+const block = (fs.readFileSync(charsFile, 'utf8').match(/const characters = \[([\s\S]*?)\n\];/) || [])[1];
+if (!block) throw new Error('could not find `const characters = [...]` in src/people/characters.js');
 const characters = {};
 for (const m of block.matchAll(/name:\s*'([^']+)'[\s\S]*?desc:\s*'([^']*)'/g)) characters[m[1]] = m[2];
-if (!Object.keys(characters).length) throw new Error('no characters found in index.html');
+if (!Object.keys(characters).length) throw new Error('no characters found in src/people/characters.js');
 
 const MAPS = {};
 const NPCS = {};

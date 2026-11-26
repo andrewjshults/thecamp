@@ -1,0 +1,333 @@
+{
+  "name": "Birthday Party Tent",
+  "where": "in the Birthday Party Tent",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "party_parrot",
+      "name": "Confetti",
+      "emoji": "🦜",
+      "color": "#e91e63",
+      "size": 0.09,
+      "px": 0.62,
+      "py": 0.47,
+      "what": "a colourful party parrot who lives in the Birthday Party Tent at the Second Camp",
+      "personality": "Loud, cheerful and always ready to party. Thinks every day is somebody's birthday. Loves cake, dancing under the disco ball and repeating funny words. Is a little scared of the Marshmallows and warns campers that they can't go in the sleeping tents.",
+      "localReplies": {
+        "hello": [
+          "SQUAWK! Happy birthday, {name}! 🎉",
+          "Hello hello! It's party time, {name}!",
+          "Rawk! {name}! Did you bring cake?"
+        ],
+        "bye": [
+          "Bye bye! Party on! 🎉",
+          "SQUAWK! Watch out for the Marshmallows!",
+          "See you at the next party, {name}!"
+        ],
+        "question": [
+          "Hmm... the answer is CAKE! Rawk!",
+          "Ask the disco ball! It knows everything. ✨",
+          "Squawk? I don't know, but let's dance about it!"
+        ],
+        "any": [
+          "The Marshmallows can't go in the sleeping tents! Hide there! Rawk!",
+          "Happy birthday to youuuu! 🎂",
+          "Dance dance dance! 🕺",
+          "Pretty bird! Pretty party!",
+          "Ember's swords are hot hot HOT! 🔥"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.06,
+      "color": "#ec407a",
+      "stripe": "#fff176"
+    },
+    "wall": {
+      "pattern": "stripes",
+      "color": "#f8bbd0",
+      "stripe": "rgba(255,255,255,0.45)",
+      "dot": "rgba(171,71,188,0.35)"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "tiles",
+      "color": "#ce93d8",
+      "skirting": "#8e24aa"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#8e24aa"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#ffca28",
+        "text": "YAY!"
+      },
+      {
+        "kind": "bunting",
+        "px": 0.13,
+        "py": 0.07,
+        "pw": 0.82,
+        "ph": 0.08,
+        "flags": 18
+      },
+      {
+        "kind": "discoBall",
+        "px": 0.44,
+        "py": 0.06,
+        "pw": 0.12,
+        "ph": 0.22
+      },
+      {
+        "kind": "sign",
+        "text": "HAPPY\nBIRTHDAY!",
+        "px": 0.16,
+        "py": 0.2,
+        "pw": 0.16,
+        "ph": 0.12,
+        "color": "#fff176",
+        "rotate": -4
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎈",
+        "px": 0.34,
+        "py": 0.2,
+        "pw": 0.05,
+        "ph": 0.1,
+        "rotate": -8
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎈",
+        "px": 0.38,
+        "py": 0.24,
+        "pw": 0.05,
+        "ph": 0.1,
+        "rotate": 6
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🪅",
+        "px": 0.82,
+        "py": 0.16,
+        "pw": 0.08,
+        "ph": 0.14
+      },
+      {
+        "kind": "partyTable",
+        "px": 0.6,
+        "py": 0.3,
+        "pw": 0.22,
+        "ph": 0.26,
+        "items": [
+          "🧃",
+          "🍭"
+        ]
+      },
+      {
+        "kind": "rug",
+        "px": 0.3,
+        "py": 0.6,
+        "pw": 0.34,
+        "ph": 0.2,
+        "colors": [
+          "#4fc3f7",
+          "#fff176",
+          "#f06292",
+          "#81c784"
+        ]
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.82,
+        "py": 0.6,
+        "pw": 0.06,
+        "ph": 0.09
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.88,
+        "py": 0.63,
+        "pw": 0.05,
+        "ph": 0.08,
+        "rotate": 8
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.85,
+        "py": 0.7,
+        "pw": 0.06,
+        "ph": 0.09,
+        "rotate": -6
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🔊",
+        "px": 0.14,
+        "py": 0.6,
+        "pw": 0.07,
+        "ph": 0.12
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎶",
+        "px": 0.2,
+        "py": 0.55,
+        "pw": 0.04,
+        "ph": 0.06
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Second Camp",
+      "interactionText": "You head back out to the Second Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level2.json",
+      "targetHotspot": "party_tent",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
+    },
+    {
+      "id": "dance_floor",
+      "name": "Dance Floor",
+      "px": 0.3,
+      "py": 0.58,
+      "pw": 0.34,
+      "ph": 0.24,
+      "action": "play",
+      "description": "Dance under the disco ball!",
+      "interactionText": "The disco ball spins, the music BOOMS, and you dance your silliest dance! 🕺💃✨",
+      "items": [
+        {
+          "id": "disco_shades",
+          "name": "Disco Shades",
+          "emoji": "🕶️"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "glow_stick",
+          "text": "You wave the glow stick on the dance floor. RAVE PARTY! 🪄✨",
+          "animation": "play"
+        }
+      ]
+    },
+    {
+      "id": "cake",
+      "name": "Birthday Cake",
+      "px": 0.6,
+      "py": 0.28,
+      "pw": 0.22,
+      "ph": 0.3,
+      "action": "eat",
+      "description": "A three-candle birthday cake",
+      "interactionText": "You blow out the candles and make a wish... I wish the Marshmallows were scared of ME! 🎂",
+      "items": [
+        {
+          "id": "cake_slice",
+          "name": "Cake Slice",
+          "emoji": "🍰"
+        },
+        {
+          "id": "juice_box",
+          "name": "Juice Box",
+          "emoji": "🧃"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "party_blower",
+          "text": "TOOT TOOT! You blow the party blower and everyone sings! 🥳",
+          "animation": "play"
+        }
+      ]
+    },
+    {
+      "id": "presents",
+      "name": "Presents",
+      "px": 0.8,
+      "py": 0.56,
+      "pw": 0.12,
+      "ph": 0.2,
+      "action": "explore",
+      "description": "A pile of presents",
+      "interactionText": "You give the presents a shake. Rattle rattle... something squeaky inside!",
+      "items": [
+        {
+          "id": "yo_yo_2",
+          "name": "Rainbow Yo-Yo",
+          "emoji": "🪀"
+        },
+        {
+          "id": "bubbles",
+          "name": "Bubble Wand",
+          "emoji": "🫧"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "pinata",
+      "name": "Piñata",
+      "px": 0.8,
+      "py": 0.12,
+      "pw": 0.1,
+      "ph": 0.2,
+      "action": "play",
+      "description": "Whack it!",
+      "interactionText": "You give the piñata a whack! WHACK! Candy everywhere! 🍬",
+      "items": [
+        {
+          "id": "candy",
+          "name": "Candy",
+          "emoji": "🍬"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

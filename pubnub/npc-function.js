@@ -99,6 +99,17 @@ const MAPS = {
       "Compost Bin"
     ]
   },
+  "assets/camp_level2.json": {
+    "name": "Second Camp",
+    "places": [
+      "Blob Fight Zone",
+      "Red Sleeping Tent",
+      "Blue Sleeping Tent",
+      "Sailboat",
+      "Disco Ball",
+      "Birthday Cake"
+    ]
+  },
   "assets/game_design.json": {
     "name": "The Camp",
     "places": [
@@ -140,6 +151,95 @@ const MAPS = {
       "Craft Table",
       "Kitchen Sink",
       "Aquarium"
+    ]
+  },
+  "assets/level2_boys_bathroom.json": {
+    "name": "Boys' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level2_girls_bathroom.json": {
+    "name": "Girls' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level2_kitchen.json": {
+    "name": "Second Camp Kitchen",
+    "places": [
+      "Recipe Board",
+      "Fridge",
+      "Bread Basket",
+      "Cutting Board",
+      "Plate",
+      "Cooking Pot",
+      "Frying Pan",
+      "Oven",
+      "Pasta Box",
+      "Chickpea Jar",
+      "Dough Bowl",
+      "Lettuce",
+      "Tomatoes",
+      "Picnic Table",
+      "Cookie",
+      "Cupcake",
+      "Cake",
+      "Compost Bin"
+    ]
+  },
+  "assets/level2_party.json": {
+    "name": "Birthday Party Tent",
+    "places": [
+      "Dance Floor",
+      "Birthday Cake",
+      "Presents",
+      "Piñata"
+    ]
+  },
+  "assets/level2_pool.json": {
+    "name": "Swimming Pool",
+    "places": [
+      "Swimming Pool",
+      "Diving Board",
+      "Lifeguard Chair",
+      "Towel Bench",
+      "Pool Shower"
+    ]
+  },
+  "assets/level2_tent.json": {
+    "name": "Big Green Tent",
+    "places": [
+      "Sleeping Bags",
+      "Game Chest",
+      "Midnight Snacks"
+    ]
+  },
+  "assets/sword_shop.json": {
+    "name": "Ember's Sword Shop",
+    "places": [
+      "Ember's Counter",
+      "Sword Rack",
+      "Forge",
+      "Box of Old Swords"
     ]
   }
 };
@@ -185,6 +285,27 @@ const NPCS = {
     "desc": "Loves exploring nature",
     "personality": "Gentle and cozy. Loves plants, trees, tea parties, and crafts, and always notices the small, pretty things that other people miss.",
     "map": "assets/inside_house.json"
+  },
+  "party_parrot": {
+    "name": "Confetti",
+    "what": "a colourful party parrot who lives in the Birthday Party Tent at the Second Camp",
+    "desc": "",
+    "personality": "Loud, cheerful and always ready to party. Thinks every day is somebody's birthday. Loves cake, dancing under the disco ball and repeating funny words. Is a little scared of the Marshmallows and warns campers that they can't go in the sleeping tents.",
+    "map": "assets/level2_party.json"
+  },
+  "pool_duck": {
+    "name": "Captain Quack",
+    "what": "a bossy little duck who is the lifeguard at the Second Camp's swimming pool",
+    "desc": "",
+    "personality": "Takes lifeguarding VERY seriously. Blows a whistle, says 'no running!' and loves swimming laps. Secretly loves cannonballs. Knows the Marshmallows hate water because they get soggy.",
+    "map": "assets/level2_pool.json"
+  },
+  "ember": {
+    "name": "Ember",
+    "what": "a friendly little dragon who makes swords in her shop at the Second Camp, heating them in her forge with her own fire",
+    "desc": "",
+    "personality": "Warm, proud of her swords and a bit of a show-off about her fire breath. Sells four swords: the Sparkle Sword ($20), the Ice Sword ($40), the Flame Sword ($60) and the Rainbow Thunder Sword ($100). You pay with coins in your backpack. Thinks the Marshmallows are rude because they keep trying to roast themselves in her forge.",
+    "map": "assets/sword_shop.json"
   }
 };
 // ── END GENERATED ──────────────────────────────────────────────────────────

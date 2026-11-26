@@ -37,7 +37,7 @@ $3 is roughly 40,000 replies a day.
    just for this game, set its monthly spend limit, and create an API key in
    it.
 2. **Create the Function.** In the PubNub Admin Portal, open the keyset the
-   game already uses (the one `PUBNUB_SUBSCRIBE_KEY` in `index.html` points
+   game already uses (the one `PUBNUB_SUBSCRIBE_KEY` in `src/mp/mp.js` points
    to). Go to **Functions**, create a module, and add a function:
    - Event type: **On Request**
    - Path: e.g. `npc-reply`
@@ -53,7 +53,7 @@ $3 is roughly 40,000 replies a day.
    You should get back `{"reply":"..."}`.
 5. **Point the game at it.** Copy the function's URL (shown in the editor,
    like `https://ps.pndsn.com/v1/blocks/sub-key/<sub-key>/npc-reply`) into
-   `NPC_FUNCTION_URL` in `index.html` and deploy.
+   `NPC_FUNCTION_URL` in `src/people/talk.js` and deploy.
 
 Leave `NPC_FUNCTION_URL` empty to skip the Function. The game then uses the
 dev server's `/api/npc-reply` (`npm run dev` with `ANTHROPIC_API_KEY` set),
@@ -63,7 +63,7 @@ or the built-in replies.
 
 The Function has its own copy of every NPC (personality, `what`, character
 `desc`) and every map's name and hotspot names. These are generated from
-`assets/*.json` and the `characters` list in `index.html`:
+`assets/*.json` and the `characters` list in `src/people/characters.js`:
 
 ```bash
 npm run build:npc
