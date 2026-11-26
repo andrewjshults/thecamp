@@ -10,7 +10,9 @@ drawing `scene` rooms, `props/` the room props, `hotspots.js`, `doors.js`,
    - `name` — display name shown on the character-select screen
    - `where` — optional, how hints say where something is on this map
      (e.g. `"out at the camp"`); default `"in the <name>"`
-   - `image` — path to the image (e.g. `"assets/map2.jpg"`), **or** a `scene` (see below)
+   - `image` — path to the image (e.g. `"assets/map2.jpg"`; an `.svg` is rasterised once when it
+     loads), **or** a `scene` (see below)
+   - `noSwordDrops` — optional, `true` to never drop a new sword here (maps that aren't always open)
    - `playerStart` — `{ "px": 0–1, "py": 0–1 }` fractional spawn point
    - `hotspots` — array of hotspot objects (see schema below)
 3. Connect it with a portal hotspot (`targetMap`, below) on a map that leads there. To start
@@ -47,7 +49,10 @@ for things seen under the gap). For cozy rooms: `bunting` (`colors`, `flags`),
 the outside in), `coffeeTable` (a board game on top, `board` colour, `items`
 emojis beside it), `gameShelf` (`shelves`: rows of `{ label, color }` game
 boxes and emoji strings), `toyChest` (`peek` toys, `label`, `color`, `lid`) and
-`beanBag` (`color`). Hotspots are separate: they're placed over
+`beanBag` (`color`). For the Second Camp's rooms (`src/world/props/level2.js`):
+`discoBall`, `partyTable` (`items`), `pool` (`lanes`, `floaties`), `divingBoard`,
+`lifeguardChair`, `sleepingBag` (`color`, `pillow`), `swordRack` (`swords: [{ emoji, blade }]`),
+`shopCounter` (`board` lines, `items`) and `forge`. Hotspots are separate: they're placed over
 the props by hand.
 
 The red house in the top-left of the main map (hotspot `red_house`, with a
@@ -71,6 +76,11 @@ Portal hotspots have `"targetMap"` (the map JSON it leads to) and
   through it (default: the hotspot's centre).
 - `"door": { "px", "py", "pw", "ph", "color", "inside": "🚽" }` — the door
   drawn on the map; it swings open (with a CREEEAK!) before the map switches.
+
+A `"passage": { "targetMap", "targetHotspot" }` is a way to another map that
+only opens later: the Blob's cave leads to the Second Camp once you've beaten
+the top-level Blob (see [level-two.md](level-two.md)). Map crawls follow it
+like a portal (`hotspotLinks`).
 
 ## Hotspot schema
 ```json

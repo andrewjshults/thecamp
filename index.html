@@ -90,6 +90,21 @@
     </div>
   </div>
 </div>
+<div id="swordShopModal" hidden>
+  <div class="menuPanel">
+    <div class="menuScreen">
+      <h2>⚔️ Sword Shop</h2>
+      <div id="shopKeeper">
+        <div id="shopKeeperFace">🐉</div>
+        <p id="shopSays"></p>
+      </div>
+      <p id="shopHolding"></p>
+      <p id="shopWallet"></p>
+      <div id="shopSwords"></div>
+      <button type="button" class="link" data-shop="close">Bye 👋</button>
+    </div>
+  </div>
+</div>
 <form id="talkBar" hidden autocomplete="off">
   <div id="talkTo"></div>
   <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
@@ -110,6 +125,7 @@
 <script src="src/world/props/basic.js"></script>
 <script src="src/world/props/bathroom.js"></script>
 <script src="src/world/props/hangout.js"></script>
+<script src="src/world/props/level2.js"></script>
 <script src="src/world/scene-svg.js"></script>
 
 <script src="src/people/characters.js"></script>
@@ -171,6 +187,8 @@
 <script src="src/features/boss/boss.js"></script>
 
 <script src="src/features/sword.js"></script>
+<script src="src/features/sword-shop/swords.js"></script>
+<script src="src/features/sword-shop/shop.js"></script>
 
 <script src="src/features/boss/map-boss.js"></script>
 
@@ -182,6 +200,10 @@
 <script src="src/features/boss/fight-sidekick.js"></script>
 <script src="src/features/boss/fight-moves.js"></script>
 <script src="src/features/boss/fight-draw.js"></script>
+
+<script src="src/features/level2/level2.js"></script>
+<script src="src/features/level2/mallows.js"></script>
+<script src="src/features/level2/draw-mallow.js"></script>
 
 <script src="src/main.js"></script>
 </body>

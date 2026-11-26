@@ -91,6 +91,11 @@ function switchMap(targetPath, targetHotspotId) {
 }
 
 // --- Every map in the world ---
+// The maps a hotspot leads to: a portal's `targetMap`, and a `passage` that
+// only opens later (like the cave to the second camp)
+function hotspotLinks(h) {
+  return [h.targetMap, h.passage && h.passage.targetMap].filter(Boolean);
+}
 // Where a map is, for hints ("out at the camp", "in the Camp Kitchen")
 function mapWhere(cfg) {
   return cfg.where || `in the ${cfg.name}`;
@@ -110,7 +115,7 @@ async function crawlMapConfigs() {
     }
     out[path] = cfg;
     for (const h of cfg.hotspots || []) {
-      if (h.targetMap && !seen.has(h.targetMap)) { seen.add(h.targetMap); queue.push(h.targetMap); }
+      for (const link of hotspotLinks(h)) if (!seen.has(link)) { seen.add(link); queue.push(link); }
     }
   }
   return out;

@@ -227,3 +227,41 @@ canvas {
 #bankWallet { font-size: 15px; color: #D7CCC8; }
 .bankRow { display: flex; gap: 10px; }
 .bankRow button { flex: 1; }
+
+/* --- Sword shop pop-up: one button per sword --- */
+#swordShopModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#swordShopModal[hidden] { display: none !important; }
+#swordShopModal .menuPanel { max-height: 94vh; overflow-y: auto; }
+#swordShopModal h2 { font-size: 28px; color: #FFAB91; }
+#shopKeeper { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
+#shopKeeperFace {
+  flex: none;
+  font-size: 54px;
+  line-height: 1;
+  animation: bankBob 1.6s ease-in-out infinite;
+}
+#shopSays {
+  flex: 1;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #FFF3E0;
+  color: #3E2723;
+  font-size: 17px;
+}
+#shopWallet, #shopHolding { font-size: 15px; color: #D7CCC8; margin: 4px 0; }
+#shopSwords { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#shopSwords button { text-align: left; }
+#shopSwords .shopName { display: block; }
+#shopSwords .shopPrice { color: #FFF59D; white-space: nowrap; }
+#shopSwords button.tooPricey { background: #8d6e63; }
+@media (max-width: 560px) { #shopSwords { grid-template-columns: 1fr; } }

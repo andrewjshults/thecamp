@@ -1,4 +1,4 @@
-let bossEngage = null;  // { start } — the Blob is shouting; the fight view opens next
+let bossEngage = null;  // { start, foe } — the Blob (or `foe`, see startFight) is shouting; the fight view opens next
 let nearBoss = false;   // close enough to pick a fight
 
 function resetMapBoss(delayMs) {
@@ -192,6 +192,24 @@ function drawMapBossShout() {
 // cave hotspot's box. Glowing eyes blink inside while the Blob is home.
 
 registerScreenLayer(20, () => drawMapBossShout());
+registerMapPeople(() => mapBossVisible() ? [{ y: mapBossPos().y, draw: drawMapBoss }] : []);
+// Space / tap next to the Blob picks a fight
+registerMapFoe(() => nearBoss ? {
+  engage: () => engageBoss(),
+  hit(sx, sy) {
+    const bp = mapBossPos();
+    const bh = mapBossHeight();
+    return Math.hypot(sx - (bp.x - camera.x), sy - (bp.y - bh / 2 - camera.y)) < bh * 0.7;
+  },
+  drawHint: () => drawMapBossHint()
+} : null);
 // The Blob comes and goes from its cave as it likes (and may ambush you)
 registerMapUpdate(10, () => updateMapBoss());
 onGameEvent('camperChosen', () => resetMapBoss());
+// Walked off the map while the Blob (or another foe) was yelling at you: the
+// fight's off (it would otherwise start on the next map)
+onGameEvent('mapLeave', () => {
+  if (!bossEngage) return;
+  if (!bossEngage.foe) mpBossFight(false, false);
+  bossEngage = null;
+});

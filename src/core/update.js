@@ -13,9 +13,9 @@ function update() {
     return;
   }
 
-  // Hold still while the Blob shouts at you, then off to the fight view
+  // Hold still while the Blob (or another foe) shouts at you, then off to the fight view
   if (bossEngage) {
-    if (performance.now() - bossEngage.start >= BOSS_ENGAGE_MS) startFight();
+    if (performance.now() - bossEngage.start >= BOSS_ENGAGE_MS) startFight(bossEngage.foe);
     return;
   }
 

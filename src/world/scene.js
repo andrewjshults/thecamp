@@ -11,10 +11,22 @@ function loadMapImage(config) {
   if (config.scene) return renderSceneImage(config.scene);
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(img);
+    // An .svg map (like the Second Camp's) is rasterised once too, so its
+    // filters aren't redrawn every frame
+    img.onload = () => resolve(/\.svg$/i.test(config.image) ? rasterise(img, img.naturalWidth, img.naturalHeight) : img);
     img.onerror = reject;
     img.src = config.image;
   });
+}
+
+function rasterise(img, W, H) {
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  c.getContext('2d').drawImage(img, 0, 0, W, H);
+  c.naturalWidth = W;
+  c.naturalHeight = H;
+  return c;
 }
 
 function renderSceneImage(scene) {
@@ -26,14 +38,8 @@ function renderSceneImage(scene) {
     const img = new Image();
     img.onload = () => {
       // Rasterise once so the (filter-heavy) SVG isn't re-rendered every frame
-      const c = document.createElement('canvas');
-      c.width = W;
-      c.height = H;
-      c.getContext('2d').drawImage(img, 0, 0, W, H);
       URL.revokeObjectURL(url);
-      c.naturalWidth = W;
-      c.naturalHeight = H;
-      resolve(c);
+      resolve(rasterise(img, W, H));
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     img.src = url;

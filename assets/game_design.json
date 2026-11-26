@@ -413,7 +413,9 @@
       "description": "Somebody hungry lives in here...",
       "interactionText": "GLUG GLUB! Something is in the cave!",
       "items": [],
-      "uses": []
+      "uses": [],
+      "passage": { "targetMap": "assets/camp_level2.json", "targetHotspot": "cave_exit" },
+      "arrive": { "px": 0.93, "py": 0.19 }
     }
   ],
   "boss": {
