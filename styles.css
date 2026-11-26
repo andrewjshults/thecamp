@@ -1,0 +1,229 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #2a1a0a;
+  overflow: hidden;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  user-select: none;
+}
+canvas {
+  display: block;
+  margin: 0 auto;
+}
+#gameCanvas {
+  cursor: default;
+  image-rendering: auto;
+}
+/* --- Talk bar (typing what your character says to an NPC) --- */
+#talkBar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 24px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(40, 24, 8, 0.88);
+  border: 3px solid #FFD54F;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+#talkBar[hidden] { display: none; }
+#talkTo {
+  flex-basis: 100%;
+  color: #FFEB3B;
+  font-size: 14px;
+  font-weight: bold;
+}
+#talkInput {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: 18px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  padding: 8px 12px;
+  border: 2px solid #FFF9C4;
+  border-radius: 12px;
+  outline: none;
+  user-select: text;
+}
+#talkInput:focus { border-color: #FFD54F; box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.35); }
+#talkInput:disabled { background: #eee; color: #888; }
+#talkBar button {
+  font: bold 16px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  color: white;
+}
+#talkSay { background: #4CAF50; }
+#talkSay:disabled { background: #9E9E9E; cursor: default; }
+#talkBye { background: #E57373; }
+#talkSidekick { background: #7E57C2; }
+#talkSidekick.dismiss { background: #8D6E63; }
+#talkSidekick:disabled { background: #9E9E9E; cursor: default; }
+
+/* --- Start menu (single / multi player, create / join a world) --- */
+#menu {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#menu[hidden], #menu [hidden] { display: none !important; }
+.menuPanel {
+  width: min(440px, 100%);
+  padding: 22px 22px 18px;
+  background: #3E2723;
+  border: 3px solid #8D6E63;
+  border-radius: 18px;
+  box-shadow: 0 0 0 6px rgba(62, 39, 35, 0.5), 0 12px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  color: #FFECB3;
+}
+.menuPanel h1 {
+  font-size: 44px;
+  color: #FF9800;
+  -webkit-text-stroke: 1.5px #5D4037;
+  margin-bottom: 4px;
+}
+.menuScreen { display: flex; flex-direction: column; gap: 12px; }
+.menuScreen p { font-size: 17px; }
+.menuScreen p.small { font-size: 13px; color: #BCAAA4; }
+.menuPanel button {
+  font: bold 20px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 14px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.08s;
+}
+.menuPanel button:hover, .menuPanel button:focus-visible { transform: translateY(-2px); outline: 3px solid #FFD54F; }
+.menuPanel button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.menuPanel button small { display: block; font-size: 13px; font-weight: normal; opacity: 0.9; }
+.menuPanel button.green  { background: #43A047; }
+.menuPanel button.purple { background: #8E24AA; }
+.menuPanel button.orange { background: #F57C00; }
+.menuPanel button.blue   { background: #1E88E5; }
+.menuPanel button.link {
+  background: none;
+  box-shadow: none;
+  color: #BCAAA4;
+  font-size: 15px;
+  padding: 4px;
+}
+.menuPanel button:disabled { background: #757575; cursor: default; transform: none; }
+#joinCode {
+  font: bold 40px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  letter-spacing: 10px;
+  text-align: center;
+  width: 100%;
+  padding: 8px 4px 8px 14px;
+  border: 3px solid #FFD54F;
+  border-radius: 14px;
+  background: #FFF8E1;
+  color: #3E2723;
+  outline: none;
+  user-select: text;
+}
+#joinCode::placeholder { color: #D7CCC8; }
+.menuError { color: #FF8A80; font-size: 15px; min-height: 20px; }
+.menuSpinner {
+  width: 44px; height: 44px; margin: 6px auto;
+  border: 6px solid rgba(255, 213, 79, 0.25);
+  border-top-color: #FFD54F;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Kitchen pop-ups: freestyle cooking, naming a recipe, all the recipes --- */
+#kitchenModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#kitchenModal[hidden], #kitchenModal [hidden] { display: none !important; }
+#kitchenModal h2 { font-size: 28px; color: #FFD54F; }
+#kmNameInput {
+  font: bold 24px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  text-align: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: 3px solid #FFD54F;
+  border-radius: 14px;
+  background: #FFF8E1;
+  color: #3E2723;
+  outline: none;
+  user-select: text;
+}
+#kmNameInput::placeholder { color: #D7CCC8; }
+#kmListBody {
+  max-height: 55vh;
+  overflow-y: auto;
+  text-align: left;
+  padding: 4px 6px;
+  background: #2f4a3a;
+  border: 3px solid #8b5a2b;
+  border-radius: 10px;
+}
+#kmListBody h3 { font-size: 16px; color: #90caf9; margin: 8px 0 2px; }
+#kmListBody .kmRecipe { font-size: 18px; color: #f4f1e8; padding: 3px 0; }
+#kmListBody .kmRecipe.mine { color: #FFE082; }
+#kmListBody .kmEmpty { font-size: 15px; color: #BCAAA4; padding: 3px 0; }
+
+/* --- Bank teller pop-up: balance / deposit / withdraw buttons --- */
+#bankModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#bankModal[hidden] { display: none !important; }
+#bankModal h2 { font-size: 28px; color: #A5D6A7; }
+#bankTeller { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
+#bankTellerFace {
+  flex: none;
+  font-size: 54px;
+  line-height: 1;
+  animation: bankBob 1.6s ease-in-out infinite;
+}
+@keyframes bankBob { 50% { transform: translateY(-4px); } }
+#bankSays {
+  position: relative;
+  flex: 1;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #FFF8E1;
+  color: #3E2723;
+  font-size: 18px;
+}
+#bankSays::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 18px;
+  border: 6px solid transparent;
+  border-right: 6px solid #FFF8E1;
+  border-width: 6px 10px 6px 0;
+}
+#bankWallet { font-size: 15px; color: #D7CCC8; }
+.bankRow { display: flex; gap: 10px; }
+.bankRow button { flex: 1; }

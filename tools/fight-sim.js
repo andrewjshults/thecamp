@@ -1,4 +1,4 @@
-// Blob fight simulator — for tuning how hard the Blob is (see bossTuning in index.html).
+// Blob fight simulator — for tuning how hard the Blob is (see bossTuning in src/features/boss/fight.js).
 //
 // How to use: open the game (npm run dev → http://localhost:3000), start a
 // Single Player game on the main map, open the browser console and paste this
