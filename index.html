@@ -5306,6 +5306,23 @@ function drawActionAnimation(action, x, y, timer) {
   }
 }
 
+// Split `text` into lines no wider than maxWidth (in the current ctx.font)
+function wrapLines(text, maxWidth) {
+  const lines = [];
+  let line = '';
+  for (const word of String(text).split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 function wrapText(text, x, y, maxWidth, lineHeight) {
   const words = text.split(' ');
   let line = '';
@@ -8101,9 +8118,12 @@ function finishFight(fled) {
     }
   }
   if (swordRating <= 0) {
-    res.lines.push(hasSpareSword()
-      ? 'Your sword is worn out, so you grab the spare from your backpack. 🗡️'
-      : 'Your sword is worn out! 🗡️ Find a new one before you fight again.');
+    res.lines.push({
+      text: hasSpareSword()
+        ? 'Your sword is worn out, so you grab the spare from your backpack. 🗡️'
+        : 'Your sword is worn out! 🗡️ Find a new one before you fight again.',
+      color: '#FFE082'
+    });
   }
   writeSave();
   f.phase = 'result';
@@ -8111,7 +8131,10 @@ function finishFight(fled) {
   f.result = res;
   f.shout = null;
   if (fled) f.p.act = 'idle';
-  if (!won) res.lines.push(`"${pickOne(fled ? ['hehe! me keep shinies!', 'run run little snack!'] : ['nom nom nom!', 'BURP! yummy!', 'me tummy full!'])}" says the Blob`);
+  if (!won) res.lines.push({
+    text: `"${pickOne(fled ? ['hehe! me keep shinies!', 'run run little snack!'] : ['nom nom nom!', 'BURP! yummy!', 'me tummy full!'])}" says the Blob`,
+    color: '#FFB74D'
+  });
 }
 
 function endFight() {
@@ -8713,8 +8736,17 @@ function drawFightOverlay(v, f, now) {
     const r = f.result;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(0, 0, W, Hc);
-    const pw = Math.min(520, W - 32), ph = 230;
-    const px = W / 2 - pw / 2, py = Hc * 0.42 - ph / 2;
+    const pw = Math.min(520, W - 32);
+    // Lines are a string or { text, color }; long ones wrap to fit the panel,
+    // and the panel grows to hold them all
+    const fs = Math.min(19, pw / 26), lineH = Math.round(fs * 1.6);
+    ctx.font = `${fs}px "Comic Sans MS", cursive`;
+    const rows = r.lines.flatMap(entry => {
+      const { text, color } = typeof entry === 'string' ? { text: entry } : entry;
+      return wrapLines(text, pw - 48).map(t => ({ text: t, color: color || '#fff' }));
+    });
+    const ph = Math.max(230, 100 + (rows.length - 1) * lineH + 70);
+    const px = W / 2 - pw / 2, py = Math.max(8, Hc * 0.42 - ph / 2);
     const u = easeOutBack(clamp(t / 350, 0, 1));
     ctx.save();
     ctx.translate(W / 2, py + ph / 2);
@@ -8729,11 +8761,10 @@ function drawFightOverlay(v, f, now) {
     const title = r.won ? 'YOU WIN! 🏆' : r.fled ? 'YOU RAN AWAY! 💨' : `${bossName().toUpperCase()} WINS!`;
     bigText(title, W / 2, py + 46, Math.min(40, pw / 11), '#FFEB3B');
     ctx.textAlign = 'center';
-    ctx.font = `${Math.min(19, pw / 26)}px "Comic Sans MS", cursive`;
-    ctx.fillStyle = '#fff';
-    r.lines.forEach((line, i) => {
-      ctx.fillStyle = i === 2 ? '#FFB74D' : '#fff';
-      ctx.fillText(line, W / 2, py + 100 + i * 32);
+    ctx.font = `${fs}px "Comic Sans MS", cursive`;
+    rows.forEach((row, i) => {
+      ctx.fillStyle = row.color;
+      ctx.fillText(row.text, W / 2, py + 100 + i * lineH);
     });
     ctx.font = 'bold 14px "Comic Sans MS", cursive';
     ctx.fillStyle = '#FFE0B2';
