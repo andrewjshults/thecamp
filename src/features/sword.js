@@ -215,3 +215,5 @@ function wearSword(f, n) {
   f.swordWornAt = performance.now();
   if (swordRating === 0) fightPop(f, 'SWORD WORN OUT! 🗡️', f.p.x, 400, '#FFAB91', 0.9);
 }
+
+registerMapLayer(50, () => drawLyingSwords());

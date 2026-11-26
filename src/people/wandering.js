@@ -135,3 +135,5 @@ function updateNpcs() {
   updateSidekick(pnow, k);
   updateLeavers(pnow);
 }
+
+registerFrameUpdate(10, () => updateNpcs());

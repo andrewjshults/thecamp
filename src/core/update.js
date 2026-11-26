@@ -105,8 +105,8 @@ function update() {
     }
   }
 
-  // The Blob comes and goes from its cave as it likes (and may ambush you)
-  updateMapBoss();
+  // Things that move around the map on their own, like the Blob (registerMapUpdate)
+  runUpdates(MAP_UPDATES);
 
   // Update camera to follow player
   updateCamera();

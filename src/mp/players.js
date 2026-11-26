@@ -146,3 +146,5 @@ function mpTick() {
     }
   }
 }
+
+registerFrameUpdate(20, () => mpTick());

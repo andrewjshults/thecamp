@@ -190,3 +190,7 @@ function drawMapBossShout() {
 
 // The cave: a rocky hill with a dark mouth, drawn over the map in the
 // cave hotspot's box. Glowing eyes blink inside while the Blob is home.
+
+registerScreenLayer(20, () => drawMapBossShout());
+// The Blob comes and goes from its cave as it likes (and may ambush you)
+registerMapUpdate(10, () => updateMapBoss());

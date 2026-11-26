@@ -62,42 +62,27 @@ function handleCanvasTap(screenX, screenY) {
 }
 
 // --- Interaction handling ---
+// Portal hotspot: switch maps, no interaction dialog. Portals with a
+// `door` rect swing that door open first (see drawDoorOpening).
+registerHotspotKind({
+  match: obj => !!obj.targetMap,
+  interact(obj) {
+    if (doorOpening) return;
+    if (obj.door) {
+      doorOpening = { obj, start: performance.now() };
+    } else {
+      switchMap(obj.targetMap, obj.targetHotspot);
+    }
+  },
+  hint: () => isTouchDevice() ? '🚪 [ TAP ]' : '🚪 [ ENTER ]'
+});
+
 function handleInteract() {
   if (state === GameState.PLAYING && nearbyObject) {
-    // Portal hotspot: switch maps, no interaction dialog. Portals with a
-    // `door` rect swing that door open first (see drawDoorOpening).
-    if (nearbyObject.targetMap) {
-      if (doorOpening) return;
-      if (nearbyObject.door) {
-        doorOpening = { obj: nearbyObject, start: performance.now() };
-      } else {
-        switchMap(nearbyObject.targetMap, nearbyObject.targetHotspot);
-      }
-      return;
-    }
-    // The bank teller's window: balance / deposit / withdraw pop-up
-    if (nearbyObject.bank) {
-      openBank(nearbyObject);
-      return;
-    }
-    // "See all recipes" on a full chalkboard
-    if (nearbyObject.seeAllRecipes) {
-      openRecipeList();
-      return;
-    }
-    // Kitchen station: Space picks up / puts down / cooks — no dialog
-    if (nearbyObject.station && mapConfig.kitchen) {
-      doStation(nearbyObject);
-      return;
-    }
-    // The boss's cave: knock and the Blob comes out to fight
-    if (isBossCave(nearbyObject)) {
-      if (mp.active && mapBoss.busyWith && mapBoss.busyWith !== mp.myId) {
-        kitchenToast(`The Blob is busy fighting ${mpBossFighterName()}! 👀`);
-      } else if (mapBoss.where === 'home') engageBoss();
-      else kitchenToast('The cave is empty... the Blob is out roaming! 👀');
-      return;
-    }
+    // Portals, kitchen stations, the bank, the cave... do their own thing
+    // (registerHotspotKind); any other hotspot opens its pop-up
+    const kind = hotspotKindOf(nearbyObject);
+    if (kind && kind.interact(nearbyObject) !== false) return;
     state = GameState.INTERACTING;
     currentInteraction = nearbyObject;
     interactionTimer = 0;

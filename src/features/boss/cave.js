@@ -124,3 +124,16 @@ function drawBossCave() {
   ctx.textBaseline = 'alphabetic';
   ctx.restore();
 }
+
+// The boss's cave: knock and the Blob comes out to fight
+registerHotspotKind({
+  match: obj => isBossCave(obj),
+  interact() {
+    if (mp.active && mapBoss.busyWith && mapBoss.busyWith !== mp.myId) {
+      kitchenToast(`The Blob is busy fighting ${mpBossFighterName()}! 👀`);
+    } else if (mapBoss.where === 'home') engageBoss();
+    else kitchenToast('The cave is empty... the Blob is out roaming! 👀');
+  },
+  hint: () => `${actionKeyLabel()} ${mapBoss.where === 'home' ? '⚔️ Knock knock...' : 'Peek inside'}`
+});
+registerMapLayer(20, () => drawBossCave());

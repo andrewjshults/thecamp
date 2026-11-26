@@ -271,3 +271,23 @@ function drawKitchenHud() {
   }
   if (heldItem) pill(`In your hands: ${heldItem.emoji} ${heldItem.name}`, py, '#FFF9C4');
 }
+
+// "See all recipes" on a full chalkboard
+registerHotspotKind({
+  match: obj => !!obj.seeAllRecipes,
+  interact: () => { openRecipeList(); }
+});
+// Kitchen station: Space picks up / puts down / cooks — no dialog
+// (on a map without a `kitchen`, it's an ordinary hotspot)
+registerHotspotKind({
+  match: obj => !!obj.station,
+  interact(obj) {
+    if (!mapConfig.kitchen) return false;
+    doStation(obj);
+  },
+  hint: obj => `${actionKeyLabel()} ${stationHint(obj)}`
+});
+
+registerMapLayer(10, () => drawChalkboards());
+registerMapLayer(40, () => drawStations());
+registerScreenLayer(30, () => drawKitchenHud());

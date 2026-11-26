@@ -326,3 +326,5 @@ function localCritterReply(npc, history) {
   const name = player.character ? player.character.name : 'friend';
   return (pool.length ? pick(pool) : '...').replace(/\{name\}/g, name);
 }
+
+registerFrameUpdate(30, () => updateConversation());

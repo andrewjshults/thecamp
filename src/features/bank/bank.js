@@ -134,3 +134,10 @@ bankModalEl.addEventListener('click', (e) => {
 bankModalEl.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { e.preventDefault(); closeBank(); }
 });
+
+// The teller's window: balance / deposit / withdraw pop-up
+registerHotspotKind({
+  match: obj => !!obj.bank,
+  interact: obj => { openBank(obj); },
+  hint: () => `${actionKeyLabel()} 🏦 Talk to the teller`
+});

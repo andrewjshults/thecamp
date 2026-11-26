@@ -60,3 +60,5 @@ function drawDoorOpening() {
   ctx.fillText('CREEEAK!', x + w / 2, y - 20);
   ctx.globalAlpha = 1;
 }
+
+registerMapLayer(60, () => { if (doorOpening) drawDoorOpening(); });

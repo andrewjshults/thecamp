@@ -90,3 +90,5 @@ function drawBankBuilding(obj) {
   }
   ctx.restore();
 }
+
+registerMapLayer(30, () => drawMapBuildings());

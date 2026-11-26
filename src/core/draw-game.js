@@ -9,12 +9,7 @@ function drawGame() {
 
   // Draw map at scaled size
   ctx.drawImage(mapImage, 0, 0, scaledMapW, scaledMapH);
-  drawChalkboards();
-  drawBossCave();
-  drawMapBuildings();
-  drawStations();
-  drawLyingSwords();
-  if (doorOpening) drawDoorOpening();
+  drawLayers(MAP_LAYERS);   // chalkboards, the cave, buildings, stations... (registerMapLayer)
 
   // Draw interaction highlights
   for (const obj of interactiveObjects) {
@@ -45,18 +40,8 @@ function drawGame() {
       // Interact hint (portals get a special "ENTER" label)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       const hintY = labelY - 24;
-      let hintText;
-      if (obj.targetMap) {
-        hintText = isTouchDevice() ? '🚪 [ TAP ]' : '🚪 [ ENTER ]';
-      } else if (obj.bank) {
-        hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} 🏦 Talk to the teller`;
-      } else if (obj.station) {
-        hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} ${stationHint(obj)}`;
-      } else if (isBossCave(obj)) {
-        hintText = `${isTouchDevice() ? '[ TAP ]' : '[ SPACE ]'} ${mapBoss.where === 'home' ? '⚔️ Knock knock...' : 'Peek inside'}`;
-      } else {
-        hintText = isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
-      }
+      const kind = hotspotKindOf(obj);
+      const hintText = kind && kind.hint ? kind.hint(obj) : actionKeyLabel();
       const hintW = ctx.measureText(hintText).width + 12;
       roundRect(labelX - hintW / 2, hintY - 12, hintW, 18, 4);
       ctx.fill();
@@ -73,9 +58,7 @@ function drawGame() {
   ctx.restore();
 
   // Speech bubbles (screen space so they can be kept on-screen)
-  drawSpeechBubbles();
-  drawMapBossShout();
-  drawKitchenHud();
+  drawLayers(SCREEN_LAYERS);   // speech bubbles, the Blob's shouts... (registerScreenLayer)
 
   // Tap ripple visual
   if (tapRipple) {

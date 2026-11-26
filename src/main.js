@@ -1,9 +1,7 @@
 // --- Main Game Loop ---
 function gameLoop() {
   update();
-  updateNpcs();
-  mpTick();
-  updateConversation();
+  runUpdates(FRAME_UPDATES);   // NPCs, multiplayer, conversations (registerFrameUpdate)
 
   // What's on screen right now draws itself (see registerGameState)
   const handlers = gameStateHandlers();

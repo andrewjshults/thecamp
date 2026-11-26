@@ -47,3 +47,51 @@ function gameStateHandlers() {
 function isTypingInGameInput(el) {
   return TYPING_INPUTS.some(input => input === el || input.contains(el));
 }
+
+// --- Hotspot kinds ---
+// A kind of hotspot that does its own thing when you press Space or tap there,
+// instead of opening the hotspot's pop-up. The first kind that matches wins.
+//   match(obj)     is this hotspot one of mine? (obj = its JSON + x, y, width, height)
+//   interact(obj)  Space / tap there; return false to open the normal pop-up after all
+//   hint(obj)      the label above it while you're close (default: "[ SPACE ]")
+const HOTSPOT_KINDS = [];
+function registerHotspotKind(kind) {
+  HOTSPOT_KINDS.push(kind);
+}
+function hotspotKindOf(obj) {
+  return HOTSPOT_KINDS.find(k => k.match(obj)) || null;
+}
+function actionKeyLabel() {
+  return isTouchDevice() ? '[ TAP ]' : '[ SPACE ]';
+}
+
+// --- Drawing layers ---
+// Extra things drawn each frame while you're on a map, lowest `z` first.
+//   map layers: in map coordinates, over the map picture and under people
+//   screen layers: in screen coordinates, over people and under the HUD
+const MAP_LAYERS = [];
+const SCREEN_LAYERS = [];
+function registerMapLayer(z, draw) { addByZ(MAP_LAYERS, z, draw); }
+function registerScreenLayer(z, draw) { addByZ(SCREEN_LAYERS, z, draw); }
+function drawLayers(layers) {
+  for (const l of layers) l.fn();
+}
+
+// --- Updates ---
+// Called once per frame, lowest `z` first:
+//   frame updates: every frame, whatever's on screen (from the game loop)
+//   map updates: only while you're walking around a map (from update())
+const FRAME_UPDATES = [];
+const MAP_UPDATES = [];
+function registerFrameUpdate(z, fn) { addByZ(FRAME_UPDATES, z, fn); }
+function registerMapUpdate(z, fn) { addByZ(MAP_UPDATES, z, fn); }
+function runUpdates(list) {
+  for (const u of list) u.fn();
+}
+
+// Keep a list sorted by z (equal z: in the order they were added)
+function addByZ(list, z, fn) {
+  let i = list.length;
+  while (i > 0 && list[i - 1].z > z) i--;
+  list.splice(i, 0, { z, fn });
+}

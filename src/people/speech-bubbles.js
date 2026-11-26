@@ -221,3 +221,5 @@ function drawSpeechBubbles() {
   for (const b of ordered) drawBubble(b, now);
   if (npcThinking) drawThinkingBubble(npcThinking.npc, now);
 }
+
+registerScreenLayer(10, () => drawSpeechBubbles());
