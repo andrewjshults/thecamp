@@ -147,6 +147,46 @@
     animation: spin 0.9s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* --- Kitchen pop-ups: freestyle cooking, naming a recipe, all the recipes --- */
+  #kitchenModal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.45);
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  }
+  #kitchenModal[hidden], #kitchenModal [hidden] { display: none !important; }
+  #kitchenModal h2 { font-size: 28px; color: #FFD54F; }
+  #kmNameInput {
+    font: bold 24px 'Comic Sans MS', 'Chalkboard SE', cursive;
+    text-align: center;
+    width: 100%;
+    padding: 8px 12px;
+    border: 3px solid #FFD54F;
+    border-radius: 14px;
+    background: #FFF8E1;
+    color: #3E2723;
+    outline: none;
+    user-select: text;
+  }
+  #kmNameInput::placeholder { color: #D7CCC8; }
+  #kmListBody {
+    max-height: 55vh;
+    overflow-y: auto;
+    text-align: left;
+    padding: 4px 6px;
+    background: #2f4a3a;
+    border: 3px solid #8b5a2b;
+    border-radius: 10px;
+  }
+  #kmListBody h3 { font-size: 16px; color: #90caf9; margin: 8px 0 2px; }
+  #kmListBody .kmRecipe { font-size: 18px; color: #f4f1e8; padding: 3px 0; }
+  #kmListBody .kmRecipe.mine { color: #FFE082; }
+  #kmListBody .kmEmpty { font-size: 15px; color: #BCAAA4; padding: 3px 0; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/pubnub@13.1.3/dist/web/pubnub.min.js"></script>
 </head>
@@ -188,6 +228,29 @@
     </div>
   </div>
 </div>
+<div id="kitchenModal" hidden>
+  <div class="menuPanel">
+    <div id="kmOffer" class="menuScreen">
+      <h2>✨ Freestyle!</h2>
+      <p id="kmOfferText"></p>
+      <p>Want to cook freestyle and make up your own recipe?</p>
+      <button type="button" class="orange" data-km="name">✨ Make my own recipe<small>Cook whatever you want!</small></button>
+      <button type="button" class="link" data-km="close">No thanks</button>
+    </div>
+    <form id="kmName" class="menuScreen" hidden autocomplete="off">
+      <h2>✏️ Name your recipe</h2>
+      <p id="kmNameText"></p>
+      <input id="kmNameInput" maxlength="24" placeholder="Tomato Surprise" enterkeyhint="done">
+      <button type="submit" class="green" id="kmNameGo">Write it on the board ✏️</button>
+      <button type="button" class="link" data-km="close">Cancel</button>
+    </form>
+    <div id="kmList" class="menuScreen" hidden>
+      <h2>📋 All the Recipes</h2>
+      <div id="kmListBody"></div>
+      <button type="button" class="blue" data-km="close">Close</button>
+    </div>
+  </div>
+</div>
 <form id="talkBar" hidden autocomplete="off">
   <div id="talkTo"></div>
   <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
@@ -216,6 +279,7 @@ const GameState = {
   USING_ITEM: 'usingItem',
   CONFIRM_DIALOG: 'confirmDialog',
   TALKING: 'talking',
+  KITCHEN_MODAL: 'kitchenModal',      // freestyle / name-your-recipe / all-recipes pop-up (HTML #kitchenModal)
   FIGHTING: 'fighting'
 };
 
@@ -302,6 +366,7 @@ function switchMap(targetPath, targetHotspotId) {
   if (heldItem) {
     if (heldItem.dessert) eatDessert(heldItem, true);   // you paid for it!
     else kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
+    if (heldItem.draft) draftRecipe = null;            // never eaten, so never finished
     heldItem = null;
   }
   // Stash current map's hotspot items
@@ -1131,28 +1196,21 @@ const SCENE_PROPS = {
     p.rect(x, y, w, h, o.color || '#a0673a', { r: 3 * S, sw: 0.7 });
   },
 
-  // Recipe chalkboard. columns: [{ title, lines: ["🍞+🧀+🥬 = 🥪", ...] }]
+  // Recipe chalkboard. columns: [{ title, lines: ["🍞+🧀+🥬 = 🥪", ...], custom? }]
+  // Only the board is drawn here: the writing is drawn live by drawChalkboards()
+  // so made-up recipes can appear on it.
   chalkboard(p, b, o) {
     const { x, y, w, h } = b, S = p.S;
-    const pad = w * 0.04;
     p.rect(x - 14 * S, y - 14 * S, w + 28 * S, h + 28 * S, '#8b5a2b', { r: 8 * S });
     p.rect(x, y, w, h, '#2f4a3a', { sw: 0.6 });
     for (const [fx, fy] of [[0.15, 0.8], [0.7, 0.3], [0.45, 0.65]]) {
       p.line(x + w * fx, y + h * fy, x + w * (fx + 0.12), y + h * (fy - 0.05), { layer: 'fill', stroke: '#fff', sw: 3, opacity: 0.07 });
     }
-    const chalk = '#f4f1e8';
     if (o.title) p.text(x + w / 2, y + h * 0.1, o.title, { size: h * 0.1, color: '#ffe082' });
-    const cols = o.columns || [];
-    const top = y + h * (o.title ? 0.22 : 0.08);
-    const maxLines = Math.max(...cols.map(c => c.lines.length + (c.title ? 1 : 0)), 1);
-    const lineH = (y + h - pad - top) / maxLines;
-    cols.forEach((c, ci) => {
-      const cx = x + w * (ci + 0.5) / cols.length;
-      let ly = top + lineH / 2;
-      if (c.title) { p.text(cx, ly, c.title, { size: lineH * 0.6, color: '#90caf9' }); ly += lineH; }
-      for (const line of c.lines) { p.text(cx, ly, line, { size: lineH * 0.78, color: chalk, layer: 'top' }); ly += lineH; }
-      if (ci > 0) p.line(x + w * ci / cols.length, top, x + w * ci / cols.length, y + h - pad, { sw: 0.3, stroke: 'rgba(255,255,255,0.35)' });
-    });
+    const L = chalkboardLayout(o, b);
+    for (let ci = 1; ci < L.cols.length; ci++) {
+      p.line(x + w * ci / L.cols.length, L.top, x + w * ci / L.cols.length, y + h - L.pad, { sw: 0.3, stroke: 'rgba(255,255,255,0.35)' });
+    }
     p.rect(x + w * 0.1, y + h + 10 * S, w * 0.8, 10 * S, '#6d4c41', { ink: false });               // chalk tray
     p.rect(x + w * 0.7, y + h + 2 * S, w * 0.05, 10 * S, '#ffffff', { r: 4 * S, ink: false });
   },
@@ -1408,6 +1466,7 @@ function writeSave() {
     backpack,
     completedUses,
     dishesMade,
+    customRecipes,
     strengthBoost,
     maps: {
       ...allMapSaves,
@@ -1445,6 +1504,8 @@ function initFreshSave() {
   hotspotItems = defaultHotspotItems();
   completedUses = [];
   dishesMade = [];
+  customRecipes = [];
+  resetDraftRecipe();
   strengthBoost = 0;
   allMapSaves = {};
   writeSave();
@@ -1453,6 +1514,8 @@ function applySave(save) {
   backpack      = Array.isArray(save.backpack)      ? save.backpack.map(it => ({ ...it }))    : [];
   completedUses = Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
   dishesMade    = Array.isArray(save.dishesMade)    ? [...save.dishesMade]                      : [];
+  customRecipes = cleanCustomRecipes(save.customRecipes);
+  resetDraftRecipe();
   strengthBoost = clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX);
   // v2: maps object keyed by map path
   if (save.maps) {
@@ -1472,7 +1535,7 @@ function applySave(save) {
 const keys = {};
 window.addEventListener('keydown', (e) => {
   // Typing in the talk bar must not drive the game (its own listener handles Esc)
-  if (e.target === talkInput || menuEl.contains(e.target)) return;
+  if (e.target === talkInput || menuEl.contains(e.target) || kitchenModalEl.contains(e.target)) return;
   keys[e.key] = true;
   if (e.key === ' ') {
     e.preventDefault();
@@ -1518,6 +1581,8 @@ window.addEventListener('keydown', (e) => {
     handleItemActionKey(e);
   } else if (state === GameState.TALKING) {
     if (e.key === 'Escape') endConversation();
+  } else if (state === GameState.KITCHEN_MODAL) {
+    if (e.key === 'Escape') closeKitchenModal();
   } else if (state === GameState.FIGHTING) {
     handleFightKey(e);
   } else if (state === GameState.USING_ITEM) {
@@ -1758,6 +1823,7 @@ function enterDevMode() {
   devMode = true;
   devSelectedHotspot = null;
   devDrag = null;
+  recalcInteractiveObjects();
 }
 
 function exitDevMode() {
@@ -1765,6 +1831,7 @@ function exitDevMode() {
   devDrag = null;
   canvas.style.cursor = 'default';
   copyHotspotsToClipboard();
+  recalcInteractiveObjects();
 }
 
 function copyHotspotsToClipboard() {
@@ -1965,7 +2032,10 @@ function drawDevModeOverlay() {
 let interactiveObjects = [];
 function recalcInteractiveObjects() {
   if (!mapConfig) return;
-  interactiveObjects = mapConfig.hotspots.map(def => ({
+  // Plus hotspots the game adds itself (a full chalkboard's "see all"), but not
+  // while editing hotspots: dev mode matches interactiveObjects to the JSON by index
+  const defs = devMode ? mapConfig.hotspots : [...mapConfig.hotspots, ...chalkboardHotspots()];
+  interactiveObjects = defs.map(def => ({
     ...def,
     x: def.px * scaledMapW,
     y: def.py * scaledMapH,
@@ -2165,6 +2235,11 @@ function handleInteract() {
       } else {
         switchMap(nearbyObject.targetMap, nearbyObject.targetHotspot);
       }
+      return;
+    }
+    // "See all recipes" on a full chalkboard
+    if (nearbyObject.seeAllRecipes) {
+      openRecipeList();
       return;
     }
     // Kitchen station: Space picks up / puts down / cooks — no dialog
@@ -3521,9 +3596,63 @@ let heldItem = null;          // { id, name, emoji } — only ever exists inside
 let dishesMade = [];          // dish ids eaten at least once (saved)
 const stationStates = {};     // `${mapPath}#${hotspotId}` → state (kept while the game runs)
 
+// --- Freestyle: making up your own recipes ---
+// Bring a food to the plate that isn't in any recipe and you're offered to cook
+// freestyle. You name it, it's written on the chalkboard (✏️, still cooking)
+// and the plate takes any food. Picking up the plate gives you the dish; eating
+// it at the table makes it a real recipe (saved in `customRecipes`, made on the
+// plate like any other from then on). Composting it or walking out with it
+// rubs it off the board.
+const CUSTOM_DISH_EMOJI = '🍽️';
+const FREESTYLE_MAX = 6;      // foods on one freestyle plate
+let customRecipes = [];       // [{ id, name, needs: [foodId], map }] (saved)
+let draftRecipe = null;       // { name, needs, map } — the one you're making up right now
+
+function customRecipesHere() {
+  return customRecipes.filter(r => r.map === currentMapPath);
+}
+function draftHere() {
+  return draftRecipe && draftRecipe.map === currentMapPath ? draftRecipe : null;
+}
+function draftDish() {
+  return { id: 'draft_recipe', name: draftRecipe.name, emoji: CUSTOM_DISH_EMOJI, dish: true, custom: true, draft: true };
+}
+// Built-in recipes plus the ones you've made up in this kitchen
+function allRecipes() {
+  return [
+    ...mapConfig.kitchen.recipes,
+    ...customRecipesHere().map(r => ({ makes: r.id, needs: r.needs }))
+  ];
+}
+function cleanRecipeName(s) {
+  return String(s || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+}
+// Forget a recipe you were still making up (new camper, fresh save...)
+function resetDraftRecipe() {
+  draftRecipe = null;
+  if (heldItem && heldItem.draft) heldItem = null;
+  for (const S of Object.values(stationStates)) {
+    if (S.draft) { S.plate = []; S.draft = false; }
+  }
+}
+function cleanCustomRecipes(arr) {
+  return Array.isArray(arr)
+    ? arr.filter(r => r && typeof r.id === 'string' && typeof r.name === 'string' && Array.isArray(r.needs) && typeof r.map === 'string')
+      .map(r => ({ id: r.id, name: cleanRecipeName(r.name), needs: r.needs.map(String), map: r.map }))
+    : [];
+}
+// The board shows recipes, so the "see all" hotspot may need to appear or go
+function kitchenBoardChanged() {
+  recalcInteractiveObjects();
+}
+
 function kitchenFood(id) {
   const f = mapConfig && mapConfig.kitchen && mapConfig.kitchen.foods[id];
-  return f ? { id, ...f } : { id, name: id, emoji: '❓' };
+  if (f) return { id, ...f };
+  if (id === 'draft_recipe' && draftRecipe) return draftDish();
+  const c = customRecipes.find(r => r.id === id);
+  if (c) return { id, name: c.name, emoji: CUSTOM_DISH_EMOJI, dish: true, custom: true };
+  return { id, name: id, emoji: '❓' };
 }
 function foodLabel(id) {
   const f = kitchenFood(id);
@@ -3587,10 +3716,10 @@ function bagFits(have, needs) {
   return true;
 }
 function plateAccepts(plate, id) {
-  return mapConfig.kitchen.recipes.some(r => bagFits([...plate, id], r.needs));
+  return allRecipes().some(r => bagFits([...plate, id], r.needs));
 }
 function plateRecipe(plate) {
-  return mapConfig.kitchen.recipes.find(r => r.needs.length === plate.length && bagFits(plate, r.needs));
+  return allRecipes().find(r => r.needs.length === plate.length && bagFits(plate, r.needs));
 }
 
 // Cooking finishes on a timer (checked every frame while drawing)
@@ -3649,11 +3778,30 @@ function doStation(obj) {
     case 'plate': {
       if (held) {
         if (held.dessert) { kitchenToast(`The ${foodLabel(held.id)} doesn't need a plate! Take it to the table to eat it.`); break; }
+        // Freestyle plate: anything goes
+        if (S.draft) {
+          if (held.custom) { kitchenToast(`The ${held.emoji} ${held.name} is ready to eat! Take it to the table.`); break; }
+          if (S.plate.length >= FREESTYLE_MAX) { kitchenToast(`Your ${draftRecipe.name} is full! Pick it up and take it to the table to eat it.`); break; }
+          S.plate.push(held.id);
+          heldItem = null;
+          kitchenBoardChanged();
+          kitchenToast(`You add the ${foodLabel(held.id)} to your ${draftRecipe.name}!`);
+          break;
+        }
+        // Putting your made-up dish back down to add more
+        if (held.draft) {
+          if (S.plate.length) { kitchenToast(`The plate isn't empty! Take the ${S.plate.map(id => kitchenFood(id).emoji).join(' ')} off first.`); break; }
+          S.plate = draftRecipe.needs;
+          S.draft = true;
+          heldItem = null;
+          kitchenToast(`You put your ${draftRecipe.name} back on the plate. Add more food, or take it to the table!`);
+          break;
+        }
         if (!plateAccepts(S.plate, held.id)) {
           const f = kitchenFood(held.id);
-          if (!S.plate.length && f.dish) kitchenToast(`The ${foodLabel(f.id)} is ready to eat! Take it to the table.`);
-          else if (S.plate.length) kitchenToast(`${f.emoji} doesn't go with ${S.plate.map(id => kitchenFood(id).emoji).join(' ')}! Check the recipe board.`);
-          else kitchenToast(`${foodLabel(f.id)} isn't in a recipe yet. Try cooking it first!`);
+          if (f.custom) { kitchenToast(`The ${foodLabel(f.id)} is ready to eat! Take it to the table.`); break; }
+          if (draftRecipe) { kitchenToast(`Finish your ✏️ ${draftRecipe.name} first! Eat it at the table, or put it in the compost.`); break; }
+          openFreestyleOffer(obj, f, S.plate);
           break;
         }
         S.plate.push(held.id);
@@ -3666,6 +3814,12 @@ function doStation(obj) {
         } else {
           kitchenToast(`You put the ${foodLabel(held.id)} on the plate.`);
         }
+      } else if (S.draft) {
+        // A made-up dish comes off the plate all together
+        heldItem = draftDish();
+        S.plate = [];
+        S.draft = false;
+        kitchenToast(`You pick up your ${CUSTOM_DISH_EMOJI} ${draftRecipe.name}! Take it to the table to eat it.`);
       } else if (S.plate.length) {
         heldItem = kitchenFood(S.plate.pop());
         kitchenToast(`You pick up the ${foodLabel(heldItem.id)}.`);
@@ -3687,6 +3841,22 @@ function doStation(obj) {
       if (!f.dish) { kitchenToast(`The ${f.name.toLowerCase()} isn't ready to eat yet. Cook it or make a recipe first!`); break; }
       heldItem = null;
       S.eating = { emoji: f.emoji, start: now };
+      if (held.draft) {
+        // Eating your made-up dish makes it a real recipe, on the board for good
+        const r = {
+          id: `custom_${Date.now().toString(36)}`,
+          name: draftRecipe.name,
+          needs: [...draftRecipe.needs],
+          map: currentMapPath
+        };
+        customRecipes.push(r);
+        draftRecipe = null;
+        writeSave();
+        kitchenBoardChanged();
+        kitchenToast(`🎉 Yum! ${CUSTOM_DISH_EMOJI} ${r.name} is a real recipe now. It's on the recipe board for good! ⭐`);
+        break;
+      }
+      if (f.custom) { kitchenToast(`Yum yum! You eat your ${foodLabel(f.id)}. 😋`); break; }
       const dishes = kitchenDishes();
       if (!dishesMade.includes(f.id)) {
         dishesMade.push(f.id);
@@ -3702,7 +3872,12 @@ function doStation(obj) {
     }
 
     case 'trash':
-      if (held) {
+      if (held && held.draft) {
+        heldItem = null;
+        draftRecipe = null;
+        kitchenBoardChanged();
+        kitchenToast(`Into the compost goes your ${held.name}. You can always make up a new recipe! ♻️`);
+      } else if (held) {
         heldItem = null;
         kitchenToast(`Into the compost goes the ${foodLabel(held.id)}! ♻️`);
       } else kitchenToast('Nothing to throw away!');
@@ -3743,6 +3918,234 @@ function doStation(obj) {
   }
 }
 
+// --- Kitchen pop-ups (HTML #kitchenModal) ---
+const kitchenModalEl = document.getElementById('kitchenModal');
+const kmNameInput = document.getElementById('kmNameInput');
+const kmNameGo = document.getElementById('kmNameGo');
+let kitchenModalOpenedAt = 0;
+let freestylePending = null;   // { obj, food } — the plate and the food that didn't fit
+
+function showKitchenModal(screenId) {
+  for (const id of ['kmOffer', 'kmName', 'kmList']) document.getElementById(id).hidden = id !== screenId;
+  kitchenModalEl.hidden = false;
+  if (state !== GameState.KITCHEN_MODAL) {
+    state = GameState.KITCHEN_MODAL;
+    kitchenModalOpenedAt = performance.now();
+    backpackOpen = false;
+    journalOpen = false;
+    tapTarget = null;
+    player.walking = false;
+    player.frame = 0;
+  }
+  // A moment later, so the Space that opened it doesn't also press a button
+  const focus = screenId === 'kmName' ? kmNameInput : kitchenModalEl.querySelector(`#${screenId} button`);
+  setTimeout(() => { if (!kitchenModalEl.hidden && focus) focus.focus(); }, 80);
+}
+
+function closeKitchenModal() {
+  if (state !== GameState.KITCHEN_MODAL) return;
+  kitchenModalEl.hidden = true;
+  freestylePending = null;
+  if (kitchenModalEl.contains(document.activeElement)) document.activeElement.blur();
+  state = GameState.PLAYING;
+}
+
+// A food that isn't in any recipe arrived at the plate
+function openFreestyleOffer(obj, food, plate) {
+  freestylePending = { obj, food };
+  const on = plate.map(id => kitchenFood(id).emoji).join(' ');
+  document.getElementById('kmOfferText').textContent =
+    plate.length ? `${food.emoji} ${food.name} doesn't go with ${on} in any recipe.`
+    : food.dish ? `The ${food.emoji} ${food.name} is ready to eat! Or you can use it to cook something new.`
+    : `${food.emoji} ${food.name} isn't in any recipe yet.`;
+  showKitchenModal('kmOffer');
+}
+
+function showFreestyleName() {
+  if (!freestylePending) return;
+  const { obj, food } = freestylePending;
+  const needs = [...stationState(obj).plate, food.id];
+  document.getElementById('kmNameText').textContent =
+    `${needs.map(id => kitchenFood(id).emoji).join(' + ')} + anything else you like!`;
+  kmNameInput.value = '';
+  kmNameGo.disabled = true;
+  showKitchenModal('kmName');
+}
+
+// Named it: the held food goes on the plate and the recipe is written on the board
+function startFreestyle(obj, name) {
+  const S = stationState(obj);
+  draftRecipe = { name, needs: [...S.plate, heldItem.id], map: currentMapPath };
+  S.plate = draftRecipe.needs;   // the same array: adding food to the plate adds to the recipe
+  S.draft = true;
+  S.madeAt = performance.now();
+  heldItem = null;
+  kitchenBoardChanged();
+  kitchenToast(`✏️ ${name} is on the recipe board! Add any food you like, then take it to the table to eat it.`);
+}
+
+// Every recipe in this kitchen, for a full chalkboard's "see all"
+function openRecipeList() {
+  const body = document.getElementById('kmListBody');
+  body.textContent = '';
+  const e = id => kitchenFood(id).emoji;
+  const section = (title, rows, empty) => {
+    const h = document.createElement('h3');
+    h.textContent = title;
+    body.appendChild(h);
+    if (!rows.length && empty) rows = [{ text: empty, cls: 'kmEmpty' }];
+    for (const r of rows) {
+      const d = document.createElement('div');
+      d.className = r.cls || 'kmRecipe';
+      d.textContent = r.text;
+      body.appendChild(d);
+    }
+  };
+  section('On the plate', mapConfig.kitchen.recipes.map(r =>
+    ({ text: `${r.needs.map(e).join(' + ')} → ${foodLabel(r.makes)}` })));
+  const mine = customRecipesHere().map(r =>
+    ({ text: `${r.needs.map(e).join(' + ')} → ${CUSTOM_DISH_EMOJI} ${r.name}`, cls: 'kmRecipe mine' }));
+  const draft = draftHere();
+  if (draft) mine.push({ text: `✏️ ${draft.needs.map(e).join(' + ')} → ${draft.name} (still cooking!)`, cls: 'kmRecipe mine' });
+  section('⭐ Your recipes', mine, 'None yet! Put any food on the plate to cook freestyle.');
+  const cooks = [];
+  for (const h of mapConfig.hotspots) {
+    const st = h.station;
+    if (!st || st.type !== 'cook') continue;
+    for (const [from, to] of Object.entries(st.makes)) {
+      cooks.push({ text: `${st.verb || 'Cook'} ${e(from)} → ${foodLabel(to)}` });
+    }
+  }
+  section('Cook it', cooks);
+  showKitchenModal('kmList');
+}
+
+kitchenModalEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-km]');
+  if (!b || performance.now() - kitchenModalOpenedAt < 300) return;
+  if (b.dataset.km === 'close') closeKitchenModal();
+  else if (b.dataset.km === 'name') showFreestyleName();
+});
+kitchenModalEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); closeKitchenModal(); }
+});
+kmNameInput.addEventListener('input', () => { kmNameGo.disabled = !cleanRecipeName(kmNameInput.value); });
+document.getElementById('kmName').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = cleanRecipeName(kmNameInput.value);
+  if (!name || !freestylePending || !heldItem) return;
+  startFreestyle(freestylePending.obj, name);
+  closeKitchenModal();
+});
+
+// --- The recipe chalkboard's writing ---
+// The board itself is part of the scene picture; the writing is drawn on top
+// every frame so your own recipes can be added. A column with `"custom": true`
+// gets your recipes under its hand-written lines. The board has a fixed number
+// of rows (`rows`, default: what the hand-written columns need); when a column
+// runs out, the oldest lines at the top are rubbed off and its last row becomes
+// "see all", with a hotspot that opens every recipe in a pop-up.
+const CHALK = '#f4f1e8';
+
+function chalkboardLayout(o, b) {
+  const pad = b.w * 0.04;
+  const cols = o.columns || [];
+  const top = b.y + b.h * (o.title ? 0.22 : 0.08);
+  const rows = o.rows || Math.max(...cols.map(c => c.lines.length + (c.title ? 1 : 0)), 1);
+  const lineH = (b.y + b.h - pad - top) / rows;
+  return { pad, cols, top, rows, lineH };
+}
+
+function chalkRecipeLine(r) {
+  return `${r.needs.map(id => kitchenFood(id).emoji).join('+')} = ${r.name}`;
+}
+
+// What fits on the board right now. Box `b` and everything returned are in scene units.
+function chalkboardView(o, b) {
+  const L = chalkboardLayout(o, b);
+  const cols = L.cols.map(c => {
+    let lines = c.lines.map(text => ({ text }));
+    if (c.custom && mapConfig && mapConfig.kitchen) {
+      for (const r of customRecipesHere()) lines.push({ text: chalkRecipeLine(r) });
+      const d = draftHere();
+      if (d) lines.push({ text: `✏️ ${chalkRecipeLine(d)}`, draft: true });
+    }
+    const room = L.rows - (c.title ? 1 : 0);
+    let more = 0;
+    if (lines.length > room) {
+      more = lines.length - (room - 1);
+      lines = lines.slice(more);
+    }
+    return { title: c.title, lines, more, total: lines.length + more };
+  });
+  return { ...L, cols };
+}
+
+function sceneChalkboards() {
+  const scene = mapConfig && mapConfig.scene;
+  if (!scene) return [];
+  const W = scene.width || 2400, H = scene.height || 1700;
+  return (scene.props || []).filter(o => o.kind === 'chalkboard').map(o => ({
+    o, W, H, b: { x: o.px * W, y: o.py * H, w: o.pw * W, h: o.ph * H }
+  }));
+}
+
+function drawChalkboards() {
+  const boards = sceneChalkboards();
+  if (!boards.length) return;
+  const now = performance.now();
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const { o, W, b } of boards) {
+    const k = scaledMapW / W;
+    const V = chalkboardView(o, b);
+    const colW = b.w / V.cols.length;
+    const write = (text, cx, cy, size, color) => {
+      ctx.font = `bold ${size * k}px ${SCENE_FONT}`;
+      const maxW = colW * 0.92 * k;
+      const w = ctx.measureText(text).width;
+      if (w > maxW) ctx.font = `bold ${size * k * maxW / w}px ${SCENE_FONT}`;
+      ctx.fillStyle = color;
+      ctx.fillText(text, cx * k, cy * k);
+    };
+    V.cols.forEach((c, ci) => {
+      const cx = b.x + colW * (ci + 0.5);
+      let ly = V.top + V.lineH / 2;
+      if (c.title) { write(c.title, cx, ly, V.lineH * 0.6, '#90caf9'); ly += V.lineH; }
+      for (const line of c.lines) {
+        // Recipes still being made up wiggle a little, in yellow chalk
+        const wob = line.draft ? Math.sin(now / 250) * V.lineH * 0.04 : 0;
+        write(line.text, cx, ly + wob, V.lineH * 0.78, line.draft ? '#fff59d' : CHALK);
+        ly += V.lineH;
+      }
+      if (c.more) write(`▼ see all ${c.total} ▼`, cx, ly, V.lineH * 0.62, '#ffe082');
+    });
+  }
+  ctx.restore();
+}
+
+// "See all recipes" hotspots for full columns (fractions of the map, like JSON hotspots)
+function chalkboardHotspots() {
+  const out = [];
+  for (const { o, W, H, b } of sceneChalkboards()) {
+    const V = chalkboardView(o, b);
+    const colW = b.w / V.cols.length;
+    V.cols.forEach((c, ci) => {
+      if (!c.more) return;
+      const rowTop = V.top + V.lineH * (V.rows - 1);
+      out.push({
+        id: `see_all_recipes_${ci}`, name: 'See All Recipes',
+        px: (b.x + colW * ci) / W, py: rowTop / H,
+        pw: colW / W, ph: (b.y + b.h + 24 * (W / 2400) - rowTop) / H,
+        action: 'explore', description: 'Every recipe, even the ones rubbed off the board',
+        items: [], uses: [], seeAllRecipes: true
+      });
+    });
+  }
+  return out;
+}
+
 // Short action text shown under the station's name ("[ SPACE ] Boil 🍅")
 function stationHint(obj) {
   const st = obj.station, S = stationState(obj), held = heldItem;
@@ -3757,7 +4160,14 @@ function stationHint(obj) {
       if (!held) return `${st.verb || 'Cook'} ${Object.keys(st.makes).map(e).join(' ')}`;
       return st.makes[held.id] ? `${st.verb || 'Cook'} ${held.emoji}` : `Can't ${(st.verb || 'cook').toLowerCase()} ${held.emoji}`;
     case 'plate':
-      if (held) return plateAccepts(S.plate, held.id) ? `Add ${held.emoji}` : `${held.emoji} doesn't fit`;
+      if (held) {
+        if (held.dessert) return `${held.emoji} doesn't need a plate`;
+        if (S.draft) return held.custom ? `${held.emoji} doesn't fit` : `Add ${held.emoji} to ${draftRecipe.name}`;
+        if (held.draft) return S.plate.length ? 'Plate is full' : `Put back ${held.emoji}`;
+        if (plateAccepts(S.plate, held.id)) return `Add ${held.emoji}`;
+        return held.custom || draftRecipe ? `${held.emoji} doesn't fit` : `✨ Freestyle with ${held.emoji}`;
+      }
+      if (S.draft) return `Take ${CUSTOM_DISH_EMOJI} ${draftRecipe.name}`;
       return S.plate.length ? `Take ${e(S.plate[S.plate.length - 1])}` : 'Make a recipe';
     case 'serve': {
       const f = held && kitchenFood(held.id);
@@ -3863,7 +4273,8 @@ function drawKitchenHud() {
   const made = dishes.filter(id => dishesMade.includes(id)).length;
   ctx.save();
   ctx.font = 'bold 14px "Comic Sans MS", cursive';
-  const label = `Recipes made ${made}/${dishes.length}`;
+  const mine = customRecipesHere().length;
+  const label = `Recipes made ${made}/${dishes.length}${mine ? `  •  ⭐ ${mine} of your own` : ''}`;
   const iconW = 30;
   const w = ctx.measureText(label).width + dishes.length * iconW + 34;
   const x = canvas.width / 2 - w / 2, y = 10;
@@ -3975,6 +4386,7 @@ function drawGame() {
 
   // Draw map at scaled size
   ctx.drawImage(mapImage, 0, 0, scaledMapW, scaledMapH);
+  drawChalkboards();
   drawBossCave();
   drawStations();
   if (doorOpening) drawDoorOpening();
@@ -5464,6 +5876,8 @@ function mpStartPlaying() {
   backpack      = save ? items(save.backpack).slice(0, BACKPACK_CAPACITY) : [];
   completedUses = save && Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
   dishesMade    = save && Array.isArray(save.dishesMade) ? [...save.dishesMade] : [];
+  customRecipes = cleanCustomRecipes(save && save.customRecipes);
+  resetDraftRecipe();
   strengthBoost = save ? clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX) : 0;
   allMapSaves = {};
   hotspotItems = mpItemsFor(currentMapPath, mapConfig);
@@ -5537,7 +5951,7 @@ function mpLoadSave() {
 function mpWriteSave() {
   try {
     localStorage.setItem(mpSaveKey(), JSON.stringify({
-      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, strengthBoost
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost
     }));
   } catch (e) { console.warn('Failed to write save', e); }
 }
@@ -5577,7 +5991,7 @@ function mpSend(message, byPost) {
 function mpInWorld() {
   return !!player.character && [
     GameState.PLAYING, GameState.TALKING, GameState.INTERACTING, GameState.ITEM_ACTION,
-    GameState.USING_ITEM, GameState.CONFIRM_DIALOG, GameState.FIGHTING
+    GameState.USING_ITEM, GameState.CONFIRM_DIALOG, GameState.FIGHTING, GameState.KITCHEN_MODAL
   ].includes(state);
 }
 
@@ -7961,6 +8375,7 @@ function gameLoop() {
       break;
     case GameState.PLAYING:
     case GameState.TALKING:
+    case GameState.KITCHEN_MODAL:
       drawGame();
       break;
     case GameState.INTERACTING:

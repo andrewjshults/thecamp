@@ -140,7 +140,25 @@ object turns hotspots that have a `station` into cooking spots:
 - Food on stations lives in memory only; which dishes have been eaten is saved
   as `dishesMade`.
 - The recipe chalkboard is a `chalkboard` scene prop with hand-written
-  `columns` — update it when recipes change.
+  `columns` — update it when recipes change. Only the board is in the scene
+  picture; the writing is drawn live each frame (`drawChalkboards`). The board
+  has a fixed number of rows (`rows`, default: what the hand-written columns
+  need). When a column runs out, its oldest lines at the top go away and its
+  last row becomes "▼ see all N ▼". A "See All Recipes" hotspot is added there
+  (`chalkboardHotspots`, not shown in dev mode). It opens every recipe in a
+  pop-up.
+
+**Freestyle / your own recipes.** Bring a food to the plate that doesn't fit
+any recipe (not a dessert) and a pop-up (`#kitchenModal`, state
+`KITCHEN_MODAL`) offers to cook freestyle. You name it, and it's written on the
+chalkboard's `"custom": true` column in yellow with a ✏️ (`draftRecipe`). The
+plate then takes any food (up to `FREESTYLE_MAX` = 6). Space with empty hands
+picks the whole dish up (🍽️), and you can put it back to add more. Eating it at
+the table finalizes it: it's saved in `customRecipes` (`{ id, name, needs, map }`,
+per camper like `dishesMade`), stays on the board, and is made on the plate like
+any built-in recipe from then on (`allRecipes()`). Composting it or walking out
+of the kitchen with it rubs it off the board. Your own recipes don't count
+toward "Recipes made"; the HUD shows "⭐ N of your own".
 
 **Desserts → strength.** A food with `"dessert": true, "price": 20, "strength": 5`
 is sold at a `shop` station (the `dessertCase` prop: 🍪 $10 +2, 🧁 $20 +5,
