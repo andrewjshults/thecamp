@@ -52,10 +52,13 @@ $3 is roughly 40,000 replies a day.
    ```
    You should get back `{"reply":"..."}`.
 5. **Point the game at it.** Copy the function's URL (shown in the editor,
-   like `https://ps.pndsn.com/v1/blocks/sub-key/<sub-key>/npc-reply`) into
+   like `https://pubsub.pubnub.com/v1/blocks/sub-key/<sub-key>/npc-reply`) into
    `NPC_FUNCTION_URL` in `src/people/talk.js` and deploy.
 
-Leave `NPC_FUNCTION_URL` empty to skip the Function. The game then uses the
+It's set to this game's Function. On `localhost`/`127.0.0.1` (`npm run dev`,
+`npm test`) the game skips the Function and uses the dev server, so local play
+never spends from the live budget. Leave `NPC_FUNCTION_URL` empty to skip the
+Function everywhere. The game then uses the
 dev server's `/api/npc-reply` (`npm run dev` with `ANTHROPIC_API_KEY` set),
 or the built-in replies.
 

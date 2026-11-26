@@ -19,7 +19,8 @@ Replies come from Claude Haiku (`claude-haiku-5-5`, thinking off, effort low,
 `fetchNpcReply` (`src/people/talk.js`) tries, in order:
 1. item questions (keyword matching, below), which never reach Claude;
 2. the **PubNub Function** `pubnub/npc-function.js` when `NPC_FUNCTION_URL` in
-   `src/people/talk.js` is set. This is for static hosting: the API key is in
+   `src/people/talk.js` is set (it is), except on localhost
+   (`NPC_ON_LOCALHOST`: `npm run dev` / `npm test` use step 3 instead). This is for static hosting: the API key is in
    the PubNub Vault, with spending caps in the KV store ($3/UTC day for
    everyone, $0.25/UTC hour per browser player id, `npcPlayerId()`). The
    browser sends only `npcId`, `here` (map path), `pid`, `playerName`,

@@ -229,7 +229,10 @@ function updateConversation() {
 // (pubnub/npc-function.js, if NPC_FUNCTION_URL is set) → the dev server's
 // /api/npc-reply → localNpcReply(). Only the player's latest line is sent.
 // Leave NPC_FUNCTION_URL empty to skip it (see pubnub/README.md and docs/npcs.md).
-const NPC_FUNCTION_URL = '';
+// On localhost (npm run dev, npm test) the dev server is used instead, so local
+// play and tests never spend from the live Function's budget.
+const NPC_ON_LOCALHOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+const NPC_FUNCTION_URL = 'https://pubsub.pubnub.com/v1/blocks/sub-key/sub-c-ba97efde-d572-48e8-82d6-a06e2b5b0738/npc-reply';
 const NPC_TIMEOUT_MS = 8000;
 const NPC_LIMIT_BACKOFF_MS = 5 * 60 * 1000;   // after "out of usage", stay local this long
 const npcBrain = { functionDownUntil: 0, devDownUntil: 0 };
@@ -276,7 +279,7 @@ async function fetchNpcReply(npc, history) {
   const playerName = player.character ? player.character.name : 'a friend';
   const now = Date.now();
 
-  if (NPC_FUNCTION_URL && now >= npcBrain.functionDownUntil) {
+  if (NPC_FUNCTION_URL && !NPC_ON_LOCALHOST && now >= npcBrain.functionDownUntil) {
     // text/plain keeps it a "simple" CORS request (no preflight round trip)
     const data = await postNpc(NPC_FUNCTION_URL, {
       pid: npcPlayerId(),
@@ -290,7 +293,7 @@ async function fetchNpcReply(npc, history) {
     if (data && (data.reason === 'limit' || data.reason === 'unconfigured' || data.reason === 'down')) {
       npcBrain.functionDownUntil = Date.now() + NPC_LIMIT_BACKOFF_MS;
     }
-  } else if (!NPC_FUNCTION_URL && now >= npcBrain.devDownUntil) {
+  } else if ((!NPC_FUNCTION_URL || NPC_ON_LOCALHOST) && now >= npcBrain.devDownUntil) {
     // Local dev server (npm run dev with ANTHROPIC_API_KEY)
     const ch = characterByName(npc.character);
     const data = await postNpc('/api/npc-reply', {
