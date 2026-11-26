@@ -1,0 +1,150 @@
+{
+  "name": "Third Camp",
+  "where": "at the Third Camp",
+  "image": "assets/camp_level3.svg",
+  "playerStart": { "px": 0.47, "py": 0.83 },
+  "noSwordDrops": true,
+  "poisonMoat": {
+    "outer": { "cx": 0.47, "cy": 0.53, "rx": 0.24, "ry": 0.25 },
+    "island": { "cx": 0.47, "cy": 0.52, "rx": 0.17, "ry": 0.17 },
+    "bridge": { "px": 0.447, "py": 0.635, "pw": 0.046, "ph": 0.155 },
+    "seconds": 10,
+    "sendTo": { "map": "assets/camp_level2.json", "hotspot": "blob_zone" }
+  },
+  "hotspots": [
+    {
+      "id": "hole_back",
+      "name": "Secret Passage",
+      "px": 0.43, "py": 0.87, "pw": 0.08, "ph": 0.11,
+      "action": "enter",
+      "description": "The secret passage back to the Second Camp",
+      "interactionText": "You climb back down the hole to the Second Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level2.json",
+      "targetHotspot": "blob_zone",
+      "arrive": { "px": 0.47, "py": 0.83 }
+    },
+    {
+      "id": "castle_door",
+      "name": "Brick Castle",
+      "px": 0.43, "py": 0.52, "pw": 0.08, "ph": 0.14,
+      "action": "enter",
+      "description": "Something with fire eyes lives in here...",
+      "interactionText": "You push open the castle gate. CREEEAK!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.455, "py": 0.545, "pw": 0.03, "ph": 0.095, "color": "#4e342e", "inside": "🔥" },
+      "targetMap": "assets/level3_castle.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.47, "py": 0.7 }
+    },
+    {
+      "id": "party_hall",
+      "name": "Party Hall",
+      "px": 0.01, "py": 0.03, "pw": 0.2, "ph": 0.37,
+      "action": "enter",
+      "description": "The birthday zone! There's a disco ball in there!",
+      "interactionText": "You go into the party hall. The disco ball is spinning!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.14, "py": 0.3, "pw": 0.045, "ph": 0.1, "color": "#8e24aa", "inside": "🪩" },
+      "targetMap": "assets/level3_party.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.163, "py": 0.44 }
+    },
+    {
+      "id": "girls_bathroom",
+      "name": "Girls' Bathroom",
+      "px": 0.215, "py": 0.02, "pw": 0.085, "ph": 0.17,
+      "action": "bathroom",
+      "description": "The girls' bathroom",
+      "interactionText": "You go into the girls' bathroom.",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.2425, "py": 0.11, "pw": 0.03, "ph": 0.08, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level3_girls_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.33, "py": 0.17 }
+    },
+    {
+      "id": "boys_bathroom",
+      "name": "Boys' Bathroom",
+      "px": 0.215, "py": 0.215, "pw": 0.085, "ph": 0.16,
+      "action": "bathroom",
+      "description": "The boys' bathroom",
+      "interactionText": "You go into the boys' bathroom.",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.2425, "py": 0.295, "pw": 0.03, "ph": 0.08, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level3_boys_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.257, "py": 0.415 }
+    },
+    {
+      "id": "pool_gate",
+      "name": "Swimming Pool",
+      "px": 0.69, "py": 0.25, "pw": 0.05, "ph": 0.12,
+      "action": "enter",
+      "description": "Climb down the ladder for a swim, or go down the slide!",
+      "interactionText": "SPLASH! You head down to the pool.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level3_pool.json",
+      "targetHotspot": "exit_gate",
+      "arrive": { "px": 0.735, "py": 0.41 }
+    },
+    {
+      "id": "splash_pool",
+      "name": "Splash Pool",
+      "px": 0.02, "py": 0.74, "pw": 0.24, "ph": 0.24,
+      "action": "enter",
+      "description": "A little pool with a slide",
+      "interactionText": "Wheee! You go to the splash pool.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level3_splash_pool.json",
+      "targetHotspot": "exit_gate",
+      "arrive": { "px": 0.14, "py": 0.72 }
+    },
+    {
+      "id": "bank",
+      "name": "Camp Bank",
+      "px": 0.69, "py": 0.64, "pw": 0.1, "ph": 0.13,
+      "action": "enter",
+      "description": "The same Camp Bank, with all your money!",
+      "interactionText": "You head inside the Camp Bank.",
+      "items": [],
+      "uses": [],
+      "building": "bank",
+      "door": { "px": 0.73, "py": 0.70, "pw": 0.02, "ph": 0.05, "color": "#2e7d32", "inside": "🏦" },
+      "targetMap": "assets/camp_bank.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "armor_shop",
+      "name": "Armor Shop",
+      "px": 0.82, "py": 0.62, "pw": 0.14, "ph": 0.2,
+      "action": "enter",
+      "description": "Armor to protect you from the bosses!",
+      "interactionText": "You step into the armor shop. Clank, clank!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.8396, "py": 0.72, "pw": 0.034, "ph": 0.1, "color": "#37474f", "inside": "🛡️" },
+      "targetMap": "assets/armor_shop.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "fountain",
+      "name": "Wishing Fountain",
+      "px": 0.75, "py": 0.84, "pw": 0.1, "ph": 0.1,
+      "action": "play",
+      "description": "Make a wish!",
+      "interactionText": "You make a wish in the fountain: \"I wish I could beat the Brick!\" Splish! ⛲",
+      "items": [
+        { "id": "wish_pebble", "name": "Wishing Pebble", "emoji": "💎" }
+      ],
+      "uses": []
+    }
+  ]
+}

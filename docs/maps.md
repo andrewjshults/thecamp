@@ -52,7 +52,9 @@ boxes and emoji strings), `toyChest` (`peek` toys, `label`, `color`, `lid`) and
 `beanBag` (`color`). For the Second Camp's rooms (`src/world/props/level2.js`):
 `discoBall`, `partyTable` (`items`), `pool` (`lanes`, `floaties`), `divingBoard`,
 `lifeguardChair`, `sleepingBag` (`color`, `pillow`), `swordRack` (`swords: [{ emoji, blade }]`),
-`shopCounter` (`board` lines, `items`) and `forge`. Hotspots are separate: they're placed over
+`shopCounter` (`board` lines, `items`) and `forge`. For the Third Camp's rooms
+(`src/world/props/level3.js`): `waterSlide` (`flip`, `color`), `throne`, `torch`, `banner`
+(`color`, `emoji`) and `armorStand` (`color`, `emoji`). Hotspots are separate: they're placed over
 the props by hand.
 
 The red house in the top-left of the main map (hotspot `red_house`, with a
@@ -78,7 +80,7 @@ Portal hotspots have `"targetMap"` (the map JSON it leads to) and
   drawn on the map; it swings open (with a CREEEAK!) before the map switches.
 
 A `"passage": { "targetMap", "targetHotspot" }` is a way to another map that
-only opens later: the Blob's cave leads to the Second Camp once you've beaten
+only opens later (its `lock`, see [level-three.md](level-three.md)): the Blob's cave leads to the Second Camp once you've beaten
 the top-level Blob (see [level-two.md](level-two.md)). Map crawls follow it
 like a portal (`hotspotLinks`).
 

@@ -1,0 +1,274 @@
+{
+  "name": "Shelly's Armor Shop",
+  "where": "in Shelly's Armor Shop",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "shelly",
+      "name": "Shelly",
+      "emoji": "🐢",
+      "color": "#2e7d32",
+      "size": 0.09,
+      "px": 0.53,
+      "py": 0.44,
+      "what": "a wise old tortoise who makes armor in her shop at the Third Camp",
+      "personality": "Slow, calm and very wise. Thinks the best armor in the world is her own shell. Sells four kinds of armor: the Padded Vest ($30), Chain Mail ($50), Knight Armor ($70) and Crystal Armor ($100). You pay with coins in your backpack. Armor sometimes stops a boss's hit, and wears out like a sword. Knows the Brick in the castle hits HARD.",
+      "localReplies": {
+        "hello": [
+          "Welcome, {name}... take your time... 🐢",
+          "Oh, hello there, {name}. Need some armor?",
+          "Slow and steady, {name}. What can I do for you?"
+        ],
+        "bye": [
+          "Bye bye, {name}... stay safe out there 🛡️",
+          "Come back when your armor is worn out, {name}.",
+          "Watch out for the Brick's fire eyes!"
+        ],
+        "question": [
+          "Hmm... let me think about that... slowly...",
+          "Good question. I think the answer is: armor! 🛡️",
+          "*thinks for a long time* ...I don't know!"
+        ],
+        "any": [
+          "Armor can stop a boss's hit! Even the Brick's! 🛡️",
+          "Pay with the coins in your backpack, and I'll take your old armor in trade.",
+          "My shell is the best armor. But you can't have it. 🐢",
+          "Crystal Armor is the strongest. It sparkles, too! 💎"
+        ]
+      },
+      "wander": false
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#455a64",
+      "stripe": "#263238"
+    },
+    "wall": {
+      "pattern": "blocks",
+      "color": "#b0bec5"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "planks",
+      "color": "#8d6e63",
+      "skirting": "#37474f"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#37474f"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#1e88e5",
+        "text": "CLANK!"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.15,
+        "py": 0.12,
+        "pw": 0.07,
+        "ph": 0.38,
+        "color": "#a1887f",
+        "emoji": "🥋"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.23,
+        "py": 0.12,
+        "pw": 0.07,
+        "ph": 0.38,
+        "color": "#b0bec5",
+        "emoji": "⛓️"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.31,
+        "py": 0.12,
+        "pw": 0.07,
+        "ph": 0.38,
+        "color": "#eceff1",
+        "emoji": "🛡️"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.39,
+        "py": 0.12,
+        "pw": 0.07,
+        "ph": 0.38,
+        "color": "#b2ebf2",
+        "emoji": "💎"
+      },
+      {
+        "kind": "sign",
+        "text": "ARMOR!",
+        "px": 0.5,
+        "py": 0.08,
+        "pw": 0.16,
+        "ph": 0.08,
+        "color": "#90caf9",
+        "rotate": -2
+      },
+      {
+        "kind": "forge",
+        "px": 0.74,
+        "py": 0.12,
+        "pw": 0.18,
+        "ph": 0.44
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.4,
+        "py": 0.4,
+        "pw": 0.3,
+        "ph": 0.22,
+        "color": "#607d8b",
+        "items": [
+          "🛡️",
+          "🪙",
+          "🛎️"
+        ],
+        "board": [
+          "🥋 $30   ⛓️ $50",
+          "🛡️ $70   💎 $100"
+        ]
+      },
+      {
+        "kind": "box",
+        "px": 0.08,
+        "py": 0.72,
+        "pw": 0.12,
+        "ph": 0.14,
+        "label": "OLD",
+        "peek": [
+          "🪖",
+          "🧤"
+        ]
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🪖",
+        "px": 0.6,
+        "py": 0.2,
+        "pw": 0.06,
+        "ph": 0.1
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Third Camp",
+      "interactionText": "You clank back out to the Third Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level3.json",
+      "targetHotspot": "armor_shop",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
+    },
+    {
+      "id": "shop_counter",
+      "name": "Shelly's Counter",
+      "px": 0.4,
+      "py": 0.38,
+      "pw": 0.3,
+      "ph": 0.26,
+      "action": "explore",
+      "description": "Buy armor!",
+      "interactionText": "Shelly the tortoise smiles slowly from behind the counter.",
+      "items": [],
+      "uses": [],
+      "armorShop": {
+        "keeper": "Shelly",
+        "emoji": "🐢"
+      }
+    },
+    {
+      "id": "armor_stands",
+      "name": "Armor Stands",
+      "px": 0.14,
+      "py": 0.1,
+      "pw": 0.33,
+      "ph": 0.42,
+      "action": "explore",
+      "description": "The four kinds of armor for sale",
+      "interactionText": "🥋 Padded Vest $30, ⛓️ Chain Mail $50, 🛡️ Knight Armor $70, 💎 Crystal Armor $100. Armor can stop a boss's hit! Buy it at the counter.",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "px": 0.74,
+      "py": 0.1,
+      "pw": 0.18,
+      "ph": 0.48,
+      "action": "explore",
+      "description": "Where armor is made",
+      "interactionText": "The forge glows. Shelly hammers a piece of armor... very... slowly. Tink... tink... 🔨",
+      "items": [
+        {
+          "id": "rivets",
+          "name": "Rivets",
+          "emoji": "🔩"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "old_armor",
+      "name": "Box of Old Armor",
+      "px": 0.08,
+      "py": 0.7,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "Trade-ins",
+      "interactionText": "A box of old armor people traded in. Mostly dented... but there's a nice pair of gloves!",
+      "items": [
+        {
+          "id": "gloves",
+          "name": "Knight Gloves",
+          "emoji": "🧤"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

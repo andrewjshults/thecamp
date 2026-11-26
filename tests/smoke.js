@@ -250,9 +250,9 @@ async function backToPlaying(tab) {
       if (await tab.state() === 'fighting') await tab.ev('endFight && endFight()');
       continue;
     }
-    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop') {
+    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop' || s === 'armorShop') {
       // These pop-ups are HTML: Esc in the page is handled by their own listeners
-      await tab.ev(s === 'bankModal' ? 'closeBank()' : s === 'swordShop' ? 'closeSwordShop()' : 'closeKitchenModal()');
+      await tab.ev({ bankModal: 'closeBank()', swordShop: 'closeSwordShop()', armorShop: 'closeArmorShop()' }[s] || 'closeKitchenModal()');
       continue;
     }
     if (s === 'itemAction' || s === 'usingItem' || s === 'interacting' || s === 'talking') {
@@ -311,6 +311,7 @@ async function singlePlayer(context) {
   for (const { path: mapPath, cfg } of crawlMaps()) {
     await tab.ev(`switchMap(${JSON.stringify(mapPath)}, null)`);
     await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(mapPath)}`, `map ${mapPath}`);
+    await tab.ev('brick.restUntil = Infinity');   // the Brick stays on its throne (thirdCamp() fights it)
     await tab.run(2500);   // camera settles
     const slug = path.basename(mapPath, '.json');
     await tab.shot(`map-${slug}`);
@@ -368,25 +369,27 @@ async function singlePlayer(context) {
   await tab.shot('fight');
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
+  await tab.ev('brick.restUntil = 0');
   await secondCamp(tab);
+  await thirdCamp(tab);
   await exploration(tab);
 
   // Some progress to save, so resuming has something to bring back
-  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; dishesMade = ['sandwich'];
+  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; dishesMade = ['sandwich'];
     customRecipes = [{ id: 'custom_1', name: 'Tomato Surprise', needs: ['tomato', 'bread'], map: 'assets/camp_kitchen.json' }];
     completedUses = [{ hotspotId: 'tree', hotspotName: 'Tree', itemId: 'rope', itemName: 'Rope', itemEmoji: '🪢', text: 'Climbed!' }];
     backpack.push({ id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }); writeSave();`);
   await tab.key('Escape');
   await tab.key('y');
   await tab.until('state === GameState.CHARACTER_SELECT');
-  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; dishesMade = []; customRecipes = []`);
+  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; level3Open = false; brickWins = 0; armorKind = null; armorRating = 0; dishesMade = []; customRecipes = []`);
   await tab.key('Enter');
   await tab.until('state === GameState.RESUME_PROMPT');
   await tab.shot('resume-prompt');
   await tab.key('r');
   await tab.until('state === GameState.PLAYING');
   tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
-    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins })`),
+    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins, level3Open, brickWins, armorKind, armorRating })`),
     save: await tab.ev(SAVES_SORTED) });
   await taps(tab);
   await tab.page.close();
@@ -461,6 +464,98 @@ async function secondCamp(tab) {
   await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`, 'back at the first camp');
   tab.note({ step: 'l2-sent-back', open: await tab.ev('level2Open') });
   await tab.ev('swordKind = "plain"; swordRating = 100; writeSave()');
+}
+
+// The Third Camp: beating the top-level Mega Mallow opens the passage in its
+// hole; the poison moat sends you back; buy armor; fight the Brick in its
+// castle (armor stops some hits); get caught with no sword → back to the
+// Second Camp, and the passage shuts again
+async function thirdCamp(tab) {
+  const L2 = 'assets/camp_level2.json', L3 = 'assets/camp_level3.json', CASTLE = 'assets/level3_castle.json';
+  const standAt = id => tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === ${JSON.stringify(id)});
+    player.x = o.x + o.width / 2; player.y = o.y + o.height / 2; tapTarget = null; })()`);
+  const onMap = (p, what) => tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(p)}`, what || p);
+  // Beat the level 10 Mega Mallow: the hole opens
+  await tab.ev(`level2Open = true; switchMap(${JSON.stringify(L2)}, 'cave_exit')`);
+  await onMap(L2);
+  await tab.run(300);
+  await tab.ev(`mallowWins = 4; startFight(mallowFoe(mallows.foes.find(m => !m.def.kid))); fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(500);
+  await tab.shot('l3-unlocked');
+  tab.note({ step: 'l3-unlock', open: await tab.ev('level3Open'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  await tab.ev('mallows.foes.forEach(m => { m.where = "home"; m.homeUntil = Infinity; })');
+  await standAt('blob_zone');
+  await tab.run(200);
+  tab.note({ step: 'l3-hole-hint', near: await tab.ev('nearbyObject && nearbyObject.id') });
+  await tab.shot('l3-hole-open');
+  await tab.key(' ');
+  await onMap(L3, 'the third camp');
+  await tab.run(2500);
+  await tab.shot('l3-arrived');
+  // The poison moat: a countdown, then back to the Second Camp (the passage stays open)
+  await tab.ev('player.x = scaledMapW * 0.27; player.y = scaledMapH * 0.53');
+  await tab.run(1500);
+  await tab.shot('l3-moat');
+  tab.note({ step: 'l3-moat', inMoat: await tab.ev('inPoisonMoat(player.x, player.y)'), ms: await tab.ev('Math.round(moat.ms)') });
+  await tab.ev('moat.ms = moatLimitMs() - 200');
+  await tab.run(500);
+  await onMap(L2, 'washed back to the second camp');
+  tab.note({ step: 'l3-moat-sent-back', open: await tab.ev('level3Open') });
+  // Shelly's Armor Shop: pay with backpack coins
+  await tab.ev(`switchMap('assets/armor_shop.json', null)`);
+  await onMap('assets/armor_shop.json');
+  await tab.ev(`backpack = backpack.filter(i => !isCoin(i)); backpack.push({ ...BANK_COIN }, { ...BANK_COIN },
+    { id: 'thirty_dollar_coin', name: '$30 Coin', emoji: '🪙', coin: true, value: 30 }, { ...BANK_COIN }, { ...BANK_COIN }, { ...BANK_COIN })`);
+  await standAt('shop_counter');
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(500);
+  await tab.page.click('[data-armor=crystal]');      // too pricey
+  await tab.page.click('[data-armor=knight]');
+  await tab.run(200);
+  await tab.shot('l3-armor-shop');
+  tab.note({ step: 'l3-shop', state: await tab.state(), armor: await tab.ev('armorKind + " " + armorRating'),
+    wallet: await tab.ev('walletTotal()'), says: await tab.ev('armorSaysEl.textContent') });
+  await tab.ev('closeArmorShop()');
+  // Into the castle: the Brick gets off its throne and catches you
+  await tab.ev(`switchMap(${JSON.stringify(L3)}, 'hole_back')`);
+  await onMap(L3);
+  await standAt('castle_door');
+  await tab.run(200);
+  await tab.key(' ');
+  await onMap(CASTLE, 'the castle');
+  await tab.run(500);
+  await tab.shot('l3-castle');
+  await tab.ev('brick.graceUntil = 0; player.x = scaledMapW * 0.5; player.y = scaledMapH * 0.8');
+  await tab.until('state === GameState.FIGHTING', 'a Brick fight', 15000);
+  await tab.run(3500);
+  await tab.shot('l3-fight');
+  // A hit on you: the armor stops it (forced), or it lands
+  await tab.ev(`(() => { const r = Math.random; Math.random = () => 0; try { fight.b.x = fight.p.x + 220; fight.p.act = 'idle';
+    resolveHit(fight, fight.b, fight.p, 'boss'); } finally { Math.random = r; } })()`);
+  await tab.run(200);
+  tab.note({ step: 'l3-armor-hit', bossScore: await tab.ev('fight.b.score'), armor: await tab.ev('armorRating') });
+  await tab.ev(`fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(300);
+  await tab.shot('l3-won');
+  tab.note({ step: 'l3-won', wins: await tab.ev('brickWins'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  // Caught with no sword: lost straight away, back to the Second Camp, passage shut
+  await tab.ev(`swordRating = 0; backpack = backpack.filter(i => i.id !== 'sword'); brick.restUntil = 0; brick.graceUntil = 0;
+    player.x = scaledMapW * 0.5; player.y = scaledMapH * 0.8`);
+  await tab.until(`state === GameState.FIGHTING && fight.phase === 'result'`, 'an instant loss to the Brick', 15000);
+  await tab.shot('l3-no-sword');
+  tab.note({ step: 'l3-no-sword', lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await onMap(L2, 'back at the second camp');
+  tab.note({ step: 'l3-sent-back', open: await tab.ev('level3Open') });
+  await tab.ev(`swordKind = "plain"; swordRating = 100; armorKind = null; armorRating = 0; level2Open = false; mallowWins = 0;
+    brickWins = 0; mallows.foes.forEach(m => { m.where = 'home'; m.homeUntil = Infinity; }); writeSave()`);
+  await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
+  await onMap('assets/game_design.json');
 }
 
 // Exploration mode (E): no bosses, and the cave passage opens without beating the Blob

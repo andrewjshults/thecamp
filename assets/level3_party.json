@@ -1,0 +1,347 @@
+{
+  "name": "Party Hall",
+  "where": "in the Party Hall",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "disco_llama",
+      "name": "Disco Dolly",
+      "emoji": "🦙",
+      "color": "#7e57c2",
+      "size": 0.09,
+      "px": 0.62,
+      "py": 0.5,
+      "what": "a groovy llama who runs the disco in the Party Hall at the Third Camp",
+      "personality": "Cool, groovy and always dancing. Loves the disco ball, glitter and birthday cake. Says 'groovy' a lot. Is scared of the Brick in the castle, and warns campers never to swim in the poison moat around it.",
+      "localReplies": {
+        "hello": [
+          "Groovy! Welcome to the party, {name}! 🪩",
+          "Hey hey, {name}! Feel the beat!",
+          "{name}! You made it! Let's DANCE!"
+        ],
+        "bye": [
+          "Stay groovy, {name}! ✨",
+          "Bye bye! Don't go in the poison moat!",
+          "Dance on out, {name}!"
+        ],
+        "question": [
+          "Hmm... the answer is: DANCE! 🕺",
+          "Ask the disco ball, it knows everything!",
+          "Groovy question! I don't know!"
+        ],
+        "any": [
+          "Never swim in the green moat! It's POISON! ☠️",
+          "The Brick lives in the castle. Its eyes are on FIRE! 🔥",
+          "Get some armor at the shop before you fight the Brick! 🛡️",
+          "Spin, disco ball, spin! 🪩",
+          "Happy birthday to EVERYONE! 🎂"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.06,
+      "color": "#7e57c2",
+      "stripe": "#fff176"
+    },
+    "wall": {
+      "pattern": "stripes",
+      "color": "#d1c4e9",
+      "stripe": "rgba(255,255,255,0.45)",
+      "dot": "rgba(233,30,99,0.3)"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "tiles",
+      "color": "#9575cd",
+      "skirting": "#4527a0"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#8e24aa"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#ffca28",
+        "text": "YAY!"
+      },
+      {
+        "kind": "bunting",
+        "px": 0.13,
+        "py": 0.07,
+        "pw": 0.82,
+        "ph": 0.08,
+        "flags": 18
+      },
+      {
+        "kind": "discoBall",
+        "px": 0.4,
+        "py": 0.04,
+        "pw": 0.2,
+        "ph": 0.32
+      },
+      {
+        "kind": "sign",
+        "text": "HAPPY\nBIRTHDAY!",
+        "px": 0.16,
+        "py": 0.2,
+        "pw": 0.16,
+        "ph": 0.12,
+        "color": "#fff176",
+        "rotate": -4
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎈",
+        "px": 0.34,
+        "py": 0.2,
+        "pw": 0.05,
+        "ph": 0.1,
+        "rotate": -8
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎈",
+        "px": 0.38,
+        "py": 0.24,
+        "pw": 0.05,
+        "ph": 0.1,
+        "rotate": 6
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🪅",
+        "px": 0.82,
+        "py": 0.16,
+        "pw": 0.08,
+        "ph": 0.14
+      },
+      {
+        "kind": "partyTable",
+        "px": 0.6,
+        "py": 0.3,
+        "pw": 0.22,
+        "ph": 0.26,
+        "items": [
+          "🧃",
+          "🍭"
+        ]
+      },
+      {
+        "kind": "rug",
+        "px": 0.3,
+        "py": 0.6,
+        "pw": 0.34,
+        "ph": 0.2,
+        "colors": [
+          "#4fc3f7",
+          "#fff176",
+          "#f06292",
+          "#81c784"
+        ]
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.82,
+        "py": 0.6,
+        "pw": 0.06,
+        "ph": 0.09
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.88,
+        "py": 0.63,
+        "pw": 0.05,
+        "ph": 0.08,
+        "rotate": 8
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎁",
+        "px": 0.85,
+        "py": 0.7,
+        "pw": 0.06,
+        "ph": 0.09,
+        "rotate": -6
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🔊",
+        "px": 0.14,
+        "py": 0.6,
+        "pw": 0.07,
+        "ph": 0.12
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🎶",
+        "px": 0.2,
+        "py": 0.55,
+        "pw": 0.04,
+        "ph": 0.06
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Third Camp",
+      "interactionText": "You dance your way back out to the Third Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level3.json",
+      "targetHotspot": "party_hall",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
+    },
+    {
+      "id": "disco_ball",
+      "name": "Disco Ball",
+      "px": 0.42,
+      "py": 0.04,
+      "pw": 0.16,
+      "ph": 0.32,
+      "action": "play",
+      "description": "The sparkliest disco ball EVER",
+      "interactionText": "The disco ball spins and throws rainbow sparkles all over the room! ✨🪩",
+      "items": [
+        {
+          "id": "mirror_tile",
+          "name": "Mirror Tile",
+          "emoji": "🪞"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "flashlight",
+          "text": "You shine your flashlight on the disco ball. A MILLION sparkles! ✨",
+          "animation": "play"
+        }
+      ]
+    },
+    {
+      "id": "dance_floor",
+      "name": "Dance Floor",
+      "px": 0.3,
+      "py": 0.58,
+      "pw": 0.34,
+      "ph": 0.24,
+      "action": "play",
+      "description": "Dance under the disco ball!",
+      "interactionText": "You do the robot, then the worm, then the chicken dance! Disco Dolly cheers! 🕺💃",
+      "items": [
+        {
+          "id": "glitter",
+          "name": "Glitter",
+          "emoji": "✨"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "glow_stick",
+          "text": "You wave the glow stick on the dance floor. RAVE PARTY! 🪄✨",
+          "animation": "play"
+        }
+      ]
+    },
+    {
+      "id": "cake",
+      "name": "Birthday Cake",
+      "px": 0.6,
+      "py": 0.28,
+      "pw": 0.22,
+      "ph": 0.3,
+      "action": "eat",
+      "description": "A three-candle birthday cake",
+      "interactionText": "You blow out the candles and make a wish... I wish I could beat the Brick! 🎂",
+      "items": [
+        {
+          "id": "cupcake",
+          "name": "Cupcake",
+          "emoji": "🧁"
+        },
+        {
+          "id": "party_popper",
+          "name": "Party Popper",
+          "emoji": "🎉"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "presents",
+      "name": "Presents",
+      "px": 0.8,
+      "py": 0.56,
+      "pw": 0.12,
+      "ph": 0.2,
+      "action": "explore",
+      "description": "A pile of presents",
+      "interactionText": "You give a present a shake. Something jingly is inside!",
+      "items": [
+        {
+          "id": "kazoo",
+          "name": "Kazoo",
+          "emoji": "🎺"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "pinata",
+      "name": "Piñata",
+      "px": 0.8,
+      "py": 0.12,
+      "pw": 0.1,
+      "ph": 0.2,
+      "action": "play",
+      "description": "Whack it!",
+      "interactionText": "WHACK! Candy everywhere! 🍬",
+      "items": [
+        {
+          "id": "lollipop",
+          "name": "Lollipop",
+          "emoji": "🍭"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}
