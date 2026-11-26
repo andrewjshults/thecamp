@@ -114,6 +114,16 @@ Replies come from Claude via `POST /api/npc-reply` in `server.js` (needs
 key, static hosting like GitHub Pages), the browser uses `localNpcReply()`.
 Conversations live in memory only.
 
+**Item questions** ("where is the sword?", "have you seen the 🪙?") never go to
+Claude. `itemQuestionReply()` in `index.html` (checked first in
+`fetchNpcReply`) uses plain keyword matching: if the line looks like a question
+or search (`ITEM_QUESTION_RE`) and names an item by a word of its name or its
+emoji (`itemsMentioned`, roughly plural-insensitive), the NPC says where it is
+right now on every map (`crawlMapConfigs` + `worldItemsFor`): hotspots, kitchen
+`source`/`shop` stations, or your own backpack. If nobody's left a sword
+anywhere, it drops one first (`findOrDropSword`). Lines that don't name an item
+go to Claude / `localNpcReply()` as before.
+
 **Wandering.** Camper NPCs stroll around their `px`/`py` spot (within
 `NPC_WANDER_RX`/`RY`; `"wander": false` keeps one still). Critters stay put.
 Where they're headed comes from the clock (`Date.now()`) and their id
