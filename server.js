@@ -60,7 +60,9 @@ const RELOAD_SNIPPET = `
 </script>`;
 
 // ── NPC dialogue (Claude) ──────────────────────────────────────────────────
-// POST /api/npc-reply  { npc, playerName, mapName, places, backpack, history }
+// POST /api/npc-reply  { npc, playerName, mapName, places, message }
+//   Only the player's latest line is sent, to keep it cheap. Deployed games
+//   use the PubNub Function instead (pubnub/npc-function.js), same model.
 //   npc: { name, what, desc, personality, sidekick }
 //   → 200 { reply: "..." }  or { reply: null } when Claude declined
 //   → 503 when the SDK isn't installed / no credentials (browser falls back
@@ -77,8 +79,8 @@ try {
               '     Run `npm install` and set ANTHROPIC_API_KEY to let characters think for themselves.)\n');
 }
 
-const NPC_MODEL = 'claude-opus-5-5';
-const MAX_HISTORY = 20;
+const NPC_MODEL = 'claude-haiku-5-5';
+const NPC_MAX_TOKENS = 100;              // replies are < 25 words
 const MAX_LINE = 300;
 
 function clean(s, max) {
@@ -88,7 +90,6 @@ function clean(s, max) {
 function buildNpcSystemPrompt(b) {
   const npc = b.npc || {};
   const places = Array.isArray(b.places) ? b.places.map(p => clean(p, 40)).filter(Boolean).slice(0, 30) : [];
-  const backpack = Array.isArray(b.backpack) ? b.backpack.map(p => clean(p, 40)).filter(Boolean).slice(0, 10) : [];
   // Critter NPCs (e.g. a frog) say what they are; everyone else is a kid camper
   const what = clean(npc.what, 120);
   return [
@@ -101,8 +102,7 @@ function buildNpcSystemPrompt(b) {
       : '',
     (what
       ? `You are talking with ${clean(b.playerName, 40)}, a kid camper who came to visit you.`
-      : `You are talking with your friend ${clean(b.playerName, 40)}, another camper.`) +
-      (backpack.length ? ` They're carrying: ${backpack.join(', ')}.` : ''),
+      : `You are talking with your friend ${clean(b.playerName, 40)}, another camper.`),
     '',
     'How to talk:',
     '- Your words appear in a speech bubble that a 6-8 year old reads, so reply with one or two short sentences (under 25 words) using simple words.',
@@ -114,27 +114,18 @@ function buildNpcSystemPrompt(b) {
 }
 
 async function generateNpcReply(body) {
-  const history = (Array.isArray(body.history) ? body.history : [])
-    .slice(-MAX_HISTORY)
-    .map(t => ({
-      role: t.speaker === 'npc' ? 'assistant' : 'user',
-      content: clean(t.text, MAX_LINE),
-    }))
-    .filter(m => m.content);
-  // The conversation must start and end with the player speaking.
-  while (history.length && history[0].role !== 'user') history.shift();
-  if (!history.length || history[history.length - 1].role !== 'user') {
-    throw Object.assign(new Error('history must end with the player speaking'), { status: 400 });
+  const message = clean(body.message, MAX_LINE);
+  if (!message) {
+    throw Object.assign(new Error('message is required'), { status: 400 });
   }
 
-  const response = await anthropic.beta.messages.create({
+  const response = await anthropic.messages.create({
     model: NPC_MODEL,
-    max_tokens: 2000,
-    output_config: { effort: 'low' },   // snappy chat replies
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',               // re-run on a fallback model if declined
+    max_tokens: NPC_MAX_TOKENS,
+    thinking: { type: 'disabled' },     // cheapest: no reasoning tokens
+    output_config: { effort: 'low' },
     system: buildNpcSystemPrompt(body),
-    messages: history,
+    messages: [{ role: 'user', content: message }],   // just this line, no history
   });
 
   if (response.stop_reason === 'refusal') return null;

@@ -5,8 +5,9 @@
 // `character` names an entry in `characters` (the player's own character is
 // hidden); px/py are the NPC's FEET position as fractions of the image.
 // The player types a line, it pops out of their mouth as a speech bubble,
-// then the NPC answers. Replies come from Claude via POST /api/npc-reply
-// (server.js); if that's unavailable we fall back to localNpcReply().
+// then the NPC answers. Replies come from Claude via the PubNub Function
+// (pubnub/npc-function.js) or the dev server's /api/npc-reply; if neither is
+// available we fall back to localNpcReply(). See fetchNpcReply.
 const talkBar   = document.getElementById('talkBar');
 const talkInput = document.getElementById('talkInput');
 const talkSay   = document.getElementById('talkSay');
@@ -224,6 +225,49 @@ function updateConversation() {
 }
 
 // --- Getting the NPC's words ---
+// Order: item questions (keyword matching, never Claude) → the PubNub Function
+// (pubnub/npc-function.js, if NPC_FUNCTION_URL is set) → the dev server's
+// /api/npc-reply → localNpcReply(). Only the player's latest line is sent.
+// Leave NPC_FUNCTION_URL empty to skip it (see pubnub/README.md and docs/npcs.md).
+// On localhost (npm run dev, npm test) the dev server is used instead, so local
+// play and tests never spend from the live Function's budget.
+const NPC_ON_LOCALHOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+const NPC_FUNCTION_URL = 'https://pubsub.pubnub.com/v1/blocks/sub-key/sub-c-ba97efde-d572-48e8-82d6-a06e2b5b0738/npc-reply';
+const NPC_TIMEOUT_MS = 8000;
+const NPC_LIMIT_BACKOFF_MS = 5 * 60 * 1000;   // after "out of usage", stay local this long
+const npcBrain = { functionDownUntil: 0, devDownUntil: 0 };
+
+// A random id per browser, so the PubNub Function can cap each player's spending
+function npcPlayerId() {
+  const key = 'louisas-game:npc-pid';
+  try {
+    let id = localStorage.getItem(key);
+    if (!id) { id = mpRandomId(); localStorage.setItem(key, id); }
+    return id;
+  } catch (_) {
+    return npcBrain.pid || (npcBrain.pid = mpRandomId());
+  }
+}
+
+async function postNpc(url, body, contentType) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), NPC_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: JSON.stringify(body),
+      signal: ctl.signal
+    });
+    if (!res.ok) return { reply: null, reason: res.status === 404 || res.status >= 500 ? 'down' : 'error' };
+    return await res.json();
+  } catch (_) {
+    return { reply: null, reason: 'down' };   // offline, blocked, timed out
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchNpcReply(npc, history) {
   // "Where's the sword?" — answered from the game's own item data, never Claude
   const itemAnswer = await itemQuestionReply(history);
@@ -231,32 +275,45 @@ async function fetchNpcReply(npc, history) {
     await new Promise(r => setTimeout(r, 400 + Math.random() * 500));
     return itemAnswer;
   }
-  const ch = characterByName(npc.character);
-  try {
-    const res = await fetch('/api/npc-reply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        npc: {
-          name: npcName(npc),
-          what: npc.what || '',                 // critters: what kind of creature they are
-          desc: ch ? ch.desc : '',
-          personality: npc.personality || '',
-          sidekick: isSidekick(npc)             // following you around, ready to help fight the Blob
-        },
-        playerName: player.character ? player.character.name : 'a friend',
-        mapName: mapConfig ? mapConfig.name : 'The Camp',
-        places: mapConfig ? mapConfig.hotspots.filter(h => !h.targetMap).map(h => h.name) : [],
-        backpack: backpack.map(i => i.name),
-        history
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.reply) return data.reply;
+  const message = (history[history.length - 1] || { text: '' }).text;
+  const playerName = player.character ? player.character.name : 'a friend';
+  const now = Date.now();
+
+  if (NPC_FUNCTION_URL && !NPC_ON_LOCALHOST && now >= npcBrain.functionDownUntil) {
+    // text/plain keeps it a "simple" CORS request (no preflight round trip)
+    const data = await postNpc(NPC_FUNCTION_URL, {
+      pid: npcPlayerId(),
+      npcId: npc.id,
+      here: currentMapPath,
+      playerName,
+      sidekick: isSidekick(npc),
+      message
+    }, 'text/plain');
+    if (data && data.reply) return data.reply;
+    if (data && (data.reason === 'limit' || data.reason === 'unconfigured' || data.reason === 'down')) {
+      npcBrain.functionDownUntil = Date.now() + NPC_LIMIT_BACKOFF_MS;
     }
-  } catch (_) { /* offline / static hosting — fall through */ }
-  // No server-side brain available: make something up locally after a little "think"
+  } else if ((!NPC_FUNCTION_URL || NPC_ON_LOCALHOST) && now >= npcBrain.devDownUntil) {
+    // Local dev server (npm run dev with ANTHROPIC_API_KEY)
+    const ch = characterByName(npc.character);
+    const data = await postNpc('/api/npc-reply', {
+      npc: {
+        name: npcName(npc),
+        what: npc.what || '',                 // critters: what kind of creature they are
+        desc: ch ? ch.desc : '',
+        personality: npc.personality || '',
+        sidekick: isSidekick(npc)             // following you around, ready to help fight the Blob
+      },
+      playerName,
+      mapName: mapConfig ? mapConfig.name : 'The Camp',
+      places: mapConfig ? mapConfig.hotspots.filter(h => !h.targetMap).map(h => h.name) : [],
+      message
+    }, 'application/json');
+    if (data && data.reply) return data.reply;
+    if (data && data.reason === 'down') npcBrain.devDownUntil = Date.now() + NPC_LIMIT_BACKOFF_MS;
+  }
+  // No brain available (not set up, out of usage, offline): make something up
+  // locally after a little "think"
   await new Promise(r => setTimeout(r, 500 + Math.random() * 700));
   return localNpcReply(npc, history);
 }
