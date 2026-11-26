@@ -4,7 +4,8 @@
 // A map JSON may have `marshmallows` (see docs/level-two.md):
 //   "marshmallows": {
 //     "lair": "blob_zone",                       // hotspot they live in (and come out of)
-//     "safeZone": { "px", "py", "pw", "ph" },    // they can't go in here (the sleeping tents)
+//     "safeZones": [ { "px", "py", "pw", "ph",   // they can't go in these (the tents, the pool)
+//                      "grumblePhrases" } ],    // optional: what they grumble at this one's edge
 //     "foes": [ { "id", "name", "aka", "kid", "label", "phrases", "hitPhrases", ...,
 //                 "pointsToWin", "reward", "size", "chase", "wander", "sniff",
 //                 "firstOut", "outFor", "restFor", "winPhrases", "fledPhrases", "grumblePhrases" } ]
@@ -97,27 +98,38 @@ function resetMallows() {
   nearMallow = null;
 }
 
-// --- The safe zone (the sleeping tents): they can't go in ---
-function safeZoneRect() {
-  const z = mallowCfg() && mallowCfg().safeZone;
-  return z ? { x: z.px * scaledMapW, y: z.py * scaledMapH, w: z.pw * scaledMapW, h: z.ph * scaledMapH, z } : null;
+// --- The safe zones (the sleeping tents, the swimming pool): they can't go in ---
+// `safeZones` is a list; a single `safeZone` object still works too.
+function safeZoneRects() {
+  const cfg = mallowCfg();
+  if (!cfg) return [];
+  const zones = cfg.safeZones || (cfg.safeZone ? [cfg.safeZone] : []);
+  return zones.map(z => ({ x: z.px * scaledMapW, y: z.py * scaledMapH, w: z.pw * scaledMapW, h: z.ph * scaledMapH, z }));
+}
+function inRect(r, x, y) {
+  return x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h;
+}
+// The zone a point is in (or null)
+function safeZoneAt(x, y) {
+  return safeZoneRects().find(r => inRect(r, x, y)) || null;
 }
 function inSafeZone(x, y) {
-  const r = safeZoneRect();
-  return !!r && x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.h;
+  return !!safeZoneAt(x, y);
 }
-// Push a point that's inside the zone out through its nearest side (not a
-// side that's the edge of the map)
+// Push a point that's inside a zone out through its nearest side (not a
+// side at the edge of the map: it would be clamped straight back in)
 function outOfSafeZone(x, y, pad) {
-  const r = safeZoneRect();
-  if (!r || !inSafeZone(x, y)) return { x, y };
-  const ways = [];
-  if (r.z.px > 0.001) ways.push({ d: x - r.x, x: r.x - pad, y });
-  if (r.z.px + r.z.pw < 0.999) ways.push({ d: r.x + r.w - x, x: r.x + r.w + pad, y });
-  if (r.z.py > 0.001) ways.push({ d: y - r.y, x, y: r.y - pad });
-  if (r.z.py + r.z.ph < 0.999) ways.push({ d: r.y + r.h - y, x, y: r.y + r.h + pad });
-  ways.sort((a, b) => a.d - b.d);
-  return ways[0] || { x, y };
+  for (const r of safeZoneRects()) {
+    if (!inRect(r, x, y)) continue;
+    const ways = [];
+    if (r.z.px > 0.04) ways.push({ d: x - r.x, x: r.x - pad, y });
+    if (r.z.px + r.z.pw < 0.96) ways.push({ d: r.x + r.w - x, x: r.x + r.w + pad, y });
+    if (r.z.py > 0.04) ways.push({ d: y - r.y, x, y: r.y - pad });
+    if (r.z.py + r.z.ph < 0.96) ways.push({ d: r.y + r.h - y, x, y: r.y + r.h + pad });
+    ways.sort((a, b) => a.d - b.d);
+    if (ways[0]) ({ x, y } = ways[0]);
+  }
+  return { x, y };
 }
 function randomWanderTarget() {
   for (let i = 0; i < 8; i++) {
@@ -169,7 +181,8 @@ function stepMallow(m, now, k) {
 
   const pos = mallowPos(m);
   const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
-  const youSafe = inSafeZone(player.x, player.y);
+  const yourZone = safeZoneAt(player.x, player.y);
+  const youSafe = !!yourZone;
   const hunting = state === GameState.PLAYING && now >= mallows.graceUntil && !youSafe;
   if (m.where === 'out' && now > m.outUntil) m.where = 'returning';
 
@@ -193,8 +206,9 @@ function stepMallow(m, now, k) {
     }
   } else {
     if (youSafe && dist < sniff && now >= m.nextShoutAt) {
-      // You're hiding in the tents: it grumbles at the edge
-      mallowShout(m, mallowSays(m, 'grumblePhrases'));
+      // You're hiding in the tents (or the pool): it grumbles at the edge
+      const own = yourZone.z.grumblePhrases;
+      mallowShout(m, own && own.length ? pickOne(own) : mallowSays(m, 'grumblePhrases'));
       m.nextShoutAt = now + randBetween(3500, 6000);
     }
     const t = m.target;
@@ -213,7 +227,7 @@ function stepMallow(m, now, k) {
     m.moving = true;
   }
 
-  // Caught you! (Not on its way home, and never in the tents.)
+  // Caught you! (Not on its way home, and never in the tents or the pool.)
   if (m.where === 'out' && hunting && dist < 55 * k * Math.max(0.8, m.def.size || 1) && !doorOpening) engageMallow(m, true);
   return dist;
 }
@@ -226,7 +240,7 @@ function engageMallow(m, auto) {
   let noSword = false;
   if (swordRating <= 0 && !equipSpareSword()) {
     if (!auto) {
-      kitchenToast('🗡️ You have no sword! Run to the sleeping tents, they can\'t go in there! ⛺');
+      kitchenToast('🗡️ You have no sword! Run to the sleeping tents or the pool, they can\'t go in there! ⛺');
       return;
     }
     noSword = true;

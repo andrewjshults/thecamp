@@ -6,7 +6,11 @@
   "noSwordDrops": true,
   "marshmallows": {
     "lair": "blob_zone",
-    "safeZone": { "px": 0, "py": 0, "pw": 0.305, "ph": 0.475 },
+    "safeZones": [
+      { "px": 0, "py": 0, "pw": 0.305, "ph": 0.475 },
+      { "px": 0.489, "py": 0.015, "pw": 0.492, "ph": 0.33,
+        "grumblePhrases": ["me no swim!", "water make me soggy!", "grrr pool!", "come out of da water!"] }
+    ],
     "foes": [
       {
         "id": "mega_mallow", "name": "Mega Mallow", "aka": "Fire Eyes", "label": "MEGA",

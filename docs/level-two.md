@@ -61,7 +61,10 @@ The map's `marshmallows` object:
 ```json
 "marshmallows": {
   "lair": "blob_zone",                                  // hotspot they live in
-  "safeZone": { "px": 0, "py": 0, "pw": 0.305, "ph": 0.475 },  // they can't go in (the tents)
+  "safeZones": [                                        // they can't go in these
+    { "px": 0, "py": 0, "pw": 0.305, "ph": 0.475 },     // the sleeping tents
+    { "px": 0.489, "py": 0.015, "pw": 0.492, "ph": 0.33,  // the swimming pool
+      "grumblePhrases": [] } ],                          // optional, instead of the foe's
   "foes": [ { "id": "mega_mallow", "name": "Mega Mallow", "aka": "Fire Eyes", "label": "MEGA",
               "size": 1.05, "chase": 2.9, "wander": 1.7, "sniff": 520,
               "firstOut": [5000, 10000], "outFor": [35000, 55000], "restFor": [10000, 22000],
@@ -77,8 +80,11 @@ Both come out of the hole in the middle of the Blob Fight Zone (fire eyes
 glow in it while they're home, `drawMallowLair`), wander, and chase you when
 you're within `sniff`. `chase` / `wander` are map px per frame (you walk at
 4): the kid is faster than its parent but still slower than you. Neither can
-go into the `safeZone` (`outOfSafeZone` pushes them back out), and they don't
-chase you while you're in it; they grumble at the fence instead. You get a
+go into a `safeZones` area, the sleeping tents or the swimming pool
+(`outOfSafeZone` pushes them back out, never through a side at the edge of
+the map), and they don't chase you while you're in one; they grumble at the
+edge instead (the zone's own `grumblePhrases` if it has them, like the pool's,
+else the foe's). A single `safeZone` object still works too. You get a
 few seconds' grace when you arrive and after every fight
 (`mallows.graceUntil`).
 
