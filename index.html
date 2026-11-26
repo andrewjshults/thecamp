@@ -3024,6 +3024,14 @@ function speakerColor(owner) {
   return ch ? ch.color : '#333';
 }
 
+// A '#rrggbb' colour mixed `amt` (0–1) of the way to white, so a character's
+// colour stays recognisable but reads on dark/green panels.
+function lightenColor(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = c => Math.round(c + (255 - c) * amt);
+  return `rgb(${mix(n >> 16)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+}
+
 // Where a bubble rests: above the speaker's head, nudged away from whoever
 // they're talking to so the two bubbles don't overlap.
 function bubbleLayout(owner, partner, w, h) {
@@ -8796,7 +8804,7 @@ function finishFight(fled) {
   }
   if (f.s) {
     f.sidekickLine = pickOne(won ? SIDEKICK_LINES.won : fled ? SIDEKICK_LINES.fled : SIDEKICK_LINES.lost);
-    res.lines.push({ text: `🤝 ${f.s.name}: "${f.sidekickLine}"`, color: f.s.char.color });
+    res.lines.push({ text: `🤝 ${f.s.name}: "${f.sidekickLine}"`, color: lightenColor(f.s.char.color, 0.6) });
   }
   writeSave();
   f.phase = 'result';
@@ -9452,7 +9460,7 @@ function drawFightOverlay(v, f, now) {
       let ly = Hc * 0.3 + big * 1.65;
       if (f.level) { bigText(`⭐ Level ${f.level} Blob: it's tougher now!`, W / 2, ly, big * 0.3, '#B3E5FC'); ly += big * 0.45; }
       if (f.boost) { bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, ly, big * 0.3, '#F8BBD0'); ly += big * 0.45; }
-      if (f.s) bigText(`🤝 ${f.s.name} is here to help!`, W / 2, ly, big * 0.3, f.s.char.color);
+      if (f.s) bigText(`🤝 ${f.s.name} is here to help!`, W / 2, ly, big * 0.3, lightenColor(f.s.char.color, 0.6));
       ctx.restore();
     } else {
       const u = clamp((t - 1200) / 250, 0, 1);
