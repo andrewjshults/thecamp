@@ -104,3 +104,13 @@ const MP_MESSAGES = Object.create(null);   // (no prototype: `t` comes from the 
 function registerMpMessage(t, fn, { othersOnly = false } = {}) {
   MP_MESSAGES[t] = { fn, othersOnly };
 }
+
+// --- Scene props ---
+// The things a `scene` map (a room without a drawing) can have in its "props"
+// list, by `kind`. Each is draw(pen, box, prop): box is { x, y, w, h } in px,
+// prop is the JSON entry. Props for a room live in a file of their own.
+const SCENE_PROPS = {};
+function registerSceneProps(props) {
+  Object.assign(SCENE_PROPS, props);
+}
+
