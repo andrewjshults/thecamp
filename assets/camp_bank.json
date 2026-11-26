@@ -1,0 +1,66 @@
+{
+  "name": "Camp Bank",
+  "where": "in the Camp Bank",
+  "playerStart": { "px": 0.12, "py": 0.66 },
+  "spriteScale": 1.8,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": { "height": 0.05, "color": "#2e7d32", "stripe": "#1b5e20" },
+    "wall": { "pattern": "blocks", "color": "#f3ead2" },
+    "floor": { "from": 0.52, "pattern": "tiles", "color": "#d9cfbd" },
+    "props": [
+      { "kind": "sign", "text": "TO CAMP", "px": 0.025, "py": 0.1, "pw": 0.085, "ph": 0.05, "color": "#a5d6a7", "rotate": -3 },
+      { "kind": "door", "px": 0.025, "py": 0.18, "pw": 0.085, "ph": 0.34, "color": "#2e7d32" },
+      { "kind": "mat", "px": 0.01, "py": 0.525, "pw": 0.115, "ph": 0.04, "color": "#c62828", "text": "HI!" },
+      { "kind": "window", "px": 0.165, "py": 0.17, "pw": 0.08, "ph": 0.13 },
+      { "kind": "emoji", "emoji": "🕰️", "px": 0.27, "py": 0.1, "pw": 0.04, "ph": 0.07 },
+      { "kind": "sign", "text": "CAMP BANK", "px": 0.36, "py": 0.075, "pw": 0.22, "ph": 0.08, "color": "#fff176", "rotate": -1 },
+      { "kind": "tellerCounter", "px": 0.3, "py": 0.24, "pw": 0.36, "ph": 0.34, "label": "TELLER",
+        "windows": [ { "teller": "🦉", "sign": "OPEN" }, { "sign": "CLOSED" } ],
+        "items": ["🛎️", "🖊️"] },
+      { "kind": "emoji", "emoji": "🪴", "px": 0.67, "py": 0.4, "pw": 0.04, "ph": 0.12 },
+      { "kind": "vault", "px": 0.73, "py": 0.1, "pw": 0.22, "ph": 0.42, "label": "VAULT" },
+      { "kind": "emoji", "emoji": "💰", "px": 0.715, "py": 0.47, "pw": 0.035, "ph": 0.06, "rotate": -8 },
+      { "kind": "emoji", "emoji": "💰", "px": 0.945, "py": 0.47, "pw": 0.035, "ph": 0.06, "rotate": 6 },
+      { "kind": "rug", "px": 0.33, "py": 0.6, "pw": 0.3, "ph": 0.18, "colors": ["#c62828", "#ffd54f", "#c62828"] },
+      { "kind": "stanchions", "px": 0.15, "py": 0.56, "pw": 0.13, "ph": 0.1, "posts": 3 }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back to Camp",
+      "px": 0.02, "py": 0.18, "pw": 0.1, "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to camp",
+      "interactionText": "You head back out to camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/game_design.json",
+      "targetHotspot": "bank",
+      "arrive": { "px": 0.07, "py": 0.63 }
+    },
+    {
+      "id": "teller",
+      "name": "Teller Window",
+      "px": 0.3, "py": 0.24, "pw": 0.18, "ph": 0.34,
+      "action": "explore",
+      "description": "Penny the owl looks after your coins",
+      "interactionText": "Penny the owl peeks out from the teller window.",
+      "items": [],
+      "uses": [],
+      "bank": { "teller": "Penny", "emoji": "🦉" }
+    },
+    {
+      "id": "vault",
+      "name": "Big Vault",
+      "px": 0.73, "py": 0.1, "pw": 0.22, "ph": 0.42,
+      "action": "explore",
+      "description": "Where all the coins sleep",
+      "interactionText": "You give the big wheel a spin... CLUNK! It's locked tight. Every coin you deposit with Penny is safe in here, even from the Glug Glub Blob! 🔒",
+      "items": [],
+      "uses": []
+    }
+  ]
+}

@@ -385,6 +385,24 @@
       ]
     },
     {
+      "id": "bank",
+      "name": "Camp Bank",
+      "px": 0.01,
+      "py": 0.655,
+      "pw": 0.095,
+      "ph": 0.125,
+      "action": "enter",
+      "description": "Keep your coins safe at the bank!",
+      "interactionText": "You push open the big green door and step into the Camp Bank!",
+      "items": [],
+      "uses": [],
+      "building": "bank",
+      "targetMap": "assets/camp_bank.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.02, "py": 0.79 },
+      "door": { "px": 0.048, "py": 0.715, "pw": 0.019, "ph": 0.05, "color": "#2e7d32", "inside": "🏦" }
+    },
+    {
       "id": "cave",
       "name": "Spooky Cave",
       "px": 0.872,

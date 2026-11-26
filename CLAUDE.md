@@ -69,6 +69,25 @@ swinging `door`) opens into `assets/hangout_house.json`, the Hangout House: a
 couch (with a 🪙 coin in the cushions), a board game table, a game shelf, a
 snack bar, a toy chest, a bean bag, and Pancake the cat 🐱 (a critter NPC).
 
+### Bank
+The hand-drawn map has no bank, so the `bank` hotspot on the main map (left
+side, under the road) has `"building": "bank"`: `drawMapBuildings` draws a
+columned bank building in the hotspot's box, with its closed door at the
+hotspot's `door` rect (move both together if you move it). It opens into
+`assets/camp_bank.json`, the Camp Bank: a teller counter (`tellerCounter` prop:
+`windows: [{ teller, sign }]`, `label`, `items`), a `vault` prop (`label`) and
+velvet-rope `stanchions` (`posts`).
+
+A hotspot with a `bank` object (`{ "teller": "Penny", "emoji": "🦉" }`) is a
+teller window. Space there opens `#bankModal` (state `BANK_MODAL`) with buttons
+only, no typing: **What's my balance?**, **Deposit 🪙** / **Deposit all** (coin
+items from the backpack, `isCoin`/`coinValue`), **Withdraw 🪙** / **Withdraw
+all** (as many `BANK_COIN`s as fit in the backpack). The teller answers each
+press with a scripted line. `bankBalance` (dollars) is saved per camper like
+`bossWins` (per world + camper in multiplayer), and coins in the bank are safe
+from the Blob, which only takes coins from the backpack. Swords are never
+dropped at a teller hotspot.
+
 Toilet stalls 1 and 2 in the bathroom open into `assets/bathroom_stall_1.json`
 and `assets/bathroom_stall_2.json`; stall 3 is "occupied" and stays shut.
 
@@ -369,7 +388,7 @@ fighting the Blob!"), nobody else can start a fight, and afterwards it goes
 home. If the keeper leaves, the next lowest id takes over. A won coin that
 doesn't fit in the backpack goes to the cave as a normal `drop`.
 
-Saves: the backpack/journal/dishes are saved per world + camper
+Saves: the backpack/journal/dishes/bank balance are saved per world + camper
 (`louisas-game:mp:<code>:<character>`); the world's items are cached in
 `louisas-game:world:<code>` and used if you "Go in anyway" to an empty world.
 One player per character in a world; camper NPCs hide when a player is that
