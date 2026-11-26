@@ -1660,7 +1660,7 @@ function applySave(save) {
   dishesMade    = Array.isArray(save.dishesMade)    ? [...save.dishesMade]                      : [];
   customRecipes = cleanCustomRecipes(save.customRecipes);
   resetDraftRecipe();
-  strengthBoost = clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX);
+  strengthBoost = Math.max(0, Number(save.strengthBoost) || 0);
   swordRating   = savedSwordRating(save);
   bossWins      = Math.max(0, Math.floor(Number(save.bossWins) || 0));
   // v2: maps object keyed by map path
@@ -4234,24 +4234,20 @@ function kitchenToast(text) {
 }
 
 // --- Desserts → strength ---
-// Eating a dessert adds its `strength` to strengthBoost (saved, for good, up to
-// STRENGTH_BOOST_MAX). Every Blob fight starts you at STRENGTH_BASE + strengthBoost.
+// Eating a dessert adds its `strength` to strengthBoost (saved, for good, no cap:
+// spend all your coins). Every Blob fight starts you at STRENGTH_BASE + strengthBoost.
 const STRENGTH_BASE = 10;
-const STRENGTH_BOOST_MAX = 10;
 let strengthBoost = 0;
 
 function coinValue(it) { return it.value || 10; }
 function walletTotal() { return backpack.filter(isCoin).reduce((sum, it) => sum + coinValue(it), 0); }
 
 function eatDessert(f, onTheWayOut) {
-  const before = strengthBoost;
-  strengthBoost = Math.min(STRENGTH_BOOST_MAX, strengthBoost + (f.strength || 1));
+  const got = f.strength || 1;
+  strengthBoost += got;
   writeSave();
-  const got = strengthBoost - before;
   const ate = onTheWayOut ? `You gobble up the ${foodLabel(f.id)} on your way out!` : `Yum! You eat the ${foodLabel(f.id)}.`;
-  kitchenToast(got
-    ? `${ate} +${got} 💪 You're stronger for good! (Strength ${STRENGTH_BASE + strengthBoost})`
-    : `${ate} You can't get any stronger! (Strength ${STRENGTH_BASE + STRENGTH_BOOST_MAX} 💪)`);
+  kitchenToast(`${ate} +${got} 💪 You're stronger for good! (Strength ${STRENGTH_BASE + strengthBoost})`);
 }
 
 // Pay `price` with coins from the backpack (smallest first). Returns the coins paid.
@@ -4460,10 +4456,6 @@ function doStation(obj) {
         heldItem = null;
         writeSave();
         kitchenToast(`You put the ${foodLabel(f.id)} back and get your $${price} back.`);
-        break;
-      }
-      if (strengthBoost >= STRENGTH_BOOST_MAX) {
-        kitchenToast(`You're already as strong as can be (Strength ${STRENGTH_BASE + STRENGTH_BOOST_MAX} 💪)! Save your coins.`);
         break;
       }
       const have = walletTotal();
@@ -6476,7 +6468,7 @@ function mpStartPlaying() {
   dishesMade    = save && Array.isArray(save.dishesMade) ? [...save.dishesMade] : [];
   customRecipes = cleanCustomRecipes(save && save.customRecipes);
   resetDraftRecipe();
-  strengthBoost = save ? clamp(Number(save.strengthBoost) || 0, 0, STRENGTH_BOOST_MAX) : 0;
+  strengthBoost = save ? Math.max(0, Number(save.strengthBoost) || 0) : 0;
   swordRating   = savedSwordRating(save);
   bossWins      = save ? Math.max(0, Math.floor(Number(save.bossWins) || 0)) : 0;
   allMapSaves = {};
@@ -9387,7 +9379,7 @@ function drawStrengthMeter(p, x, y, w, now, edge) {
   }
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.lineWidth = 1.5;
-  for (let i = 1; i < max; i++) {
+  for (let i = 1; i < max && max <= 30; i++) {   // too many ticks would black out a big bar
     ctx.beginPath();
     ctx.moveTo(ix + iw * i / max, iy + 1);
     ctx.lineTo(ix + iw * i / max, iy + ih - 1);

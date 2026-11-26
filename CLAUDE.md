@@ -195,8 +195,9 @@ is sold at a `shop` station (the `dessertCase` prop: 🍪 $10 +2, 🧁 $20 +5,
 🍰 $30 +8). Buying pays with coin items from the backpack (`value`, default 10)
 and puts the dessert in your hands; Space at the shop again puts it back for a
 refund. Eat it at the table (or it's eaten automatically if you walk out) to
-add its `strength` to `strengthBoost` — permanently (saved, capped at
-`STRENGTH_BOOST_MAX` = 10; the shop won't sell once you're maxed). Desserts don't count toward "Recipes made".
+add its `strength` to `strengthBoost` — permanently (saved, no cap, so you
+can spend all your coins; past strength 20 only the hit/block odds keep
+creeping up, since `strengthSpeed` tops out at 20). Desserts don't count toward "Recipes made".
 
 ### Boss fight — Glug Glub Blob
 The main map has a `boss` object and a `cave` hotspot (top-right corner). The
