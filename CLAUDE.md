@@ -114,6 +114,24 @@ Replies come from Claude via `POST /api/npc-reply` in `server.js` (needs
 key, static hosting like GitHub Pages), the browser uses `localNpcReply()`.
 Conversations live in memory only.
 
+**Wandering.** Camper NPCs stroll around their `px`/`py` spot (within
+`NPC_WANDER_RX`/`RY`; `"wander": false` keeps one still). Critters stay put.
+Where they're headed comes from the clock (`Date.now()`) and their id
+(`wanderTarget`), so every computer in a multiplayer world sees them in the
+same place without sending anything. They stop when you're close, so they're
+easy to talk to. Their live positions are in `npcRt` (`npcPos()` reads them).
+
+**Sidekicks.** Talking to a camper NPC shows a **🤝 Be my sidekick!** button in
+the talk bar. A sidekick (`sidekick` in `index.html`, in memory only) follows
+your trail while you walk, settles beside you when you stop, and comes
+through doors with you (`placeSidekickBeside` in `switchMap`). They're
+talkable as usual. The same button then reads **👋 You can go home**. Your
+sidekick also fights the Blob with you (see the boss section). When the fight
+ends, or you send them home, they say goodbye and walk home: across the map if
+it's their own map, otherwise out the door that leads home (`npcLeavers`,
+`exitTowards`), and then they wander there again. Claude is told when an NPC is
+your sidekick (`npc.sidekick` in `/api/npc-reply`).
+
 **Critter NPCs** use an `emoji` instead of a `character` and are drawn as that
 emoji (bobbing, squishing while they talk). Example: Sir Ribbit, the frog in
 the broken toilet (`assets/bathroom_stall_2.json`).
@@ -211,6 +229,23 @@ counter-attacks with a wind-up you can't interrupt. Win → `reward` goes in the
 backpack (or at the cave if the backpack is full). Lose → every coin item
 (`coin: true` or an id containing "coin") is taken from the backpack.
 
+**Your sidekick fights with you.** If you have a sidekick, they're in the fight
+(`fight.s`, `sidekickAI`). They stand in a lane just behind you (drawn a little
+smaller and higher, `SIDEKICK_LANE`), a step back from you
+(`SIDEKICK_BEHIND`). Every `SIDEKICK_SWING_GAP_MS` they run in and swing their
+own sword, then step back. Their hits count toward *your* score (and the Blob
+can block them and counter-attack you). When the Blob winds up, they put their
+sword up `SIDEKICK_BLOCK_CHANCE` of the time. **A block guards you both**: while
+the sidekick blocks within `SIDEKICK_GUARD` of you, the Blob's swing at you
+hits their guard instead (`resolveHit`), and a big shared shield is drawn in
+front of you both whenever either of you blocks (`drawTeamGuard`). The Blob
+only ever attacks you, so the sidekick can't be hurt and has no strength bar.
+They use the sidekick's own sword, so your sword doesn't wear when they swing.
+When the fight ends (won, lost or ran away) they stop being your sidekick and
+walk home. Sim results (decent bot, level 5 Blob): 45% alone, 69% with a
+sidekick. Their swings were worth about +25 points and their blocks about +15
+before tuning, so both were cut back.
+
 **Strength — same rules for you and the Blob.** You start every fight at
 `STRENGTH_BASE` (10) + `strengthBoost` from desserts (kept between fights); the
 Blob starts at `boss.strength` (default 10). Each hit taken costs 1, and each
@@ -296,7 +331,7 @@ carry `from`, the sender's per-tab player id):
 
 | `t`     | fields | meaning |
 |---------|--------|---------|
-| `pos`   | `char, map, x, y, f, w, r, h, fi, sw` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji, `fi` = fighting the Blob, `sw` = has a sword (the Blob only chases campers with one). ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
+| `pos`   | `char, map, x, y, f, w, r, h, fi, sw, sk?` | where I am: map path, 0–1 fractions of the map, facing, walking, rotation, held food emoji, `fi` = fighting the Blob, `sw` = has a sword (the Blob only chases campers with one), `sk` = my sidekick `{ id, c, x, y, f, w }` (NPC id, character name, where they are on my map). ~8/s while moving, every 2.5s idle; a friend unheard for 9s is dropped |
 | `hello` | — | I just joined: others reply with `pos`, and one synced player replies with `snap` |
 | `snap`  | `to, at, items` | the whole world's items, `{ mapPath: { hotspotId: [item] } }`, as of op timetoken `at` |
 | `take`  | `map, hs, item` (item id) | take an item from a hotspot |
@@ -327,7 +362,9 @@ Saves: the backpack/journal/dishes are saved per world + camper
 (`louisas-game:mp:<code>:<character>`); the world's items are cached in
 `louisas-game:world:<code>` and used if you "Go in anyway" to an empty world.
 One player per character in a world; camper NPCs hide when a player is that
-character. Kitchen station food is still per-player (only held food is shown
+character. A friend's sidekick is drawn following them (`rp.sk`,
+`mpOnFriendSidekick`) and isn't at its spot for anyone else. If two campers ask
+the same NPC at once, the lower player id keeps them. Kitchen station food is still per-player (only held food is shown
 to friends).
 
 ## Developer mode — adjusting hotspot bounds in-game

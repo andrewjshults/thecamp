@@ -15,6 +15,10 @@
 // it runs), driven by a bot that reacts to the Blob's wind-up after a delay and
 // then blocks, backs off or misses it, walks in and swings at its own pace,
 // sometimes from too far away. Nothing is saved.
+//
+// With a sidekick, the simulated fights include them too (startFight reads the
+// global `sidekick`). E.g. `makeSidekick(npcOnThisMap('red_scout'))` first,
+// then `simMany(...)`, and `sidekick = null` to go back to fighting alone.
 window.BOTS = {
   // younger kid: slow to react, often doesn't defend, mashes, swings from too far, slow to step back in
   casual: { react: 650, jitter: 150, block: 0.35, retreat: 0.10, cadence: 150, cadenceJitter: 100, whiff: 0.35, stepIn: 450 },

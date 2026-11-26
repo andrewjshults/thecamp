@@ -60,6 +60,7 @@ const RELOAD_SNIPPET = `
 
 // ── NPC dialogue (Claude) ──────────────────────────────────────────────────
 // POST /api/npc-reply  { npc, playerName, mapName, places, backpack, history }
+//   npc: { name, what, desc, personality, sidekick }
 //   → 200 { reply: "..." }  or { reply: null } when Claude declined
 //   → 503 when the SDK isn't installed / no credentials (browser falls back
 //     to its built-in reply generator).
@@ -94,6 +95,9 @@ function buildNpcSystemPrompt(b) {
     npc.desc ? `About you: ${clean(npc.desc, 120)}.` : '',
     npc.personality ? `Your personality: ${clean(npc.personality, 400)}` : '',
     `You are hanging out at "${clean(b.mapName, 60)}". Things around here: ${places.join(', ') || 'lots of fun spots'}.`,
+    npc.sidekick === true
+      ? `Right now you are ${clean(b.playerName, 40)}'s sidekick: you follow them everywhere they go, and if the Glug Glub Blob (a silly monster living in a cave at the camp) catches them, you'll fight it right beside them with your own sword. You're proud and excited to be their sidekick.`
+      : '',
     (what
       ? `You are talking with ${clean(b.playerName, 40)}, a kid camper who came to visit you.`
       : `You are talking with your friend ${clean(b.playerName, 40)}, another camper.`) +
