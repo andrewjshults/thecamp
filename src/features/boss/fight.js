@@ -52,6 +52,10 @@ function fightTune(f) { return (f && f.tune) || BOSS_TUNE_BASE; }
 const BOSS_LEVEL_MAX = 5;
 const BOSS_TUNE_TOP = { block: 0.22, strength: 3.5, armor: 0.5, windup: 0.72, think: 0.72, tough: 0.18, regen: 0.72, speed: 1.22 };
 let bossWins = 0;      // Blob fights won (saved per camper)
+registerSaveField('bossWins', {
+  save: () => bossWins,
+  load: s => { bossWins = Math.max(0, Math.floor(Number(s.bossWins) || 0)); }
+});
 function bossLevel() { return Math.min(bossWins, BOSS_LEVEL_MAX); }
 function bossTuning(level) {
   const u = clamp(level, 0, BOSS_LEVEL_MAX) / BOSS_LEVEL_MAX;

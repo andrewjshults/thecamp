@@ -13,9 +13,11 @@ const bankSaysEl = document.getElementById('bankSays');
 let bankModalOpenedAt = 0;
 let bankTeller = null;   // the teller hotspot's `bank` settings while the pop-up is open
 
+let bankBalance = 0;   // dollars kept at the Camp Bank (saved per camper)
 function savedBankBalance(save) {
   return save ? Math.max(0, Math.floor(Number(save.bankBalance) || 0)) : 0;
 }
+registerSaveField('bankBalance', { save: () => bankBalance, load: s => { bankBalance = savedBankBalance(s); } });
 function tellerName() { return (bankTeller && bankTeller.teller) || 'Penny'; }
 function dollars(n) { return `$${n}`; }
 function coinsWord(n) { return n === 1 ? '1 coin' : `${n} coins`; }

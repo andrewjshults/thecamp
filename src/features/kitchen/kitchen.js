@@ -56,17 +56,20 @@ function resetDraftRecipe() {
     if (S.draft) { S.plate = []; S.draft = false; }
   }
 }
-// Older saves have no sword yet: they start with a new one
-function savedSwordRating(save) {
-  const n = save && Number(save.swordRating);
-  return Number.isFinite(n) ? clamp(Math.round(n), 0, SWORD_MAX) : SWORD_MAX;
-}
 function cleanCustomRecipes(arr) {
   return Array.isArray(arr)
     ? arr.filter(r => r && typeof r.id === 'string' && typeof r.name === 'string' && Array.isArray(r.needs) && typeof r.map === 'string')
       .map(r => ({ id: r.id, name: cleanRecipeName(r.name), needs: r.needs.map(String), map: r.map }))
     : [];
 }
+registerSaveField('dishesMade', {
+  save: () => dishesMade,
+  load: s => { dishesMade = Array.isArray(s.dishesMade) ? [...s.dishesMade] : []; }
+});
+registerSaveField('customRecipes', {
+  save: () => customRecipes,
+  load: s => { customRecipes = cleanCustomRecipes(s.customRecipes); resetDraftRecipe(); }
+});
 // The board shows recipes, so the "see all" hotspot may need to appear or go
 function kitchenBoardChanged() {
   recalcInteractiveObjects();
@@ -101,6 +104,10 @@ function kitchenToast(text) {
 // spend all your coins). Every Blob fight starts you at STRENGTH_BASE + strengthBoost.
 const STRENGTH_BASE = 10;
 let strengthBoost = 0;
+registerSaveField('strengthBoost', {
+  save: () => strengthBoost,
+  load: s => { strengthBoost = Math.max(0, Number(s.strengthBoost) || 0); }
+});
 
 function coinValue(it) { return it.value || 10; }
 function walletTotal() { return backpack.filter(isCoin).reduce((sum, it) => sum + coinValue(it), 0); }

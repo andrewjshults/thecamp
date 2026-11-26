@@ -134,13 +134,7 @@ function mpStartPlaying() {
   const items = arr => Array.isArray(arr) ? arr.map(mpCleanItem).filter(Boolean) : [];
   backpack      = save ? items(save.backpack).slice(0, BACKPACK_CAPACITY) : [];
   completedUses = save && Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
-  dishesMade    = save && Array.isArray(save.dishesMade) ? [...save.dishesMade] : [];
-  customRecipes = cleanCustomRecipes(save && save.customRecipes);
-  resetDraftRecipe();
-  strengthBoost = save ? Math.max(0, Number(save.strengthBoost) || 0) : 0;
-  swordRating   = savedSwordRating(save);
-  bossWins      = save ? Math.max(0, Math.floor(Number(save.bossWins) || 0)) : 0;
-  bankBalance   = savedBankBalance(save);
+  loadSaveFields(save);
   allMapSaves = {};
   hotspotItems = mpItemsFor(currentMapPath, mapConfig);
   // Arrive beside (not on top of) any friends standing at the start

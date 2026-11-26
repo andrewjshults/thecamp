@@ -14,6 +14,12 @@ const SWORD_SWING_WEAR = 1;
 const SWORD_HIT_WEAR = 4;
 const SWORD_ITEM = { id: 'sword', name: 'Sword', emoji: '🗡️' };
 let swordRating = SWORD_MAX;
+// Older saves have no sword yet: they start with a new one
+function savedSwordRating(save) {
+  const n = save && Number(save.swordRating);
+  return Number.isFinite(n) ? clamp(Math.round(n), 0, SWORD_MAX) : SWORD_MAX;
+}
+registerSaveField('swordRating', { save: () => swordRating, load: s => { swordRating = savedSwordRating(s); } });
 let swordSearch = null;      // the find-or-drop in progress (it may fetch map files)
 let lastSwordDrop = null;    // { path, hs, at } — a multiplayer drop takes a moment to arrive
 const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from allMapConfigs, which the journal counts)

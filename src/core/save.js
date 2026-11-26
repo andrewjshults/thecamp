@@ -37,12 +37,7 @@ function writeSave() {
     currentMap: currentMapPath,
     backpack,
     completedUses,
-    dishesMade,
-    customRecipes,
-    strengthBoost,
-    swordRating,
-    bossWins,
-    bankBalance,
+    ...saveFieldValues(),   // each feature's own saved values (registerSaveField)
     maps: {
       ...allMapSaves,
       [currentMapPath]: { hotspots: hotspotItems }
@@ -78,26 +73,14 @@ function initFreshSave() {
   backpack = [];
   hotspotItems = defaultHotspotItems();
   completedUses = [];
-  dishesMade = [];
-  customRecipes = [];
-  resetDraftRecipe();
-  strengthBoost = 0;
-  swordRating = SWORD_MAX;
-  bossWins = 0;
-  bankBalance = 0;
+  loadSaveFields({});
   allMapSaves = {};
   writeSave();
 }
 function applySave(save) {
   backpack      = Array.isArray(save.backpack)      ? save.backpack.map(it => ({ ...it }))    : [];
   completedUses = Array.isArray(save.completedUses) ? save.completedUses.map(u => ({ ...u })) : [];
-  dishesMade    = Array.isArray(save.dishesMade)    ? [...save.dishesMade]                      : [];
-  customRecipes = cleanCustomRecipes(save.customRecipes);
-  resetDraftRecipe();
-  strengthBoost = Math.max(0, Number(save.strengthBoost) || 0);
-  swordRating   = savedSwordRating(save);
-  bossWins      = Math.max(0, Math.floor(Number(save.bossWins) || 0));
-  bankBalance   = savedBankBalance(save);
+  loadSaveFields(save);
   // v2: maps object keyed by map path
   if (save.maps) {
     allMapSaves = {};

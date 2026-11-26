@@ -11,7 +11,7 @@ function mpLoadSave() {
 function mpWriteSave() {
   try {
     localStorage.setItem(mpSaveKey(), JSON.stringify({
-      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, dishesMade, customRecipes, strengthBoost, swordRating, bossWins, bankBalance
+      version: SAVE_VERSION, currentMap: currentMapPath, backpack, completedUses, ...saveFieldValues()
     }));
   } catch (e) { console.warn('Failed to write save', e); }
 }

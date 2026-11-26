@@ -34,7 +34,6 @@ const HOTSPOT_CAPACITY = 3;
 const SAVE_VERSION = 2;
 let backpack = [];                                  // up to BACKPACK_CAPACITY items
 let hotspotItems = {};                              // hotspotId -> item[]
-let bankBalance = 0;                                // dollars kept at the Camp Bank (saved per camper)
 let backpackOpen = false;
 let backpackSelection = { row: 'backpack', col: 0 };
 let backpackActionButton = 0;                       // index of focused button in action modal

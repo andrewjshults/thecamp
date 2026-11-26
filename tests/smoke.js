@@ -261,6 +261,18 @@ async function backToPlaying(tab) {
   throw new Error(`[${tab.name}] stuck in state ${await tab.state()}`);
 }
 
+// Every save in localStorage, with object keys sorted (the order a save's
+// fields are written in doesn't matter)
+const SAVES_SORTED = `(() => {
+  const sort = v => Array.isArray(v) ? v.map(sort) : v && typeof v === 'object'
+    ? Object.fromEntries(Object.keys(v).sort().map(k => [k, sort(v[k])])) : v;
+  const out = {};
+  for (const k of Object.keys(localStorage).sort()) {
+    try { out[k] = sort(JSON.parse(localStorage.getItem(k))); } catch (_) { out[k] = localStorage.getItem(k); }
+  }
+  return out;
+})()`;
+
 // ---------------------------------------------------------------- scenarios
 async function singlePlayer(context) {
   const tab = await newTab(context, 'solo', 12345);
@@ -353,15 +365,23 @@ async function singlePlayer(context) {
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
 
+  // Some progress to save, so resuming has something to bring back
+  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; dishesMade = ['sandwich'];
+    customRecipes = [{ id: 'custom_1', name: 'Tomato Surprise', needs: ['tomato', 'bread'], map: 'assets/camp_kitchen.json' }];
+    completedUses = [{ hotspotId: 'tree', hotspotName: 'Tree', itemId: 'rope', itemName: 'Rope', itemEmoji: '🪢', text: 'Climbed!' }];
+    backpack.push({ id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }); writeSave();`);
   await tab.key('Escape');
   await tab.key('y');
   await tab.until('state === GameState.CHARACTER_SELECT');
+  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; dishesMade = []; customRecipes = []`);
   await tab.key('Enter');
   await tab.until('state === GameState.RESUME_PROMPT');
   await tab.shot('resume-prompt');
   await tab.key('r');
   await tab.until('state === GameState.PLAYING');
-  tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)') });
+  tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
+    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, bossWins, bankBalance })`),
+    save: await tab.ev(SAVES_SORTED) });
   await tab.page.close();
 }
 
@@ -416,6 +436,12 @@ async function multiPlayer(browser) {
     const bLeft = await b.ev(`(mp.items[currentMapPath][${JSON.stringify(pick.hs)}] || []).map(i => i.id)`);
     log('multiplayer: A took', pick.id, 'from', pick.hs, '→ in A\'s backpack:', aHas, '— left for B:', bLeft);
     if (!aHas) errors.push('[mp] picked-up item did not reach the backpack');
+    const saves = await a.ev(SAVES_SORTED);
+    const mine = Object.entries(saves).find(([k]) => k.startsWith('louisas-game:mp:'));
+    if (!mine || !mine[1].backpack.some(i => i.id === pick.id)) errors.push('[mp] the world save is missing the item');
+    if (mine) for (const k of ['swordRating', 'bankBalance', 'bossWins', 'strengthBoost', 'dishesMade', 'customRecipes']) {
+      if (!(k in mine[1])) errors.push(`[mp] the world save is missing ${k}`);
+    }
   }
   await context.close();
 }
