@@ -382,7 +382,69 @@ async function singlePlayer(context) {
   tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
     values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, bossWins, bankBalance })`),
     save: await tab.ev(SAVES_SORTED) });
+  await taps(tab);
   await tab.page.close();
+}
+
+// Clicking / tapping instead of keys (the same code handles touch)
+async function taps(tab) {
+  const click = async (xy, what) => {
+    const p = await tab.ev(xy);
+    await tab.page.mouse.click(p.x, p.y);
+    await tab.run(300);
+    tab.note({ tap: what, state: await tab.state() });
+  };
+  const centre = r => `(() => { const r = ${r}; return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; })()`;
+  const playerOnScreen = `({ x: player.x - camera.x, y: player.y - player.height / 2 - camera.y })`;
+
+  await tab.ev('switchMap("assets/game_design.json", null)');
+  await tab.until('state === GameState.PLAYING && currentMapPath === "assets/game_design.json"');
+  await tab.run(2500);
+  // Tap the map: walk there
+  await click('({ x: 300, y: 500 })', 'walk');
+  await tab.run(2000);
+  tab.note({ tap: 'walked', x: await tab.ev('Math.round(player.x)'), y: await tab.ev('Math.round(player.y)') });
+  // Stand at a hotspot with items, tap yourself: its dialog opens; tap again: it closes
+  await tab.ev(`(() => { const o = interactiveObjects.find(o => (hotspotItems[o.id] || []).length && !o.targetMap && !o.station && !o.bank);
+    player.x = o.x + o.width / 2; player.y = o.y + o.height / 2; tapTarget = null; })()`);
+  await tab.run(2500);
+  await click(playerOnScreen, 'tap self at hotspot');
+  await tab.shot('tap-interaction');
+  await click('({ x: 20, y: 400 })', 'tap to close dialog');
+  // Backpack: open it, tap the hotspot's first item, then the first button
+  await tab.key('b');
+  await tab.run(100);
+  await click(centre('backpackSlotRects.hotspot[0]'), 'tap item at hotspot');
+  await tab.shot('tap-item-action');
+  if (await tab.state() === 'itemAction') {
+    await click(centre('itemActionButtonRects.find(r => !r.disabled)'), 'tap item button');
+    tab.note({ tap: 'after item button', backpack: await tab.ev('backpack.map(i => i.id)') });
+  }
+  await backToPlaying(tab);
+  if (await tab.ev('backpackOpen')) await tab.key('b');
+  // Menu → No, then Menu → Yes
+  const confirmBtn = yes => `(() => { const panelH = 150, panelY = canvas.height / 2 - panelH / 2;
+    return { x: canvas.width / 2 + (${yes} ? -50 : 50), y: panelY + panelH - 34 }; })()`;
+  await tab.key('Escape');
+  await click(confirmBtn(false), 'confirm: no');
+  await tab.key('Escape');
+  await click(confirmBtn(true), 'confirm: yes');
+  // Character select: tap Blue Explorer (no save → straight in), then back out
+  const charAt = i => `(() => { for (let y = 0; y < canvas.height; y += 10) for (let x = 0; x < canvas.width; x += 10)
+    if (getHoveredCharacter(x, y) === ${i}) return { x: x + 15, y: y + 15 }; return null; })()`;
+  await click(charAt(3), 'pick a camper');
+  await tab.until('state === GameState.PLAYING');
+  await tab.key('Escape');
+  await tab.key('y');
+  // Green Girl has a save: tap Resume
+  await click(charAt(0), 'pick a camper with a save');
+  await tab.shot('tap-resume-prompt');
+  await click(centre(`resumePromptButtonRects().find(b => b.id === 'resume')`), 'resume');
+  await tab.until('state === GameState.PLAYING');
+  await tab.key('Escape');
+  await tab.key('y');
+  await click(centre('charSelectBackRect()'), 'back to the menu');
+  await tab.until('state === GameState.MODE_SELECT');
 }
 
 async function multiPlayer(browser) {

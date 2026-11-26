@@ -9,6 +9,13 @@
 //   "bank": { "teller": "Penny", "emoji": "🦉" }
 const BANK_COIN = { id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 };
 const bankModalEl = document.getElementById('bankModal');
+// The teller's balance / deposit / withdraw pop-up (HTML #bankModal)
+registerGameState('BANK_MODAL', {
+  draw: () => drawGame(),
+  onKey: e => { if (e.key === 'Escape') closeBank(); },
+  inWorld: true,
+  inputs: [bankModalEl]
+});
 const bankSaysEl = document.getElementById('bankSays');
 let bankModalOpenedAt = 0;
 let bankTeller = null;   // the teller hotspot's `bank` settings while the pop-up is open

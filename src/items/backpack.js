@@ -211,3 +211,30 @@ function handleItemActionKey(e) {
     if (b && !b.disabled) performItemAction(b.id);
   }
 }
+
+function itemActionTap(screenX, screenY) {
+  for (const r of itemActionButtonRects) {
+    if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+      if (!r.disabled) performItemAction(r.id);
+      return;
+    }
+  }
+}
+registerGameState('ITEM_ACTION', {
+  draw: () => { drawItemActionDialog(); drawJournal(); drawCompletionToast(); },
+  onKey: e => handleItemActionKey(e),
+  onTap: (x, y) => itemActionTap(x, y),
+  inWorld: true
+});
+
+function itemUseKey(e) {
+  if (e.key === 'Escape' || e.key === ' ') {
+    closeItemUse();
+  }
+}
+registerGameState('USING_ITEM', {
+  draw: () => drawItemUseDialog(),
+  onKey: e => itemUseKey(e),
+  onTap: (x, y) => closeItemUse(x, y),
+  inWorld: true
+});

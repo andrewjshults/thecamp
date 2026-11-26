@@ -12,6 +12,12 @@ const talkInput = document.getElementById('talkInput');
 const talkSay   = document.getElementById('talkSay');
 const talkBye   = document.getElementById('talkBye');
 const talkTo    = document.getElementById('talkTo');
+registerGameState('TALKING', {
+  draw: () => drawGame(),
+  onKey: e => { if (e.key === 'Escape') endConversation(); },
+  inWorld: true,
+  inputs: [talkInput]
+});
 
 const NPC_TALK_RANGE = 170;          // map px between feet to be able to chat
 const conversations  = {};           // character name → [{ speaker:'player'|'npc', text }]

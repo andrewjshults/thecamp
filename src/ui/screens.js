@@ -180,3 +180,34 @@ function drawStar(x, y, size) {
   ctx.fill();
   ctx.restore();
 }
+
+registerGameState('LOADING', {
+  draw: () => drawLoadingScreen()
+});
+
+function characterSelectKey(e) {
+  if (e.key === 'ArrowLeft') {
+    selectedCharIndex = (selectedCharIndex - 1 + characters.length) % characters.length;
+  }
+  if (e.key === 'ArrowRight') {
+    selectedCharIndex = (selectedCharIndex + 1) % characters.length;
+  }
+  if (e.key === 'Enter' || e.key === ' ') {
+    selectCharacter(selectedCharIndex);
+  }
+  if (e.key === 'Escape') backToModeSelect();
+}
+function characterSelectTap(screenX, screenY) {
+  const b = charSelectBackRect();
+  if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
+    backToModeSelect();
+    return;
+  }
+  const idx = getHoveredCharacter(screenX, screenY);
+  if (idx >= 0) selectCharacter(idx);
+}
+registerGameState('CHARACTER_SELECT', {
+  draw: () => drawCharacterSelect(),
+  onKey: e => characterSelectKey(e),
+  onTap: (x, y) => characterSelectTap(x, y)
+});

@@ -345,6 +345,13 @@ function doStation(obj) {
 
 // --- Kitchen pop-ups (HTML #kitchenModal) ---
 const kitchenModalEl = document.getElementById('kitchenModal');
+// The freestyle / name-your-recipe / all-recipes pop-up (HTML #kitchenModal)
+registerGameState('KITCHEN_MODAL', {
+  draw: () => drawGame(),
+  onKey: e => { if (e.key === 'Escape') closeKitchenModal(); },
+  inWorld: true,
+  inputs: [kitchenModalEl]
+});
 const kmNameInput = document.getElementById('kmNameInput');
 const kmNameGo = document.getElementById('kmNameGo');
 let kitchenModalOpenedAt = 0;

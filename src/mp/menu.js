@@ -2,6 +2,10 @@
 const menuEl = document.getElementById('menu');
 const MENU_SCREENS = ['menuMode', 'menuMulti', 'menuJoin', 'menuBusy', 'menuEmpty'];
 let menuScreen = null;
+registerGameState('MODE_SELECT', {
+  draw: () => drawMenuBackdrop(),
+  inputs: [menuEl]
+});
 
 function showMenu(id) {
   menuEl.hidden = false;

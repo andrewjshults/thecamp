@@ -1,9 +1,9 @@
 // --- Input ---
 const keys = {};
 window.addEventListener('keydown', (e) => {
-  // Typing in the talk bar must not drive the game (its own listener handles Esc)
-  if (e.target === talkInput || menuEl.contains(e.target) || kitchenModalEl.contains(e.target) ||
-      bankModalEl.contains(e.target)) return;
+  // Typing in the talk bar or an HTML pop-up must not drive the game (their own
+  // listeners handle Esc). Each state lists those elements as its `inputs`.
+  if (isTypingInGameInput(e.target)) return;
   keys[e.key] = true;
   if (e.key === ' ') {
     e.preventDefault();
@@ -14,89 +14,9 @@ window.addEventListener('keydown', (e) => {
     devMode ? exitDevMode() : enterDevMode();
     return;
   }
-  if (state === GameState.CHARACTER_SELECT) {
-    if (e.key === 'ArrowLeft') {
-      selectedCharIndex = (selectedCharIndex - 1 + characters.length) % characters.length;
-    }
-    if (e.key === 'ArrowRight') {
-      selectedCharIndex = (selectedCharIndex + 1) % characters.length;
-    }
-    if (e.key === 'Enter' || e.key === ' ') {
-      selectCharacter(selectedCharIndex);
-    }
-    if (e.key === 'Escape') backToModeSelect();
-  } else if (state === GameState.RESUME_PROMPT) {
-    if (e.key === 'Enter' || e.key === 'r' || e.key === 'R') {
-      resumePendingSave();
-    } else if (e.key === 'f' || e.key === 'F') {
-      startFreshSave();
-    } else if (e.key === 'Escape') {
-      pendingResumeSave = null;
-      player.character = null;
-      state = GameState.CHARACTER_SELECT;
-    }
-  } else if (state === GameState.CONFIRM_DIALOG) {
-    if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
-      goToCharacterSelect();
-    } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
-      state = GameState.PLAYING;
-    }
-  } else if (state === GameState.INTERACTING) {
-    if (e.key === 'Escape' || e.key === ' ') {
-      closeInteraction();
-    }
-  } else if (state === GameState.ITEM_ACTION) {
-    handleItemActionKey(e);
-  } else if (state === GameState.TALKING) {
-    if (e.key === 'Escape') endConversation();
-  } else if (state === GameState.KITCHEN_MODAL) {
-    if (e.key === 'Escape') closeKitchenModal();
-  } else if (state === GameState.BANK_MODAL) {
-    if (e.key === 'Escape') closeBank();
-  } else if (state === GameState.FIGHTING) {
-    handleFightKey(e);
-  } else if (state === GameState.USING_ITEM) {
-    if (e.key === 'Escape' || e.key === ' ') {
-      closeItemUse();
-    }
-  } else if (state === GameState.PLAYING) {
-    if (e.key === 'j' || e.key === 'J') {
-      journalOpen = !journalOpen;
-      if (journalOpen) { journalScroll = 0; journalScrollTarget = 0; }
-      return;
-    }
-    if (e.key === 'Escape' && journalOpen) {
-      journalOpen = false;
-      return;
-    }
-    if (e.key === 'b' || e.key === 'B') {
-      toggleBackpack();
-      return;
-    }
-    if (e.key === 'r' || e.key === 'R') {
-      player.rotation = (player.rotation + 90) % 360;
-      return;
-    }
-    if (backpackOpen) {
-      handleBackpackKey(e);
-      return;
-    }
-    if ((e.key === 't' || e.key === 'T') && nearbyNpc) {
-      e.preventDefault();  // don't type the "t" into the talk box we're about to focus
-      startConversation(nearbyNpc);
-      return;
-    }
-    if (e.key === ' ') {
-      // Space next to the Blob picks a fight; next to a friend (with no
-      // hotspot to use here) it starts a chat
-      if (nearBoss) engageBoss();
-      else if (!nearbyObject && nearbyNpc) startConversation(nearbyNpc);
-      else handleInteract();
-    }
-    if (e.key === 'Escape') {
-      state = GameState.CONFIRM_DIALOG;
-    }
-  }
+  // Everything else depends on what's on screen (see registerGameState)
+  const handlers = gameStateHandlers();
+  if (handlers.onKey) handlers.onKey(e);
 });
 window.addEventListener('keyup', (e) => {
   keys[e.key] = false;

@@ -136,3 +136,10 @@ function startFight() {
   }
   state = GameState.FIGHTING;
 }
+
+registerGameState('FIGHTING', {
+  draw: () => { updateFight(); drawFight(); },
+  onKey: e => handleFightKey(e),
+  onTap: () => { if (fight && fight.phase === 'result') endFight(); },
+  inWorld: true
+});

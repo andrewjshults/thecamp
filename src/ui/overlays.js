@@ -362,3 +362,57 @@ function drawConfirmDialog() {
   ctx.fillStyle = 'white';
   ctx.fillText('No (N)', noBtnX + btnW / 2, btnY + 24);
 }
+
+function resumePromptKey(e) {
+  if (e.key === 'Enter' || e.key === 'r' || e.key === 'R') {
+    resumePendingSave();
+  } else if (e.key === 'f' || e.key === 'F') {
+    startFreshSave();
+  } else if (e.key === 'Escape') {
+    pendingResumeSave = null;
+    player.character = null;
+    state = GameState.CHARACTER_SELECT;
+  }
+}
+function resumePromptTap(screenX, screenY) {
+  const btns = resumePromptButtonRects();
+  for (const b of btns) {
+    if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
+      if (b.id === 'resume') resumePendingSave();
+      else if (b.id === 'fresh') startFreshSave();
+      return;
+    }
+  }
+}
+registerGameState('RESUME_PROMPT', {
+  draw: () => drawResumePrompt(),
+  onKey: e => resumePromptKey(e),
+  onTap: (x, y) => resumePromptTap(x, y)
+});
+
+function confirmDialogKey(e) {
+  if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
+    goToCharacterSelect();
+  } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+    state = GameState.PLAYING;
+  }
+}
+function confirmDialogTap(screenX, screenY) {
+  const panelW = Math.min(400, canvas.width - 40);
+  const panelH = 150;
+  const panelY = canvas.height / 2 - panelH / 2;
+  const btnW = 80, btnH = 36, btnY = panelY + panelH - 52, btnGap = 20;
+  const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
+  const noBtnX = canvas.width / 2 + btnGap / 2;
+  if (screenX >= yesBtnX && screenX <= yesBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
+    goToCharacterSelect();
+  } else if (screenX >= noBtnX && screenX <= noBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
+    state = GameState.PLAYING;
+  }
+}
+registerGameState('CONFIRM_DIALOG', {
+  draw: () => drawConfirmDialog(),
+  onKey: e => confirmDialogKey(e),
+  onTap: (x, y) => confirmDialogTap(x, y),
+  inWorld: true
+});

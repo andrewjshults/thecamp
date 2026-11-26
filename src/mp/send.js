@@ -14,11 +14,7 @@ function mpSend(message, byPost) {
 
 // Is our camper out in the world (visible to friends)?
 function mpInWorld() {
-  return !!player.character && [
-    GameState.PLAYING, GameState.TALKING, GameState.INTERACTING, GameState.ITEM_ACTION,
-    GameState.USING_ITEM, GameState.CONFIRM_DIALOG, GameState.FIGHTING, GameState.KITCHEN_MODAL,
-    GameState.BANK_MODAL
-  ].includes(state);
+  return !!player.character && !!gameStateHandlers().inWorld;
 }
 
 function mpSendPos(force) {

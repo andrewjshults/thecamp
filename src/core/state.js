@@ -9,10 +9,10 @@ const GameState = {
   ITEM_ACTION: 'itemAction',
   USING_ITEM: 'usingItem',
   CONFIRM_DIALOG: 'confirmDialog',
-  TALKING: 'talking',
-  KITCHEN_MODAL: 'kitchenModal',      // freestyle / name-your-recipe / all-recipes pop-up (HTML #kitchenModal)
-  BANK_MODAL: 'bankModal',            // the bank teller's balance / deposit / withdraw pop-up (HTML #bankModal)
-  FIGHTING: 'fighting'
+  TALKING: 'talking'
+  // ...and the ones features add with registerGameState (KITCHEN_MODAL,
+  // BANK_MODAL, FIGHTING). Each state's drawing, keys and taps are registered
+  // by the file that owns it.
 };
 
 let state = GameState.LOADING;

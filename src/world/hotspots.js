@@ -56,146 +56,9 @@ function handleCanvasTap(screenX, screenY) {
     if (canvas.width < 600) { journalOpen = false; return; }
   }
 
-  if (state === GameState.USING_ITEM) {
-    closeItemUse();
-    return;
-  }
-
-  if (state === GameState.FIGHTING) {
-    if (fight && fight.phase === 'result') endFight();
-    return;
-  }
-
-  if (state === GameState.CHARACTER_SELECT) {
-    const b = charSelectBackRect();
-    if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
-      backToModeSelect();
-      return;
-    }
-    const idx = getHoveredCharacter(screenX, screenY);
-    if (idx >= 0) selectCharacter(idx);
-  } else if (state === GameState.RESUME_PROMPT) {
-    const btns = resumePromptButtonRects();
-    for (const b of btns) {
-      if (screenX >= b.x && screenX <= b.x + b.w && screenY >= b.y && screenY <= b.y + b.h) {
-        if (b.id === 'resume') resumePendingSave();
-        else if (b.id === 'fresh') startFreshSave();
-        return;
-      }
-    }
-  } else if (state === GameState.CONFIRM_DIALOG) {
-    const panelW = Math.min(400, canvas.width - 40);
-    const panelH = 150;
-    const panelY = canvas.height / 2 - panelH / 2;
-    const btnW = 80, btnH = 36, btnY = panelY + panelH - 52, btnGap = 20;
-    const yesBtnX = canvas.width / 2 - btnW - btnGap / 2;
-    const noBtnX = canvas.width / 2 + btnGap / 2;
-    if (screenX >= yesBtnX && screenX <= yesBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
-      goToCharacterSelect();
-    } else if (screenX >= noBtnX && screenX <= noBtnX + btnW && screenY >= btnY && screenY <= btnY + btnH) {
-      state = GameState.PLAYING;
-    }
-  } else if (state === GameState.INTERACTING) {
-    // Item at this hotspot: pick it up, stay in dialog
-    for (const r of interactionHereRects) {
-      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
-        interactionHintText = pickUpHotspotItem(currentInteraction.id, r.index)
-          ? `${r.item.emoji} ${r.item.name} is in your backpack!`
-          : 'Your backpack is full!';
-        return;
-      }
-    }
-    // Dimmed item tap: show location hint, stay in dialog
-    for (const r of interactionDimmedRects) {
-      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
-        interactionHintText = `Find the ${r.item.emoji} ${r.item.name} at the ${r.location}!`;
-        return;
-      }
-    }
-    // Usable item tap: use it
-    for (const r of interactionUseRects) {
-      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
-        closeInteraction();
-        useItem(r.item);
-        return;
-      }
-    }
-    closeInteraction();
-  } else if (state === GameState.ITEM_ACTION) {
-    for (const r of itemActionButtonRects) {
-      if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
-        if (!r.disabled) performItemAction(r.id);
-        return;
-      }
-    }
-  } else if (state === GameState.PLAYING) {
-    // Backpack overlay hit-tests (slots) take precedence when open
-    if (backpackOpen) {
-      const allRects = [
-        ...backpackSlotRects.hotspot.map(r => ({ ...r, row: 'hotspot' })),
-        ...backpackSlotRects.backpack.map(r => ({ ...r, row: 'backpack' }))
-      ];
-      for (const r of allRects) {
-        if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
-          backpackSelection = { row: r.row, col: r.col };
-          // Open action modal when player is inside a hotspot and slot has an item
-          if (nearbyObject) {
-            const item = r.row === 'backpack'
-              ? backpack[r.col]
-              : (hotspotItems[nearbyObject.id] || [])[r.col];
-            if (item) openItemAction();
-          }
-          return;
-        }
-      }
-      // Tap outside any slot but still within the overlay band closes the backpack
-      const overlayTop = backpackOverlayTop();
-      if (screenY >= overlayTop) {
-        backpackOpen = false;
-        return;
-      }
-    }
-
-    // Tapping the Blob when it's close picks a fight
-    if (nearBoss) {
-      const bp = mapBossPos();
-      const bh = mapBossHeight();
-      if (Math.hypot(screenX - (bp.x - camera.x), screenY - (bp.y - bh / 2 - camera.y)) < bh * 0.7) {
-        engageBoss();
-        return;
-      }
-    }
-
-    // Tapping a nearby friend starts a conversation (tapping a far one walks there)
-    const tappedNpc = npcAtScreenPoint(screenX, screenY);
-    if (tappedNpc && tappedNpc === nearbyNpc) {
-      startConversation(tappedNpc);
-      return;
-    }
-
-    // Tapping the character sprite triggers interaction; tapping elsewhere walks there
-    const spriteScreenX = player.x - camera.x;
-    const spriteScreenY = player.y - player.height - camera.y;
-    const hitDist = Math.hypot(screenX - spriteScreenX, screenY - (spriteScreenY + player.height / 2));
-    const onCharacter = hitDist < 108;
-    const now = performance.now();
-    if (onCharacter && nearbyObject) {
-      handleInteract();
-      lastCharTapTime = now;
-    } else if (onCharacter) {
-      if (now - lastCharTapTime < 350) {
-        toggleBackpack();
-        lastCharTapTime = 0;
-      } else {
-        lastCharTapTime = now;
-      }
-    } else {
-      const mapX = screenX + camera.x;
-      const mapY = screenY + camera.y;
-      tapTarget = { x: mapX, y: mapY };
-      tapRipple = { x: screenX, y: screenY, age: 0 };
-    }
-  }
+  // Everything else depends on what's on screen (see registerGameState)
+  const handlers = gameStateHandlers();
+  if (handlers.onTap) handlers.onTap(screenX, screenY);
 }
 
 // --- Interaction handling ---
@@ -247,3 +110,42 @@ function closeInteraction() {
   currentInteraction = null;
   interactionHintText = null;
 }
+
+function interactionKey(e) {
+  if (e.key === 'Escape' || e.key === ' ') {
+    closeInteraction();
+  }
+}
+function interactionTap(screenX, screenY) {
+  // Item at this hotspot: pick it up, stay in dialog
+  for (const r of interactionHereRects) {
+    if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+      interactionHintText = pickUpHotspotItem(currentInteraction.id, r.index)
+        ? `${r.item.emoji} ${r.item.name} is in your backpack!`
+        : 'Your backpack is full!';
+      return;
+    }
+  }
+  // Dimmed item tap: show location hint, stay in dialog
+  for (const r of interactionDimmedRects) {
+    if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+      interactionHintText = `Find the ${r.item.emoji} ${r.item.name} at the ${r.location}!`;
+      return;
+    }
+  }
+  // Usable item tap: use it
+  for (const r of interactionUseRects) {
+    if (screenX >= r.x && screenX <= r.x + r.w && screenY >= r.y && screenY <= r.y + r.h) {
+      closeInteraction();
+      useItem(r.item);
+      return;
+    }
+  }
+  closeInteraction();
+}
+registerGameState('INTERACTING', {
+  draw: () => { drawInteraction(); drawJournal(); drawCompletionToast(); },
+  onKey: e => interactionKey(e),
+  onTap: (x, y) => interactionTap(x, y),
+  inWorld: true
+});
