@@ -238,7 +238,9 @@ the main map and skip portals, kitchen stations and the cave. In multiplayer
 the camper who picked it up drops the replacement as a normal `drop`. Every 15s
 a check drops one if none is left (in multiplayer only the lowest player id
 checks, and only after two misses in a row). Picking a sword up re-arms you at
-100 (`onSwordPickedUp`). A
+100 (`onSwordPickedUp`). Items at hotspots are normally only listed in the
+hotspot's pop-up, so a sword lying at one is also drawn on the map, bobbing and
+glowing (`drawLyingSwords`). A
 sword picked up while yours still works stays in the backpack as a spare, and
 it's used automatically when yours wears out. Until you have a sword, the Blob
 won't chase you or start a fight by catching you. Pressing Space at the cave or

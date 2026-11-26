@@ -4535,6 +4535,7 @@ function drawGame() {
   drawChalkboards();
   drawBossCave();
   drawStations();
+  drawLyingSwords();
   if (doorOpening) drawDoorOpening();
 
   // Draw interaction highlights
@@ -7027,6 +7028,36 @@ function swordNeededHint() {
       ? `🗡️ You need a sword to fight the Blob! There's one right here ${mapWhere(at.cfg)}. Look around!`
       : `🗡️ You need a sword to fight the Blob! I think there's one ${mapWhere(at.cfg)}.`);
   });
+}
+
+// Items at hotspots are only listed in the hotspot's dialog, so a sword lying
+// at one is drawn on the map too (bobbing and sparkling) so campers can find it
+function drawLyingSwords() {
+  const now = performance.now();
+  const size = 44 * SPRITE_SCALE / BASE_SPRITE_SCALE;
+  for (const obj of interactiveObjects) {
+    if (!(hotspotItems[obj.id] || []).some(it => it.id === SWORD_ITEM.id)) continue;
+    const x = obj.x + obj.width / 2;
+    const y = obj.y + obj.height * 0.82 - Math.abs(Math.sin(now / 350)) * size * 0.2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x, obj.y + obj.height * 0.82 + size * 0.45, size * 0.45, size * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 0.9);
+    glow.addColorStop(0, `rgba(255, 241, 118, ${0.65 + 0.2 * Math.sin(now / 250)})`);
+    glow.addColorStop(1, 'rgba(255, 241, 118, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.9, 0, Math.PI * 2);
+    ctx.fill();
+    drawFoodEmoji(SWORD_ITEM.emoji, x, y, size);
+    ctx.restore();
+    for (let i = 0; i < 3; i++) {
+      const a = now / 600 + i * 2.1;
+      drawFoodEmoji('✨', x + Math.cos(a) * size * 0.7, y + Math.sin(a) * size * 0.5, size * 0.35, 0.5 + 0.5 * Math.sin(now / 180 + i));
+    }
+  }
 }
 
 // One swing (n = SWORD_SWING_WEAR) or one hit (n = SWORD_HIT_WEAR)
