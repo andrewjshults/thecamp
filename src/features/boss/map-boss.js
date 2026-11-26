@@ -20,7 +20,7 @@ function caveMouth() {
   return { x: c.x + c.width * 0.5, y: c.y + c.height * 0.97 };
 }
 function mapBossVisible() {
-  return !!(bossCave() && mapBoss.map === currentMapPath &&
+  return !!(bossCave() && !foesOff() && mapBoss.map === currentMapPath &&
     mapBoss.where !== 'home' && mapBoss.where !== 'fighting');
 }
 function bossShout(text, dur) {
@@ -36,10 +36,17 @@ function shoutMouth(sh, now) {
 
 function updateMapBoss() {
   nearBoss = false;
-  if (mp.active && !mpRunsBoss()) { mpBossCatchCheck(); return; }
+  if (mp.active && !mpRunsBoss()) { if (!foesOff()) mpBossCatchCheck(); return; }
   if (!bossCave() || !player.character) return;
   const now = performance.now();
   if (mapBoss.map !== currentMapPath) resetMapBoss();
+  // Bosses off (exploration mode): on your own, it stays in its cave (and
+  // comes out a while after they're back on). In a multiplayer world it's
+  // shared, so it carries on for your friends but ignores you (below).
+  if (foesOff() && !mp.active) {
+    Object.assign(mapBoss, { where: 'home', homeUntil: now + 15000, shout: null, target: null, moving: false });
+    return;
+  }
   const dt = Math.min(50, now - (mapBoss.lastT || now));
   mapBoss.lastT = now;
   if (mapBoss.shout && now - mapBoss.shout.start > mapBoss.shout.dur) mapBoss.shout = null;
@@ -64,7 +71,7 @@ function updateMapBoss() {
   const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
   // In a multiplayer world it chases whichever camper is closest
   // (campers without a sword aren't worth chasing)
-  const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING && hasSword() ? dist : Infinity };
+  const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING && hasSword() && !foesOff() ? dist : Infinity };
   for (const rp of mpPlayersHere()) {
     const d = Math.hypot(rp.x - pos.x, rp.y - pos.y);
     if (!rp.fighting && rp.sword !== false && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
@@ -106,6 +113,7 @@ function updateMapBoss() {
     mapBoss.moving = true;
   }
 
+  if (foesOff()) return;
   nearBoss = dist < 190 * k;
   // Caught you! (Not while it's heading home for a rest.)
   if (mapBoss.where === 'out' && dist < 55 * k && !doorOpening) engageBoss(true);
@@ -114,7 +122,7 @@ function updateMapBoss() {
 // The Blob yells something, then the fight view opens (see update())
 // `auto`: the Blob caught you (rather than you picking the fight)
 function engageBoss(auto) {
-  if (state !== GameState.PLAYING || bossEngage || doorOpening || !bossCave()) return;
+  if (state !== GameState.PLAYING || bossEngage || doorOpening || !bossCave() || foesOff()) return;
   if (swordRating <= 0 && !equipSpareSword()) {
     if (!auto) swordNeededHint();     // no sword: the Blob leaves you alone
     return;
@@ -208,8 +216,9 @@ registerMapUpdate(10, () => updateMapBoss());
 onGameEvent('camperChosen', () => resetMapBoss());
 // Walked off the map while the Blob (or another foe) was yelling at you: the
 // fight's off (it would otherwise start on the next map)
-onGameEvent('mapLeave', () => {
+function cancelBossEngage() {
   if (!bossEngage) return;
   if (!bossEngage.foe) mpBossFight(false, false);
   bossEngage = null;
-});
+}
+onGameEvent('mapLeave', () => cancelBossEngage());

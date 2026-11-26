@@ -369,6 +369,7 @@ async function singlePlayer(context) {
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
   await secondCamp(tab);
+  await exploration(tab);
 
   // Some progress to save, so resuming has something to bring back
   await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; dishesMade = ['sandwich'];
@@ -460,6 +461,32 @@ async function secondCamp(tab) {
   await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`, 'back at the first camp');
   tab.note({ step: 'l2-sent-back', open: await tab.ev('level2Open') });
   await tab.ev('swordKind = "plain"; swordRating = 100; writeSave()');
+}
+
+// Exploration mode (E): no bosses, and the cave passage opens without beating the Blob
+async function exploration(tab) {
+  const L2 = 'assets/camp_level2.json';
+  const standAt = id => tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === ${JSON.stringify(id)});
+    player.x = o.x + o.width / 2; player.y = o.y + o.height / 2; tapTarget = null; })()`);
+  await tab.key('e');
+  await standAt('cave');
+  await tab.run(300);
+  await tab.shot('explore-on');
+  tab.note({ step: 'explore-on', on: await tab.ev('exploreMode'), open: await tab.ev('level2Open'),
+    blob: await tab.ev('mapBossVisible()') });
+  await tab.key(' ');
+  await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(L2)}`, 'the second camp, exploring');
+  // The Marshmallows stay home, even right next to their lair
+  await tab.ev('mallows.graceUntil = 0');
+  await standAt('blob_zone');
+  await tab.run(3000);
+  tab.note({ step: 'explore-l2', state: await tab.state(), out: await tab.ev('mallowsOut().length') });
+  await tab.shot('explore-l2');
+  await tab.key('e');
+  await tab.run(300);
+  tab.note({ step: 'explore-off', on: await tab.ev('exploreMode') });
+  await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
+  await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`);
 }
 
 // Clicking / tapping instead of keys (the same code handles touch)

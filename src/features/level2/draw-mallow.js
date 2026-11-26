@@ -327,7 +327,7 @@ function drawFightMallow(v, f, now) {
 // hole for each Marshmallow that's home
 function drawMallowLair() {
   const lair = mallowLair();
-  if (!lair) return;
+  if (!lair || foesOff()) return;
   const now = performance.now();
   const cx = lair.x + lair.width / 2, cy = lair.y + lair.height * 0.52;
   const r = lair.width * 0.14;
