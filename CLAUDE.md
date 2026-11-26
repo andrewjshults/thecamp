@@ -183,7 +183,9 @@ The main map has a `boss` object and a `cave` hotspot (top-right corner). The
 cave is drawn over the map in code (`drawBossCave`), and the Blob (human head,
 fox body, sword in its tail — `drawBlob`) lives there. It comes out at random
 to roam, chases you when you're close, and starts a fight if it catches you.
-You can also press Space at the cave or next to it (or tap it).
+You can also press Space at the cave or next to it (or tap it). After a fight
+it stays in its cave for a while (`bossRestMs`): 30–60s when it was beaten,
+30–50s otherwise.
 ```json
 "boss": {
   "name": "Glug Glub Blob", "aka": "I Eat You Blob",

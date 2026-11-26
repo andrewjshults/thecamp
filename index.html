@@ -6647,16 +6647,16 @@ function mpOnBossFight(m, from) {
     mapBoss.tfx = mapBoss.tfy = null;
     nearBoss = false;
   } else if (mapBoss.busyWith === from) {
-    mpBossGoHome();
+    mpBossGoHome(m.won);
   }
 }
 
-function mpBossGoHome() {
+function mpBossGoHome(beaten) {
   mapBoss.busyWith = null;
   mapBoss.where = 'home';
   mapBoss.shout = null;
   mapBoss.tfx = mapBoss.tfy = null;
-  mapBoss.homeUntil = performance.now() + randBetween(30000, 50000);
+  mapBoss.homeUntil = performance.now() + bossRestMs(!!beaten);
 }
 
 // Runs even when the tab is in the background (rAF pauses there)
@@ -6813,6 +6813,13 @@ const mapBoss = {
   tfx: null, tfy: null,   // latest broadcast position (non-keepers glide to it)
   lastSid: null       // id of the last broadcast shout we showed
 };
+// How long the Blob stays in its cave after a fight: longer when it was beaten
+const BOSS_REST_BEATEN_MS = [30000, 60000];
+const BOSS_REST_MS = [30000, 50000];
+function bossRestMs(beaten) {
+  const [lo, hi] = beaten ? BOSS_REST_BEATEN_MS : BOSS_REST_MS;
+  return randBetween(lo, hi);
+}
 let bossEngage = null;  // { start } — the Blob is shouting; the fight view opens next
 let nearBoss = false;   // close enough to pick a fight
 
@@ -7896,7 +7903,7 @@ function endFight() {
   const won = fight.result && fight.result.won;
   fight = null;
   fightTouch = { left: false, right: false, block: false };
-  resetMapBoss(randBetween(30000, 50000));
+  resetMapBoss(bossRestMs(won));
   mpBossFight(false, won);
   state = GameState.PLAYING;
   kitchenToast(won ? 'The Blob runs home to its cave, sniffling. 🏆' : 'The Blob waddles home to its cave, full and happy. 😋');
