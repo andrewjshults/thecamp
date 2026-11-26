@@ -3641,7 +3641,7 @@ function doStation(obj) {
         eatDessert(f);
         break;
       }
-      if (!f.dish) { kitchenToast(`Raw ${f.name.toLowerCase()}? Yuck! Cook it or make a recipe first.`); break; }
+      if (!f.dish) { kitchenToast(`The ${f.name.toLowerCase()} isn't ready to eat yet. Cook it or make a recipe first!`); break; }
       heldItem = null;
       S.eating = { emoji: f.emoji, start: now };
       const dishes = kitchenDishes();
@@ -5766,7 +5766,7 @@ function mpOwnTakeResult(m, item) {
     return;
   }
   const taker = mp.players.get(mp.lastTaker[`${m.map}|${m.hs}|${m.item}`]);
-  mpToast(taker ? `Too slow! ${taker.name} grabbed it first! 😄` : 'Oops — that one is already gone!');
+  mpToast(taker ? `So close! ${taker.name} got it first. 😄` : 'Oops — that one is already gone!');
 }
 
 function mpOwnDropResult(m, item, ok) {
