@@ -141,15 +141,16 @@ function drawPeople() {
   const friends = mpPlayersHere();
   for (const rp of friends) people.push({ y: rp.y, draw: () => drawRemotePlayer(rp) });
   people.push({ y: player.y, draw: drawPlayerSprite });
-  if (mapBossVisible()) people.push({ y: mapBossPos().y, draw: drawMapBoss });
+  people.push(...mapPeopleExtras());     // the Blob and other foes (registerMapPeople)
   people.sort((a, b) => a.y - b.y);
   for (const p of people) p.draw();
-  // Hint over whoever you're next to: the Blob first, else a friend / NPC
-  const showBossHint = state === GameState.PLAYING && nearBoss && !bossEngage;
+  // Hint over whoever you're next to: the Blob (or another foe) first, else a friend / NPC
+  const foe = state === GameState.PLAYING && !bossEngage ? nearbyFoe() : null;
+  const showBossHint = !!foe;
   const hinting = state === GameState.PLAYING && !showBossHint ? nearbyNpc : null;
   for (const rp of friends) if (rp !== hinting) drawNameTag(rp);
   if (sidekick && hinting !== sidekick.npc && state !== GameState.TALKING) drawSidekickTag(sidekick.npc, '🤝 Sidekick');
   for (const sk of friendSidekicks) drawSidekickTag(sk, `🤝 ${sk.owner.name}'s sidekick`);
-  if (showBossHint) drawMapBossHint();
+  if (showBossHint) foe.drawHint();
   else if (hinting) drawNpcTalkHint(hinting);
 }

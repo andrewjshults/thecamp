@@ -5,6 +5,20 @@ the map, `cave.js`, `draw-blob.js`, `fight.js` starting a fight and tuning,
 `fight-moves.js` the duel, `fight-sidekick.js`, `fight-draw.js`),
 `src/features/sword.js`, `src/mp/boss-sync.js`, and `tools/fight-sim.js`.
 
+The Second Camp's bosses, the Marshmallows, use the same fight: see
+[level-two.md](level-two.md).
+
+**Who you fight is a foe** (`blobFoe()` for the Blob; `mallowFoe` in
+`src/features/level2/mallows.js`): `{ id, def, level, tune, label, intro,
+draw, arena, finish, end, after, begin }`, explained above `blobFoe` in
+`fight.js`. `startFight(foe)` (no foe: the Blob), `finishFight` calls
+`foe.finish` for the prize or penalty (`giveFightReward`,
+`gobbleBackpackCoins`) and then emits the `fightOver` game event, and
+`endFight` calls `foe.end` / `foe.after`. `bossEngage` (`{ start, foe }`)
+holds the moment before the fight view opens, and is called off if you leave
+the map (`mapLeave`). The Blob is hooked onto the map with `registerMapFoe`
+and `registerMapPeople`.
+
 The main map has a `boss` object and a `cave` hotspot (top-right corner). The
 cave is drawn over the map in code (`drawBossCave`), and the Blob (human head,
 fox body, sword in its tail — `drawBlob`) lives there. It comes out at random
@@ -86,6 +100,12 @@ The good bot wins 67% at level 5, and desserts help a lot (decent at strength
 because your hits interrupt its wind-ups. What actually works is blocking more,
 starting stronger, and armored wind-ups paired with shorter wind-ups. Use
 `bossTuneOverride` to force a tuning in tests.
+
+**Kinds of sword.** `SWORD_KINDS` in `sword.js`: the plain 🗡️ Sword, plus
+the four from Ember's Sword Shop (see [sword-shop.md](sword-shop.md)).
+`swordKind` (saved) is the one you hold, `swordMax()` its rating when new and
+`swordStats()` what it does in a fight (reach, landing and blocking odds,
+swing speed, power, stun, smashing through armor).
 
 **Your sword wears out.** You fight with a sword rated 0–100 (`swordRating`,
 saved per camper; older saves start at 100). Each swing costs

@@ -12,6 +12,11 @@ hotspot's `door` rect (move both together if you move it). It opens into
 `windows: [{ teller, sign }]`, `label`, `items`), a `vault` prop (`label`) and
 velvet-rope `stanchions` (`posts`).
 
+The Second Camp has the same bank (its `bank` hotspot on the pool deck also
+has `"building": "bank"` and leads into `camp_bank.json`), so your balance is
+the same from both camps. The bank's door always goes back out to the first
+camp.
+
 A hotspot with a `bank` object (`{ "teller": "Penny", "emoji": "🦉" }`) is a
 teller window. Space there opens `#bankModal` (state `BANK_MODAL`) with buttons
 only, no typing: **What's my balance?**, **Deposit 🪙** / **Deposit all** (coin

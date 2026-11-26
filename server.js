@@ -38,10 +38,11 @@ function broadcast() {
 // ── File watcher ───────────────────────────────────────────────────────────
 fs.watch(ROOT, { recursive: true }, (event, filename) => {
   if (!filename) return;
-  // Skip hidden files, node_modules, and the server script itself
+  // Skip hidden files, node_modules, test output (out/) and the server script itself
   if (
     filename.startsWith('.') ||
     filename.startsWith('node_modules') ||
+    filename.startsWith('out') ||
     filename === 'server.js'
   ) return;
   console.log(`  ↻  ${filename}`);

@@ -10,10 +10,10 @@ function fightAttack() {
   p.actStart = now;
   p.lastAttack = now;
   p.hitChecked = false;
-  p.recover = P_RECOVER / strengthSpeed(p.strength);   // tired arms swing slower
+  p.recover = P_RECOVER / strengthSpeed(p.strength) / swordStats().speed;   // tired arms swing slower
   wearSword(f, SWORD_SWING_WEAR);
   // Sometimes the Blob sees it coming and puts its sword up
-  b.rolledBlock = Math.abs(p.x - b.x) < P_REACH + 60 && bossMaybeBlock(f, now);
+  b.rolledBlock = Math.abs(p.x - b.x) < playerReach() + 60 && bossMaybeBlock(f, now);
 }
 
 // More likely right after it's been bonked, and a lot more against mashing
@@ -46,11 +46,22 @@ function fightSay(f, text, dur) {
   f.shout = { text, start: performance.now(), dur: dur || 1100 };
 }
 
+// How far your sword reaches (a longer shop sword reaches further)
+function playerReach() { return P_REACH + swordStats().reach; }
+// The odds a swing lands / a block holds: strength, plus what your sword adds
+function swingOdds(att, who) {
+  return Math.min(0.98, strengthOdds(att.strength) + (who === 'player' ? swordStats().land : 0));
+}
+function guardOdds(f, guard) {
+  return Math.min(0.98, strengthOdds(guard.strength) + (guard === f.p ? swordStats().guard : 0));
+}
+
 // One swing lands (or doesn't) on `def`
 function resolveHit(f, att, def, who) {
   const now = performance.now();
   const dist = Math.abs(att.x - def.x);
-  const reach = who === 'boss' ? B_REACH : P_REACH;
+  const reach = who === 'boss' ? B_REACH : who === 'player' ? playerReach() : P_REACH;
+  const sw = who === 'player' ? swordStats() : SWORD_STATS_PLAIN;
   const away = def.x > att.x ? 1 : -1;
   const midX = (att.x + def.x) / 2;
   if (dist > reach) return;                                  // whiff
@@ -65,7 +76,11 @@ function resolveHit(f, att, def, who) {
     fightPop(f, 'MISSED!', def.x, def.y + 230, '#B3E5FC', 0.8);
     return;
   }
-  if (def.act === 'windup' && def.armor) {               // counter-attacks can't be stopped
+  // A strong enough sword can smash right through an armored wind-up
+  const smash = def.act === 'windup' && def.armor && sw.pierce > 0 && Math.random() < sw.pierce;
+  if (smash) {
+    fightPop(f, 'SMASH! 💥', def.x - away * 40, 300, '#FFD54F', 1);
+  } else if (def.act === 'windup' && def.armor) {        // counter-attacks can't be stopped
     if (who === 'player') wearSword(f, SWORD_HIT_WEAR);  // sword on sword (the sidekick has their own)
     f.sparks.push({ x: def.x - away * 70, y: 140, color: '#90CAF9', start: now });
     fightPop(f, 'CLANG!', def.x - away * 40, 230, '#90CAF9', 0.9);
@@ -73,7 +88,7 @@ function resolveHit(f, att, def, who) {
     return;
   }
   // A block only holds if the blocker is strong enough
-  const broke = !!guard && Math.random() > strengthOdds(guard.strength);
+  const broke = !!guard && Math.random() > guardOdds(f, guard);
   if (broke) {
     f.sparks.push({ x: guard.x - away * 70, y: 140 + guardY, color: '#FF8A65', start: now });
     fightPop(f, 'BLOCK BROKEN!', guard.x - away * 40, 300 + guardY, '#FF8A65', 0.8);
@@ -91,7 +106,7 @@ function resolveHit(f, att, def, who) {
     return;
   }
   // A swing only lands if the swinger is strong enough — otherwise it gets dodged
-  if (!broke && Math.random() > strengthOdds(att.strength)) {
+  if (!broke && Math.random() > swingOdds(att, who)) {
     def.pushV = 380 * away;
     if (who !== 'boss') {
       fightPop(f, pickOne(['DODGED!', 'TOO WEAK!', 'WIGGLED AWAY!']), def.x, 250, '#B3E5FC', 0.9);
@@ -111,13 +126,16 @@ function resolveHit(f, att, def, who) {
   def.actStart = now;
   def.pushV = 950 * away;         // knocked back out of reach: step in again
   def.lastHit = now;
+  def.stunX = sw.stun;            // an ice sword freezes it for longer
   f.sparks.push({ x: midX + away * 50, y: 130 + def.y, color: '#FFEB3B', start: now });
   fightPop(f, pickOne(['POW!', 'BONK!', 'SMACK!', 'WHACK!', 'THWACK!', 'BOOF!']), def.x, 250 + def.y, '#FFEB3B', 1.1);
   const popColor = who === 'player' ? player.character.color : who === 'sidekick' ? att.char.color : '#FF9E5E';
   fightPop(f, '+1', att.x, 260 + (who === 'sidekick' ? SIDEKICK_LANE : 0), popColor, 0.8);
   if (who === 'sidekick' && Math.random() < 0.5) fightPop(f, pickOne(SIDEKICK_LINES.hit), att.x, 330 + SIDEKICK_LANE, popColor, 0.55);
   f.shake = 10;
-  loseStrength(f, def, now);
+  // a stronger sword knocks off more (power 1.5: 2 💪 half the time)
+  const knocks = Math.floor(sw.power) + (sw.power % 1 && Math.random() < sw.power % 1 ? 1 : 0);
+  for (let i = 0; i < knocks; i++) loseStrength(f, def, now);
   if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
   else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
   else f.shout = null;
@@ -185,7 +203,7 @@ function bossAI(f, now, dt) {
   const spd = strengthSpeed(b.strength);
   switch (b.act) {
     case 'hit':
-      if (t > HIT_STUN * T.stun) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450) * T.think; }
+      if (t > HIT_STUN * T.stun * (b.stunX || 1)) { b.act = 'idle'; f.bossThinkAt = now + randBetween(150, 450) * T.think; }
       return;
     case 'blockstun':
       if (t > BLOCK_STUN) {
@@ -304,48 +322,9 @@ function updateFight() {
 function finishFight(fled) {
   const f = fight;
   const won = !fled && f.winner === 'player';
-  const reward = (f.def && f.def.reward) || DEFAULT_BOSS_REWARD;
   const res = { won, fled, lines: [] };
-  if (won) bossWins++;
-  if (won) {
-    if (backpack.length < BACKPACK_CAPACITY) {
-      backpack.push({ ...reward });
-      res.lines.push(`You got a special ${reward.emoji} ${reward.name}!`);
-      res.lines.push('It\'s in your backpack. 🎒');
-    } else {
-      const caveId = f.def.cave;
-      const there = hotspotItems[caveId] || (hotspotItems[caveId] = []);
-      if (there.length + mpPendingDropsAt(caveId) < HOTSPOT_CAPACITY) {
-        // In a multiplayer world the cave's items are shared, so it goes via PubNub
-        if (mp.active) mpRequestDrop(caveId, { ...reward });
-        else there.push({ ...reward });
-        res.lines.push(`You won a special ${reward.emoji} ${reward.name}!`);
-        res.lines.push('Your backpack is full, so it\'s waiting at the cave.');
-      } else {
-        res.lines.push(`You won a ${reward.emoji} ${reward.name}...`);
-        res.lines.push('...but there was no room for it anywhere! 😢');
-      }
-    }
-  } else {
-    const lost = backpack.filter(isCoin);
-    backpack = backpack.filter(it => !isCoin(it));
-    const total = lost.reduce((sum, it) => sum + (it.value || 0), 0);
-    if (lost.length) {
-      res.lines.push(`The Blob gobbled up your ${lost.length === 1 ? 'coin' : lost.length + ' coins'}${total ? ` ($${total})` : ''}! 😱`);
-      res.lines.push(lost.map(it => it.emoji || '🪙').join(' ') + '  →  👄');
-    } else {
-      res.lines.push('You had no coins, so the Blob got nothing.');
-      res.lines.push('Phew! 😅');
-    }
-  }
-  if (won) {
-    res.lines.push({
-      text: bossLevel() > f.level
-        ? `The Blob is getting tougher! 💪 Next time it's Level ${bossLevel()} of ${BOSS_LEVEL_MAX}.`
-        : `That's the toughest Blob there is (Level ${BOSS_LEVEL_MAX}), and you beat it! ⭐`,
-      color: '#B3E5FC'
-    });
-  }
+  f.foe.finish(f, res, won, fled);
+  emitGameEvent('fightOver', { foe: f.foe, won, fled, level: f.level, res });
   if (swordRating <= 0) {
     res.lines.push({
       text: hasSpareSword()
@@ -364,26 +343,78 @@ function finishFight(fled) {
   f.result = res;
   f.shout = null;
   if (fled) f.p.act = 'idle';
-  if (!won) res.lines.push({
+  if (!won && f.foe.gloat) res.lines.push(f.foe.gloat(fled));
+}
+
+// The Blob's prize, or the coins it gobbles up
+function blobFinish(f, res, won) {
+  const reward = (f.def && f.def.reward) || DEFAULT_BOSS_REWARD;
+  if (won) bossWins++;
+  if (won) giveFightReward(reward, f.def.cave, res, 'at the cave');
+  else gobbleBackpackCoins(res, 'The Blob');
+  if (won) {
+    res.lines.push({
+      text: bossLevel() > f.level
+        ? `The Blob is getting tougher! 💪 Next time it's Level ${bossLevel()} of ${BOSS_LEVEL_MAX}.`
+        : `That's the toughest Blob there is (Level ${BOSS_LEVEL_MAX}), and you beat it! ⭐`,
+      color: '#B3E5FC'
+    });
+  }
+  f.foe.gloat = fled => ({
     text: `"${pickOne(fled ? ['hehe! me keep shinies!', 'run run little snack!'] : ['nom nom nom!', 'BURP! yummy!', 'me tummy full!'])}" says the Blob`,
     color: '#FFB74D'
   });
 }
 
+// A prize goes in the backpack, or waits at hotspot `spotId` (`where`) if it's full
+function giveFightReward(reward, spotId, res, where) {
+  if (backpack.length < BACKPACK_CAPACITY) {
+    backpack.push({ ...reward });
+    res.lines.push(`You got a special ${reward.emoji} ${reward.name}!`);
+    res.lines.push('It\'s in your backpack. 🎒');
+    return;
+  }
+  const there = hotspotItems[spotId] || (hotspotItems[spotId] = []);
+  if (there.length + mpPendingDropsAt(spotId) < HOTSPOT_CAPACITY) {
+    // In a multiplayer world a hotspot's items are shared, so it goes via PubNub
+    if (mp.active) mpRequestDrop(spotId, { ...reward });
+    else there.push({ ...reward });
+    res.lines.push(`You won a special ${reward.emoji} ${reward.name}!`);
+    res.lines.push(`Your backpack is full, so it's waiting ${where}.`);
+  } else {
+    res.lines.push(`You won a ${reward.emoji} ${reward.name}...`);
+    res.lines.push('...but there was no room for it anywhere! 😢');
+  }
+}
+
+// Lost: `who` ("The Blob") eats every coin in your backpack (the bank keeps the rest safe)
+function gobbleBackpackCoins(res, who) {
+  const lost = backpack.filter(isCoin);
+  backpack = backpack.filter(it => !isCoin(it));
+  const total = lost.reduce((sum, it) => sum + (it.value || 0), 0);
+  if (lost.length) {
+    res.lines.push(`${who} gobbled up your ${lost.length === 1 ? 'coin' : lost.length + ' coins'}${total ? ` ($${total})` : ''}! 😱`);
+    res.lines.push(lost.map(it => it.emoji || '🪙').join(' ') + '  →  👄');
+  } else {
+    res.lines.push(`You had no coins, so ${who.replace(/^The /, 'the ')} got nothing.`);
+    res.lines.push('Phew! 😅');
+  }
+}
+
 function endFight() {
   if (!fight) return;
   const won = fight.result && fight.result.won;
+  const foe = fight.foe;
   const sidekickLine = fight.s ? fight.sidekickLine : null;
   fight = null;
   // The fight's over, so your sidekick heads home
   if (sidekickLine) releaseSidekick(sidekickLine);
   fightTouch = { left: false, right: false, block: false };
-  resetMapBoss(bossRestMs(won));
-  mpBossFight(false, won);
+  foe.end(won);
   state = GameState.PLAYING;
   // A worn-out sword: use the spare, or a new one turns up somewhere
   if (swordRating <= 0 && !equipSpareSword()) findOrDropSword();
-  kitchenToast(won ? 'The Blob runs home to its cave, sniffling. 🏆' : 'The Blob waddles home to its cave, full and happy. 😋');
+  foe.after(won);
 }
 
 function handleFightKey(e) {

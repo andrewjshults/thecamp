@@ -93,9 +93,31 @@ function newFighter(x, facing) {
   return { x, y: 0, vy: 0, facing, act: 'idle', actStart: 0, walk: 0, pushV: 0, score: 0, hitChecked: false, ai: 'wait' };
 }
 
-function startFight() {
+// Who you're fighting. A foe is { id, def (the map JSON's boss: name, aka,
+// phrases, pointsToWin, reward...), level, tune, label (on the score panel),
+// intro(f) (an extra line on the intro screen), draw(v, f, now) (its body in
+// the fight), arena(v, now) (the background), finish(f, res, won, fled) (adds
+// the result lines: rewards, what it takes when you lose; may set gloat),
+// end(won) (as the result screen closes) and after(won) (once you're back on
+// the map), and optionally begin(f) (right as the fight starts) }. With no
+// foe it's the Blob on this map.
+function blobFoe() {
+  const level = bossLevel();
+  return {
+    id: 'blob', def: mapConfig.boss, level, tune: bossTuning(level), label: 'BLOB',
+    intro: f => f.level ? `⭐ Level ${f.level} Blob: it's tougher now!` : null,
+    draw: (v, f, now) => drawFightBoss(v, f, now),
+    arena: (v, now) => drawCaveArena(v, now),
+    finish: (f, res, won, fled) => blobFinish(f, res, won, fled),
+    end: won => { resetMapBoss(bossRestMs(won)); mpBossFight(false, won); },
+    after: won => kitchenToast(won ? 'The Blob runs home to its cave, sniffling. 🏆' : 'The Blob waddles home to its cave, full and happy. 😋')
+  };
+}
+
+function startFight(foe) {
   const now = performance.now();
-  const def = mapConfig.boss;
+  foe = foe || blobFoe();
+  const def = foe.def;
   bossEngage = null;
   mapBoss.shout = null;
   backpackOpen = false;
@@ -104,6 +126,7 @@ function startFight() {
   speechBubbles = [];
   fightTouch = { left: false, right: false, block: false };
   fight = {
+    foe,
     def,
     toWin: def.pointsToWin || 10,
     phase: 'intro',            // intro → fight → ko → result
@@ -121,10 +144,10 @@ function startFight() {
     winner: null,
     result: null
   };
-  fight.level = bossLevel();
-  fight.tune = bossTuneOverride ? { ...BOSS_TUNE_BASE, ...bossTuneOverride } : bossTuning(fight.level);
+  fight.level = foe.level;
+  fight.tune = bossTuneOverride ? { ...BOSS_TUNE_BASE, ...bossTuneOverride } : foe.tune;
   fight.p.strength = fight.p.maxStrength = STRENGTH_BASE + strengthBoost;
-  fight.b.strength = fight.b.maxStrength = (def.strength || STRENGTH_BASE) + fight.tune.strength;
+  fight.b.strength = fight.b.maxStrength = Math.max(1, (def.strength || STRENGTH_BASE) + fight.tune.strength);
   fight.b.regenMs = STRENGTH_REGEN_MS * fight.tune.regen;
   // Your sidekick fights beside you (in the lane just behind)
   if (sidekick) {
@@ -135,6 +158,7 @@ function startFight() {
     });
   }
   state = GameState.FIGHTING;
+  if (foe.begin) foe.begin(fight);
 }
 
 registerGameState('FIGHTING', {

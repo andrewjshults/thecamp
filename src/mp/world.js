@@ -177,9 +177,11 @@ async function mpLoadAllMaps() {
     }
     out[path] = restoreOrDefaultHotspots(cfg, {});
     for (const h of cfg.hotspots || []) {
-      if (h.targetMap && !seen.has(h.targetMap)) {
-        seen.add(h.targetMap);
-        queue.push(h.targetMap);
+      for (const link of hotspotLinks(h)) {
+        if (!seen.has(link)) {
+          seen.add(link);
+          queue.push(link);
+        }
       }
     }
   }

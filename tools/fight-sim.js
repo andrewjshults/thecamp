@@ -8,6 +8,12 @@
 //   simMany({ armor: 1, windup: 0.6 }, 'good')    // try any mix of BOSS_TUNE_BASE settings
 //   simMany(bossTuning(5), 'casual', 300, 20)     // ...with a player at strength 20 (desserts)
 //
+// The Second Camp's Marshmallows (src/features/level2/mallows.js) and the shop
+// swords (src/features/sword-shop/swords.js): pass { toWin, sword } as the 5th
+// argument, e.g.
+//   simMany(mallowTuning(8), 'good', 300, 10, { sword: 'flame' })     // Mega Mallow, level 8
+//   simMany(kidTuning(6), 'decent', 300, 10, { toWin: 8 })           // Mini Mallow (first to 8)
+//
 // → { win: % the player won, dur: average seconds, wear: sword wear per fight,
 //     loserPts: points the loser got, timeouts }
 //
@@ -48,26 +54,33 @@ window.botStep = function (f, now, bot, st) {
   if ((p.act === 'hit' || b.act === 'hit') && !st.waitUntil) st.waitUntil = now + bot.stepIn;
   if (st.waitUntil && now < st.waitUntil) return;
   st.waitUntil = 0;
-  const swingFrom = st.swingFrom || (st.swingFrom = P_REACH - 30);
+  const swingFrom = st.swingFrom || (st.swingFrom = playerReach() - 30);
   if (dist > swingFrom) {
     if (toward > 0) fightTouch.right = true; else fightTouch.left = true;
   } else if (!fightBusy(p) && p.act !== 'block' && now >= st.nextSwing) {
     fightAttack();
     st.nextSwing = now + bot.cadence + Math.random() * bot.cadenceJitter;
-    st.swingFrom = Math.random() < bot.whiff ? P_REACH + 40 + Math.random() * 120 : P_REACH - 30;
+    st.swingFrom = Math.random() < bot.whiff ? playerReach() + 40 + Math.random() * 120 : playerReach() - 30;
   }
 };
-window.simFight = function (tune, botName, pStrength) {
+// A stand-in foe: fights like any boss with this tuning (nothing drawn or won)
+window.simFoe = function (toWin) {
+  const none = () => null;
+  return { id: 'sim', def: { pointsToWin: toWin || 10 }, level: 0, tune: BOSS_TUNE_BASE, label: 'SIM',
+    intro: none, draw: none, arena: none, finish: none, end: none, after: none };
+};
+window.simFight = function (tune, botName, pStrength, opts = {}) {
   const bot = BOTS[botName];
   let clock = 1e8;
   performance.now = () => clock;
-  const saved = { sword: swordRating, boost: strengthBoost, state };
+  const saved = { sword: swordRating, kind: swordKind, boost: strengthBoost, state };
   try {
     strengthBoost = (pStrength || STRENGTH_BASE) - STRENGTH_BASE;
     for (const k of Object.keys(keys)) keys[k] = false;
+    swordKind = opts.sword || 'plain';
     swordRating = 1e6;
     bossTuneOverride = tune || null;
-    startFight();
+    startFight(simFoe(opts.toWin));
     const f = fight;
     f.phase = 'fight'; f.phaseStart = clock; f.bossThinkAt = clock + 500; f.lastT = clock;
     const st = { threatStart: null, plan: null, nextSwing: 0 };
@@ -75,15 +88,15 @@ window.simFight = function (tune, botName, pStrength) {
     while (!f.winner && clock < limit) { clock += 1000 / 60; botStep(f, clock, bot, st); updateFight(); }
     return { won: f.winner === 'player', timeout: !f.winner, dur: (clock - start) / 1000, p: f.p.score, b: f.b.score, wear: 1e6 - swordRating };
   } finally {
-    fight = null; state = saved.state; bossTuneOverride = null; swordRating = saved.sword; strengthBoost = saved.boost;
+    fight = null; state = saved.state; bossTuneOverride = null; swordRating = saved.sword; swordKind = saved.kind; strengthBoost = saved.boost;
     fightTouch = { left: false, right: false, block: false };
     delete performance.now;
   }
 };
-window.simMany = function (tune, botName, n, pStrength) {
+window.simMany = function (tune, botName, n, pStrength, opts) {
   let wins = 0, dur = 0, wear = 0, timeouts = 0, pts = 0;
   for (let i = 0; i < n; i++) {
-    const r = simFight(tune, botName, pStrength);
+    const r = simFight(tune, botName, pStrength, opts);
     if (r.won) wins++; if (r.timeout) timeouts++;
     dur += r.dur; wear += r.wear; pts += r.won ? r.b : r.p;
   }

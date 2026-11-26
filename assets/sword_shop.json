@@ -1,0 +1,271 @@
+{
+  "name": "Ember's Sword Shop",
+  "where": "in Ember's Sword Shop",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "ember",
+      "name": "Ember",
+      "emoji": "🐉",
+      "color": "#e64a19",
+      "size": 0.13,
+      "px": 0.53,
+      "py": 0.44,
+      "wander": false,
+      "what": "a friendly little dragon who makes swords in her shop at the Second Camp, heating them in her forge with her own fire",
+      "personality": "Warm, proud of her swords and a bit of a show-off about her fire breath. Sells four swords: the Sparkle Sword ($20), the Ice Sword ($40), the Flame Sword ($60) and the Rainbow Thunder Sword ($100). You pay with coins in your backpack. Thinks the Marshmallows are rude because they keep trying to roast themselves in her forge.",
+      "localReplies": {
+        "hello": [
+          "Welcome to my shop, {name}! Want a new sword? 🐉🔥",
+          "Oh hi, {name}! I just made a fresh batch of swords!",
+          "Hello, {name}! Come in, come in, mind the forge!"
+        ],
+        "bye": [
+          "Bye, {name}! Good luck with the Marshmallows! 🔥",
+          "Come back when you need a new sword!",
+          "Fly safe! Well... walk safe! 🐉"
+        ],
+        "question": [
+          "Hmm! Ask me about swords. I know EVERYTHING about swords.",
+          "Good question! I think the answer is... a better sword! 🗡️",
+          "*puff of smoke* Let me think about that one..."
+        ],
+        "any": [
+          "The Sparkle Sword lasts longer, the Ice Sword freezes, the Flame Sword hits twice as hard, and the Rainbow Thunder Sword does EVERYTHING! 🌈",
+          "Pay with the coins in your backpack, and I'll trade in your old sword.",
+          "I heat every sword in my forge with my own fire breath! 🔥",
+          "The Mini Mallow is fast, but the Mega Mallow is TOUGH. Block when it yells!"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#5d4037",
+      "stripe": "#3e2723"
+    },
+    "wall": {
+      "pattern": "blocks",
+      "color": "#bcaaa4"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "planks",
+      "color": "#a1887f",
+      "skirting": "#4e342e"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#f59f1b",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#5d4037"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#e64a19",
+        "text": "CLANG!"
+      },
+      {
+        "kind": "swordRack",
+        "px": 0.15,
+        "py": 0.12,
+        "pw": 0.3,
+        "ph": 0.3,
+        "swords": [
+          {
+            "emoji": "✨",
+            "blade": "#fff9c4"
+          },
+          {
+            "emoji": "🧊",
+            "blade": "#b3e5fc"
+          },
+          {
+            "emoji": "🔥",
+            "blade": "#ffcc80"
+          },
+          {
+            "emoji": "🌈",
+            "blade": "#e1bee7"
+          }
+        ]
+      },
+      {
+        "kind": "sign",
+        "text": "SWORDS!",
+        "px": 0.48,
+        "py": 0.08,
+        "pw": 0.16,
+        "ph": 0.08,
+        "color": "#ffcc80",
+        "rotate": -2
+      },
+      {
+        "kind": "forge",
+        "px": 0.72,
+        "py": 0.12,
+        "pw": 0.2,
+        "ph": 0.44
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.38,
+        "py": 0.4,
+        "pw": 0.3,
+        "ph": 0.22,
+        "items": [
+          "🗡️",
+          "🪙",
+          "🛎️"
+        ],
+        "board": [
+          "✨ $20   🧊 $40",
+          "🔥 $60   🌈 $100"
+        ]
+      },
+      {
+        "kind": "box",
+        "px": 0.08,
+        "py": 0.72,
+        "pw": 0.12,
+        "ph": 0.14,
+        "label": "OLD",
+        "peek": [
+          "🗡️",
+          "🛡️"
+        ]
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🛡️",
+        "px": 0.62,
+        "py": 0.2,
+        "pw": 0.06,
+        "ph": 0.1
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🪓",
+        "px": 0.62,
+        "py": 0.32,
+        "pw": 0.05,
+        "ph": 0.08,
+        "rotate": 20
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Second Camp",
+      "interactionText": "You head back out, ready for battle!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level2.json",
+      "targetHotspot": "sword_shop",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
+    },
+    {
+      "id": "shop_counter",
+      "name": "Ember's Counter",
+      "px": 0.38,
+      "py": 0.38,
+      "pw": 0.3,
+      "ph": 0.26,
+      "action": "explore",
+      "description": "Buy a sword!",
+      "interactionText": "Ember the dragon waves from behind the counter.",
+      "items": [],
+      "uses": [],
+      "swordShop": {
+        "keeper": "Ember",
+        "emoji": "🐉"
+      }
+    },
+    {
+      "id": "sword_rack",
+      "name": "Sword Rack",
+      "px": 0.15,
+      "py": 0.1,
+      "pw": 0.3,
+      "ph": 0.34,
+      "action": "explore",
+      "description": "The four swords for sale",
+      "interactionText": "✨ Sparkle Sword $20: lasts longer. 🧊 Ice Sword $40: freezes the boss and blocks better. 🔥 Flame Sword $60: every hit knocks off 2 💪. 🌈 Rainbow Thunder Sword $100: does it ALL! Buy them at the counter.",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "px": 0.72,
+      "py": 0.1,
+      "pw": 0.2,
+      "ph": 0.48,
+      "action": "explore",
+      "description": "Hot hot hot!",
+      "interactionText": "The forge glows bright orange. WHOOSH! Ember breathes on it to make it even hotter! 🔥",
+      "items": [
+        {
+          "id": "hammer",
+          "name": "Hammer",
+          "emoji": "🔨"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "old_swords",
+      "name": "Box of Old Swords",
+      "px": 0.08,
+      "py": 0.7,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "Trade-ins",
+      "interactionText": "A box of old swords people traded in. They are all worn out... except for a shiny shield!",
+      "items": [
+        {
+          "id": "shield",
+          "name": "Shield",
+          "emoji": "🛡️"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

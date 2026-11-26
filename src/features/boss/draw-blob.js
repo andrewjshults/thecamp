@@ -12,8 +12,9 @@ function lerpPose(p, q, t) {
   return { tx: lerp(p.tx, q.tx, t), ty: lerp(p.ty, q.ty, t), a: lerp(p.a, q.a, t) };
 }
 
-// A sword along +x from the current origin (the hand / tail tip)
-function drawSword(len, w) {
+// A sword along +x from the current origin (the hand / tail tip).
+// `kind` (optional, see SWORD_KINDS): a shop sword's blade colour and glow.
+function drawSword(len, w, kind) {
   const ink = '#2b2320';
   ctx.lineJoin = 'round';
   ctx.fillStyle = '#6d4c41';                      // grip
@@ -29,7 +30,15 @@ function drawSword(len, w) {
   ctx.lineTo(len * 0.86, w);
   ctx.lineTo(0, w);
   ctx.closePath();
-  ctx.fillStyle = '#E3E9F0';
+  if (kind && kind.glow) {
+    ctx.save();
+    ctx.shadowColor = kind.glow;
+    ctx.shadowBlur = w * 6;
+    ctx.fillStyle = kind.glow;
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = (kind && kind.blade) || '#E3E9F0';
   ctx.fill();
   ctx.lineWidth = Math.max(1, w * 0.45);
   ctx.strokeStyle = ink;

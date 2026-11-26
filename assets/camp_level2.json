@@ -1,0 +1,245 @@
+{
+  "name": "Second Camp",
+  "where": "at the Second Camp",
+  "image": "assets/camp_level2.svg",
+  "playerStart": { "px": 0.385, "py": 0.17 },
+  "noSwordDrops": true,
+  "marshmallows": {
+    "lair": "blob_zone",
+    "safeZone": { "px": 0, "py": 0, "pw": 0.305, "ph": 0.475 },
+    "foes": [
+      {
+        "id": "mega_mallow", "name": "Mega Mallow", "aka": "Fire Eyes", "label": "MEGA",
+        "size": 1.05, "chase": 2.9, "wander": 1.7, "sniff": 520,
+        "firstOut": [5000, 10000], "outFor": [35000, 55000], "restFor": [10000, 22000],
+        "pointsToWin": 10,
+        "reward": { "id": "twenty_dollar_coin", "name": "$20 Coin", "emoji": "🪙", "coin": true, "value": 20 },
+        "phrases": ["ROAST YOU!", "toasty toasty yous!", "me burn you crispy!", "s'more of yous!", "SQUISH!", "fire eyes see yous!", "gooey gooey gotcha!", "marshy SMASH!", "me so puffy angry!", "sizzle sizzle!"],
+        "hitPhrases": ["hehe crispy!", "toasted yous!", "me hot stuff!", "gooey win!"],
+        "hurtPhrases": ["OW me fluff!", "no squish me!", "me melty!", "grrr sizzle!", "not me puffs!"],
+        "missPhrases": ["aww me missed!", "come back crispy!", "too slippy yous!"],
+        "dodgePhrases": ["too puffy for yous!", "bounce bounce!", "hehe! me squishy!", "no poke the mallow!"],
+        "grumblePhrases": ["no fair! come out!", "me no allowed in tents!", "me wait for yous...", "grrr tents!"],
+        "winPhrases": ["me toasty champion!", "s'mores for me!", "sizzle sizzle WIN!"],
+        "fledPhrases": ["run run little crispy!", "hehe! me keep yous shinies!"]
+      },
+      {
+        "id": "mini_mallow", "name": "Mini Mallow", "aka": "Little Sizzle", "label": "MINI", "kid": true,
+        "size": 0.68, "chase": 3.5, "wander": 2.5, "sniff": 600,
+        "firstOut": [2500, 6000], "outFor": [40000, 60000], "restFor": [8000, 15000],
+        "pointsToWin": 8,
+        "reward": { "id": "ten_dollar_coin", "name": "$10 Coin", "emoji": "🪙", "coin": true, "value": 10 },
+        "phrases": ["me too! me too!", "baby ROAST!", "tiny toasty!", "zoom zoom gotcha!", "mama look!", "me fast fast!", "poke poke!", "mini SMASH!"],
+        "hitPhrases": ["hehe me did it!", "mama me hit!", "yay yay!"],
+        "hurtPhrases": ["MAMAAA!", "waaah!", "no fair big yous!", "owie me puff!"],
+        "missPhrases": ["aww!", "me try again!", "wait for me!"],
+        "dodgePhrases": ["too zoomy!", "can't catch me!", "nyah nyah!"],
+        "grumblePhrases": ["come out come out!", "me tell mama!", "no fair tents!"],
+        "winPhrases": ["me big now!", "mama me WON!", "zoom zoom champion!"],
+        "fledPhrases": ["bye bye slowpoke!", "hehe zoomies!"]
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "cave_exit",
+      "name": "Secret Passage",
+      "px": 0.31, "py": 0.0, "pw": 0.15, "ph": 0.125,
+      "action": "enter",
+      "description": "The secret passage back to the first camp",
+      "interactionText": "You squeeze back through the secret passage.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/game_design.json",
+      "targetHotspot": "cave",
+      "arrive": { "px": 0.385, "py": 0.17 }
+    },
+    {
+      "id": "blob_zone",
+      "name": "Blob Fight Zone",
+      "px": 0.3495, "py": 0.4925, "pw": 0.091, "ph": 0.125,
+      "action": "fight",
+      "description": "Something with fire eyes lives down that hole...",
+      "interactionText": "You peek down the hole in the middle of the Blob Fight Zone. It's warm down there, and it smells like toasted marshmallows... 🔥👀",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "tent_red",
+      "name": "Red Sleeping Tent",
+      "px": 0.02, "py": 0.05, "pw": 0.13, "ph": 0.21,
+      "action": "sleep",
+      "description": "A safe, cozy tent. No marshmallows allowed!",
+      "interactionText": "You flop onto the bunk in the red tent. The Marshmallows can't get you in here! Zzz...",
+      "items": [
+        { "id": "comic_book", "name": "Comic Book", "emoji": "📚" },
+        { "id": "earmuffs", "name": "Earmuffs", "emoji": "🎧" }
+      ],
+      "uses": [
+        { "itemId": "flashlight", "text": "You read comics under the blanket with your flashlight. Best sleepover EVER! 🔦", "animation": "sleep" }
+      ]
+    },
+    {
+      "id": "tent_blue",
+      "name": "Blue Sleeping Tent",
+      "px": 0.175, "py": 0.08, "pw": 0.11, "ph": 0.17,
+      "action": "sleep",
+      "description": "A little blue tent with a glowing lantern",
+      "interactionText": "You curl up in the blue tent and watch the lantern glow. So peaceful!",
+      "items": [
+        { "id": "night_light", "name": "Night Light", "emoji": "🕯️" },
+        { "id": "stuffed_unicorn", "name": "Stuffed Unicorn", "emoji": "🦄" }
+      ],
+      "uses": [
+        { "itemId": "teddy_bear", "text": "Teddy Bear and the Stuffed Unicorn snuggle up together. Best friends! 🧸🦄", "animation": "sleep" }
+      ]
+    },
+    {
+      "id": "tent_green",
+      "name": "Big Green Tent",
+      "px": 0.07, "py": 0.25, "pw": 0.15, "ph": 0.2,
+      "action": "enter",
+      "description": "The big sleepover tent. Come on in!",
+      "interactionText": "You crawl into the big green sleepover tent.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level2_tent.json",
+      "targetHotspot": "exit_flap"
+    },
+    {
+      "id": "pool_gate",
+      "name": "Swimming Pool",
+      "px": 0.495, "py": 0.24, "pw": 0.065, "ph": 0.13,
+      "action": "enter",
+      "description": "Climb down the ladder for a swim!",
+      "interactionText": "SPLASH! You head down to the pool.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level2_pool.json",
+      "targetHotspot": "exit_gate",
+      "arrive": { "px": 0.53, "py": 0.4 }
+    },
+    {
+      "id": "boat",
+      "name": "Sailboat",
+      "px": 0.69, "py": 0.19, "pw": 0.1, "ph": 0.13,
+      "action": "play",
+      "description": "A little sailboat bobbing in the pool",
+      "interactionText": "You hop in the sailboat and sail across the pool. Ahoy! ⛵",
+      "items": [
+        { "id": "oar", "name": "Oar", "emoji": "🛶" },
+        { "id": "life_jacket", "name": "Life Jacket", "emoji": "🦺" }
+      ],
+      "uses": [
+        { "itemId": "map", "text": "You read the map in the sailboat. Arrr, the treasure must be across the pool! 🗺️", "animation": "explore" }
+      ]
+    },
+    {
+      "id": "bank",
+      "name": "Camp Bank",
+      "px": 0.64, "py": 0.37, "pw": 0.1, "ph": 0.125,
+      "action": "enter",
+      "description": "The same Camp Bank, with all your money!",
+      "interactionText": "You head inside the Camp Bank.",
+      "items": [],
+      "uses": [],
+      "building": "bank",
+      "door": { "px": 0.68, "py": 0.43, "pw": 0.02, "ph": 0.05, "color": "#2e7d32", "inside": "🏦" },
+      "targetMap": "assets/camp_bank.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "sword_shop",
+      "name": "Sword Shop",
+      "px": 0.8, "py": 0.3, "pw": 0.15, "ph": 0.195,
+      "action": "enter",
+      "description": "Better swords for sale!",
+      "interactionText": "You step into the sword shop. Clang, clang!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.821, "py": 0.3975, "pw": 0.036, "ph": 0.0975, "color": "#5d4037", "inside": "⚔️" },
+      "targetMap": "assets/sword_shop.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "disco_ball",
+      "name": "Disco Ball",
+      "px": 0.04, "py": 0.74, "pw": 0.1, "ph": 0.12,
+      "action": "play",
+      "description": "Dance party time!",
+      "interactionText": "The disco ball spins and sparkles everywhere. You bust out your best dance moves! 🕺💃",
+      "items": [
+        { "id": "party_hat", "name": "Party Hat", "emoji": "🎉" },
+        { "id": "glow_stick", "name": "Glow Stick", "emoji": "🪄" }
+      ],
+      "uses": [
+        { "itemId": "flashlight", "text": "You shine your flashlight on the disco ball. SPARKLES EVERYWHERE! ✨", "animation": "play" }
+      ]
+    },
+    {
+      "id": "party_tent",
+      "name": "Birthday Party Tent",
+      "px": 0.18, "py": 0.69, "pw": 0.14, "ph": 0.25,
+      "action": "enter",
+      "description": "There's a birthday party inside!",
+      "interactionText": "You go into the birthday party tent. SURPRISE!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.2304, "py": 0.84, "pw": 0.0392, "ph": 0.1, "color": "#8e24aa", "inside": "🎉" },
+      "targetMap": "assets/level2_party.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "cake_table",
+      "name": "Birthday Cake",
+      "px": 0.04, "py": 0.85, "pw": 0.13, "ph": 0.13,
+      "action": "eat",
+      "description": "Whose birthday is it? Everyone's!",
+      "interactionText": "Happy birthday to youuu! 🎂 You make a wish and blow out the candles.",
+      "items": [
+        { "id": "party_blower", "name": "Party Blower", "emoji": "🥳" },
+        { "id": "balloon", "name": "Balloon", "emoji": "🎈" }
+      ],
+      "uses": []
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "px": 0.56, "py": 0.67, "pw": 0.22, "ph": 0.31,
+      "action": "enter",
+      "description": "The Second Camp's kitchen",
+      "interactionText": "You head into the kitchen. Something smells yummy!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.5776, "py": 0.8095, "pw": 0.044, "ph": 0.1705, "color": "#ef6c00", "inside": "🍳" },
+      "targetMap": "assets/level2_kitchen.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "boys_bathroom",
+      "name": "Boys' Bathroom",
+      "px": 0.885, "py": 0.62, "pw": 0.11, "ph": 0.17,
+      "action": "bathroom",
+      "description": "The boys' bathroom",
+      "interactionText": "You go into the boys' bathroom.",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.918, "py": 0.6965, "pw": 0.044, "ph": 0.0935, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level2_boys_bathroom.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "girls_bathroom",
+      "name": "Girls' Bathroom",
+      "px": 0.885, "py": 0.81, "pw": 0.11, "ph": 0.17,
+      "action": "bathroom",
+      "description": "The girls' bathroom",
+      "interactionText": "You go into the girls' bathroom.",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.918, "py": 0.8865, "pw": 0.044, "ph": 0.0935, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level2_girls_bathroom.json",
+      "targetHotspot": "exit_door"
+    }
+  ]
+}

@@ -31,9 +31,10 @@ function playingKey(e) {
     return;
   }
   if (e.key === ' ') {
-    // Space next to the Blob picks a fight; next to a friend (with no
-    // hotspot to use here) it starts a chat
-    if (nearBoss) engageBoss();
+    // Space next to the Blob (or another foe) picks a fight; next to a
+    // friend (with no hotspot to use here) it starts a chat
+    const foe = nearbyFoe();
+    if (foe) foe.engage();
     else if (!nearbyObject && nearbyNpc) startConversation(nearbyNpc);
     else handleInteract();
   }
@@ -70,14 +71,11 @@ function playingTap(screenX, screenY) {
     }
   }
 
-  // Tapping the Blob when it's close picks a fight
-  if (nearBoss) {
-    const bp = mapBossPos();
-    const bh = mapBossHeight();
-    if (Math.hypot(screenX - (bp.x - camera.x), screenY - (bp.y - bh / 2 - camera.y)) < bh * 0.7) {
-      engageBoss();
-      return;
-    }
+  // Tapping the Blob (or another foe) when it's close picks a fight
+  const foe = nearbyFoe();
+  if (foe && foe.hit(screenX, screenY)) {
+    foe.engage();
+    return;
   }
 
   // Tapping a nearby friend starts a conversation (tapping a far one walks there)

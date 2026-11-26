@@ -167,7 +167,7 @@ function drawFightPlayer(v, p, now, ch, lane) {
   ctx.save();
   ctx.translate(hand.x, hand.y);
   ctx.rotate(g.a);
-  drawSword(28 * s, 1.5 * s);
+  drawSword(28 * s, 1.5 * s, lane ? null : swordKindDef());
   ctx.restore();
   ctx.fillStyle = '#FFCC80';
   ctx.beginPath();
@@ -225,8 +225,9 @@ function drawTeamGuard(v, f, now) {
   ctx.restore();
 }
 
-function bossTail(b, now) {
-  const P = BLOB_POSES;
+// Where the boss's sword is, for its current move. `P`: its poses
+// (default the Blob's tail; the Marshmallows' arm uses MALLOW_POSES)
+function bossTail(b, now, P = BLOB_POSES) {
   const t = now - b.actStart;
   switch (b.act) {
     case 'windup': {
@@ -251,6 +252,21 @@ function bossTail(b, now) {
 function drawFightBoss(v, f, now) {
   const b = f.b;
   const t = now - b.actStart;
+  drawArmorGlow(v, b, now);
+  let mouth = shoutMouth(f.shout, now);
+  if (b.act === 'attack' && t < B_ACTIVE + 120) mouth = 1;
+  drawBlob(v.sx(b.x), v.sy(b.y), 215 * v.scale, b.facing, {
+    tail: bossTail(b, now),
+    moving: b.act === 'walk',
+    walk: b.walk,
+    mouth,
+    t: now,
+    dizzy: b.act === 'hit' || b.act === 'ko',
+    swoosh: b.act === 'attack' && t < B_ACTIVE + 100 ? 1 - t / (B_ACTIVE + 100) : 0
+  });
+}
+
+function drawArmorGlow(v, b, now) {
   if (b.act === 'windup' && b.armor) {
     // Armored wind-up: it glows, and your swings will just CLANG. Block or back off!
     const r = 150 * v.scale * (1 + 0.08 * Math.sin(now / 70));
@@ -269,17 +285,6 @@ function drawFightBoss(v, f, now) {
     ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2);
     ctx.stroke();
   }
-  let mouth = shoutMouth(f.shout, now);
-  if (b.act === 'attack' && t < B_ACTIVE + 120) mouth = 1;
-  drawBlob(v.sx(b.x), v.sy(b.y), 215 * v.scale, b.facing, {
-    tail: bossTail(b, now),
-    moving: b.act === 'walk',
-    walk: b.walk,
-    mouth,
-    t: now,
-    dizzy: b.act === 'hit' || b.act === 'ko',
-    swoosh: b.act === 'attack' && t < B_ACTIVE + 100 ? 1 - t / (B_ACTIVE + 100) : 0
-  });
 }
 
 function bigText(text, x, y, size, fill, stroke) {
@@ -384,7 +389,7 @@ function drawFightHud(v, f, now) {
   ctx.fillText('YOU', px + 16, py + 24);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#FF9E5E';
-  ctx.fillText('BLOB', px + pw - 16, py + 24);
+  ctx.fillText(f.foe.label, px + pw - 16, py + 24);
   ctx.save();
   ctx.translate(px + 78, py + 26);
   ctx.scale(pulse(f.pPulse), pulse(f.pPulse));
@@ -432,14 +437,14 @@ function drawFightHud(v, f, now) {
 function drawSwordBadge(x, y) {
   if (!mapConfig) return;
   const spare = hasSpareSword() ? ' +1' : '';
-  const text = swordRating > 0 ? `🗡️ ${swordRating}${spare}` : hasSpareSword() ? '🗡️ 0 +1' : '🗡️ Find a sword!';
+  const text = swordRating > 0 ? `${swordKindDef().emoji} ${swordRating}${spare}` : hasSpareSword() ? '🗡️ 0 +1' : '🗡️ Find a sword!';
   ctx.save();
   ctx.font = 'bold 15px "Comic Sans MS", cursive';
   const w = ctx.measureText(text).width + 22;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
   roundRect(x, y, w, 36, 8);
   ctx.fill();
-  ctx.fillStyle = swordRating > 30 ? '#E0E0E0' : swordRating > 0 ? '#FFCA28' : '#FF8A80';
+  ctx.fillStyle = swordRating > 0.3 * swordMax() ? '#E0E0E0' : swordRating > 0 ? '#FFCA28' : '#FF8A80';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x + 11, y + 19);
@@ -448,7 +453,7 @@ function drawSwordBadge(x, y) {
 
 // Fight HUD: your sword's rating as a thin bar under your strength
 function drawSwordMeter(f, x, y, w, now) {
-  const h = 18, frac = swordRating / SWORD_MAX;
+  const h = 18, frac = swordRating / swordMax();
   const flash = Math.max(0, 1 - (now - (f.swordWornAt || 0)) / 300);
   ctx.save();
   ctx.fillStyle = 'rgba(20, 12, 6, 0.8)';
@@ -472,7 +477,7 @@ function drawSwordMeter(f, x, y, w, now) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#000';
-  ctx.fillText('🗡️', x + 15, y + h / 2 + 1);
+  ctx.fillText(swordKindDef().emoji, x + 15, y + h / 2 + 1);
   ctx.font = 'bold 12px "Comic Sans MS", cursive';
   ctx.fillStyle = swordRating > 0 ? '#ECEFF1' : '#FF8A80';
   ctx.textAlign = 'right';
@@ -571,7 +576,8 @@ function drawFightOverlay(v, f, now) {
       if (f.def && f.def.aka) bigText(`a.k.a. the ${f.def.aka}`, W / 2, Hc * 0.3 + big * 0.5, big * 0.28, '#FFE0B2');
       bigText('READY...', W / 2, Hc * 0.3 + big * 1.1, big * 0.5, '#fff');
       let ly = Hc * 0.3 + big * 1.65;
-      if (f.level) { bigText(`⭐ Level ${f.level} Blob: it's tougher now!`, W / 2, ly, big * 0.3, '#B3E5FC'); ly += big * 0.45; }
+      const introLine = f.foe.intro(f);
+      if (introLine) { bigText(introLine, W / 2, ly, big * 0.3, '#B3E5FC'); ly += big * 0.45; }
       if (f.boost) { bigText(`🧁 Sugar power! +${f.boost} 💪`, W / 2, ly, big * 0.3, '#F8BBD0'); ly += big * 0.45; }
       if (f.s) bigText(`🤝 ${f.s.name} is here to help!`, W / 2, ly, big * 0.3, lightenColor(f.s.char.color, 0.6));
       ctx.restore();
@@ -642,9 +648,9 @@ function drawFight() {
   const v = fightView();
   ctx.save();
   if (f.shake > 0) ctx.translate((Math.random() - 0.5) * f.shake, (Math.random() - 0.5) * f.shake);
-  drawCaveArena(v, now);
+  f.foe.arena(v, now);
   if (f.s) drawFightPlayer(v, f.s, now, f.s.char, SIDEKICK_LANE);
-  drawFightBoss(v, f, now);
+  f.foe.draw(v, f, now);
   drawFightPlayer(v, f.p, now);
   if (f.s) drawTeamGuard(v, f, now);
   drawFightFx(v, f, now);

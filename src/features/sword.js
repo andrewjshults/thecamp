@@ -13,11 +13,31 @@ const SWORD_MAX = 100;
 const SWORD_SWING_WEAR = 1;
 const SWORD_HIT_WEAR = 4;
 const SWORD_ITEM = { id: 'sword', name: 'Sword', emoji: '🗡️' };
+// Kinds of sword. The plain one is the one you find lying around; the sword
+// shop (src/features/sword-shop/) adds the ones you can buy. A kind is
+// { name, emoji, max (its rating when new), blade / glow (colours in the
+// fight), and what it does in a fight: land (added to the odds a swing
+// lands), reach (arena units), speed (× how fast you recover from a swing),
+// power (strength a hit knocks off the boss; 1.5 = 2 half the time), stun (× how long a hit stuns
+// it), pierce (chance to smash through an armored wind-up), guard (added to
+// the odds your block holds) }. Every kind wears out the same way.
+const SWORD_KINDS = {
+  plain: { name: 'Sword', emoji: '🗡️', max: SWORD_MAX }
+};
+const SWORD_STATS_PLAIN = { land: 0, reach: 0, speed: 1, power: 1, stun: 1, pierce: 0, guard: 0 };
+let swordKind = 'plain';
 let swordRating = SWORD_MAX;
+function swordKindDef(id) { return SWORD_KINDS[id || swordKind] || SWORD_KINDS.plain; }
+function swordMax() { return swordKindDef().max || SWORD_MAX; }
+function swordStats() { return { ...SWORD_STATS_PLAIN, ...swordKindDef() }; }
+registerSaveField('swordKind', {
+  save: () => swordKind,
+  load: s => { swordKind = s && SWORD_KINDS[s.swordKind] ? s.swordKind : 'plain'; }
+});
 // Older saves have no sword yet: they start with a new one
 function savedSwordRating(save) {
   const n = save && Number(save.swordRating);
-  return Number.isFinite(n) ? clamp(Math.round(n), 0, SWORD_MAX) : SWORD_MAX;
+  return Number.isFinite(n) ? clamp(Math.round(n), 0, swordMax()) : swordMax();
 }
 registerSaveField('swordRating', { save: () => swordRating, load: s => { swordRating = savedSwordRating(s); } });
 let swordSearch = null;      // the find-or-drop in progress (it may fetch map files)
@@ -27,11 +47,12 @@ const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from all
 function hasSpareSword() { return backpack.some(it => it.id === SWORD_ITEM.id); }
 function hasSword() { return swordRating > 0 || hasSpareSword(); }
 
-// Use the spare sword from the backpack (when yours is worn out)
+// Use the spare (plain) sword from the backpack (when yours is worn out)
 function equipSpareSword() {
   const i = backpack.findIndex(it => it.id === SWORD_ITEM.id);
   if (i < 0 || swordRating > 0) return false;
   backpack.splice(i, 1);
+  swordKind = 'plain';           // a worn-out shop sword is swapped for the plain one
   swordRating = SWORD_MAX;
   writeSave();
   return true;
@@ -66,6 +87,7 @@ function findSword(configs) {
 function dropSword(configs, avoid) {
   const spots = {};
   for (const [path, cfg] of Object.entries(configs)) {
+    if (cfg.noSwordDrops) continue;     // e.g. the second camp, which isn't always open
     const items = worldItemsFor(path, cfg);
     const cave = cfg.boss && cfg.boss.cave;
     const ok = (cfg.hotspots || []).filter(h => !h.targetMap && !h.station && !h.bank && h.id !== cave &&
@@ -180,7 +202,14 @@ function wearSword(f, n) {
   if (swordRating <= 0) return;
   swordRating = Math.max(0, swordRating - n);
   f.swordWornAt = performance.now();
-  if (swordRating === 0) fightPop(f, 'SWORD WORN OUT! 🗡️', f.p.x, 400, '#FFAB91', 0.9);
+  if (swordRating === 0) fightPop(f, `${swordKindDef().name.toUpperCase()} WORN OUT! ${swordKindDef().emoji}`, f.p.x, 400, '#FFAB91', 0.9);
+}
+
+// Buy / get a sword of kind `id`, as good as new (your old one is traded in)
+function equipSwordKind(id) {
+  swordKind = SWORD_KINDS[id] ? id : 'plain';
+  swordRating = swordMax();
+  writeSave();
 }
 
 registerMapLayer(50, () => drawLyingSwords());

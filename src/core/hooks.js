@@ -55,8 +55,10 @@ function isTypingInGameInput(el) {
 //   interact(obj)  Space / tap there; return false to open the normal pop-up after all
 //   hint(obj)      the label above it while you're close (default: "[ SPACE ]")
 const HOTSPOT_KINDS = [];
-function registerHotspotKind(kind) {
-  HOTSPOT_KINDS.push(kind);
+// `first`: checked before the kinds registered so far (to take over a hotspot
+// another kind already handles, e.g. the cave once it leads somewhere)
+function registerHotspotKind(kind, { first = false } = {}) {
+  if (first) HOTSPOT_KINDS.unshift(kind); else HOTSPOT_KINDS.push(kind);
 }
 function hotspotKindOf(obj) {
   return HOTSPOT_KINDS.find(k => k.match(obj)) || null;
@@ -96,6 +98,29 @@ function addByZ(list, z, fn) {
   list.splice(i, 0, { z, fn });
 }
 
+// --- Foes and creatures on the map ---
+// Things that walk around a map and can pick a fight (the Blob, the
+// Marshmallows), drawn sorted in with the people.
+//   registerMapFoe(near): near() returns null, or the foe you're close enough
+//     to fight: { engage(), hit(screenX, screenY) → tapped it?, drawHint() }.
+//     Space / tapping it calls engage(); drawHint() draws the label over it.
+//   registerMapPeople(list): list() returns [{ y, draw }] to draw this frame,
+//     sorted by feet `y` in with the campers and NPCs.
+const MAP_FOES = [];
+const MAP_PEOPLE = [];
+function registerMapFoe(near) { MAP_FOES.push(near); }
+function registerMapPeople(list) { MAP_PEOPLE.push(list); }
+function nearbyFoe() {
+  for (const near of MAP_FOES) {
+    const foe = near();
+    if (foe) return foe;
+  }
+  return null;
+}
+function mapPeopleExtras() {
+  return MAP_PEOPLE.flatMap(list => list());
+}
+
 // --- Multiplayer messages ---
 // What to do when a message of type `t` arrives on the world's channel (see the
 // table in docs/multiplayer.md). fn(message, fromPlayerId, timetoken).
@@ -122,6 +147,8 @@ function registerSceneProps(props) {
 //   'playStart'     their save is loaded and they're in the game
 //   'mapLeave'      about to walk out of the current map (switchMap)
 //   'mapArrive'     arrived on a new map and placed on it (switchMap)
+//   'fightOver'     a boss fight just ended, before the result shows:
+//                   ({ foe, won, fled, level, res }); res.lines can be added to
 const GAME_EVENT_LISTENERS = Object.create(null);
 function onGameEvent(name, fn) {
   (GAME_EVENT_LISTENERS[name] = GAME_EVENT_LISTENERS[name] || []).push(fn);

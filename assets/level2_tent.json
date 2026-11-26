@@ -1,0 +1,288 @@
+{
+  "name": "Big Green Tent",
+  "where": "in the Big Green Tent",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.06,
+      "color": "#2e7d32",
+      "stripe": "#1b5e20"
+    },
+    "wall": {
+      "pattern": "canvas",
+      "color": "#a5d6a7"
+    },
+    "floor": {
+      "from": 0.5,
+      "pattern": "planks",
+      "color": "#d7ccc8",
+      "skirting": "#33691e"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff59d",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.32,
+        "color": "#388e3c",
+        "outside": "#1a237e"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.505,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#5d4037",
+        "text": "ZZZ"
+      },
+      {
+        "kind": "bulb",
+        "px": 0.48,
+        "py": 0.06,
+        "pw": 0.025,
+        "ph": 0.12,
+        "color": "#ffd54f"
+      },
+      {
+        "kind": "bunting",
+        "px": 0.15,
+        "py": 0.08,
+        "pw": 0.3,
+        "ph": 0.06,
+        "flags": 7,
+        "colors": [
+          "#fff59d",
+          "#90caf9",
+          "#f8bbd0"
+        ]
+      },
+      {
+        "kind": "bunting",
+        "px": 0.55,
+        "py": 0.08,
+        "pw": 0.3,
+        "ph": 0.06,
+        "flags": 7,
+        "colors": [
+          "#fff59d",
+          "#90caf9",
+          "#f8bbd0"
+        ]
+      },
+      {
+        "kind": "window",
+        "px": 0.17,
+        "py": 0.2,
+        "pw": 0.09,
+        "ph": 0.14
+      },
+      {
+        "kind": "scribble",
+        "text": "★ SLEEPOVER ★",
+        "px": 0.62,
+        "py": 0.24,
+        "pw": 0.22,
+        "ph": 0.06,
+        "color": "#f9a825",
+        "rotate": -3
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🏮",
+        "px": 0.88,
+        "py": 0.16,
+        "pw": 0.05,
+        "ph": 0.09
+      },
+      {
+        "kind": "rug",
+        "px": 0.36,
+        "py": 0.6,
+        "pw": 0.3,
+        "ph": 0.18,
+        "colors": [
+          "#ffb74d",
+          "#4db6ac",
+          "#f06292",
+          "#fff59d"
+        ]
+      },
+      {
+        "kind": "sleepingBag",
+        "px": 0.15,
+        "py": 0.82,
+        "pw": 0.22,
+        "ph": 0.1,
+        "color": "#5c6bc0"
+      },
+      {
+        "kind": "sleepingBag",
+        "px": 0.42,
+        "py": 0.84,
+        "pw": 0.22,
+        "ph": 0.1,
+        "color": "#ec407a",
+        "pillow": "#fff9c4"
+      },
+      {
+        "kind": "sleepingBag",
+        "px": 0.7,
+        "py": 0.82,
+        "pw": 0.22,
+        "ph": 0.1,
+        "color": "#ffa726"
+      },
+      {
+        "kind": "toyChest",
+        "px": 0.73,
+        "py": 0.4,
+        "pw": 0.16,
+        "ph": 0.16,
+        "peek": [
+          "🔦",
+          "🃏",
+          "🧸"
+        ],
+        "color": "#8d6e63"
+      },
+      {
+        "kind": "beanBag",
+        "px": 0.3,
+        "py": 0.45,
+        "pw": 0.12,
+        "ph": 0.12,
+        "color": "#7e57c2"
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🍫",
+        "px": 0.48,
+        "py": 0.65,
+        "pw": 0.04,
+        "ph": 0.06
+      },
+      {
+        "kind": "emoji",
+        "emoji": "📖",
+        "px": 0.54,
+        "py": 0.67,
+        "pw": 0.04,
+        "ph": 0.06,
+        "rotate": 12
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_flap",
+      "name": "Tent Flap",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.34,
+      "action": "enter",
+      "description": "Back out to the Second Camp",
+      "interactionText": "You crawl back out of the tent.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level2.json",
+      "targetHotspot": "tent_green",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
+    },
+    {
+      "id": "sleeping_bags",
+      "name": "Sleeping Bags",
+      "px": 0.13,
+      "py": 0.78,
+      "pw": 0.8,
+      "ph": 0.17,
+      "action": "sleep",
+      "description": "Three puffy sleeping bags in a row",
+      "interactionText": "You wriggle into a sleeping bag and tell spooky stories about the Marshmallows. Shhh... did you hear something? 🔦👻",
+      "items": [
+        {
+          "id": "pillow_fort_blanket",
+          "name": "Fluffy Blanket",
+          "emoji": "🛌"
+        },
+        {
+          "id": "flashlight_2",
+          "name": "Spare Flashlight",
+          "emoji": "🔦"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "comic_book",
+          "text": "You read the comic book with everyone in their sleeping bags. Giggle fit! 📚",
+          "animation": "sleep"
+        }
+      ]
+    },
+    {
+      "id": "toy_chest",
+      "name": "Game Chest",
+      "px": 0.73,
+      "py": 0.38,
+      "pw": 0.16,
+      "ph": 0.2,
+      "action": "play",
+      "description": "Games for a rainy night",
+      "interactionText": "You open the game chest. Cards, puzzles, and a VERY old teddy bear!",
+      "items": [
+        {
+          "id": "playing_cards",
+          "name": "Playing Cards",
+          "emoji": "🃏"
+        },
+        {
+          "id": "puzzle",
+          "name": "Puzzle",
+          "emoji": "🧩"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "snack_rug",
+      "name": "Midnight Snacks",
+      "px": 0.36,
+      "py": 0.58,
+      "pw": 0.3,
+      "ph": 0.2,
+      "action": "eat",
+      "description": "Chocolate and stories on the rug",
+      "interactionText": "You share midnight snacks on the rug. Crunch crunch... shhh, quiet crunching!",
+      "items": [
+        {
+          "id": "chocolate_bar",
+          "name": "Chocolate Bar",
+          "emoji": "🍫"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

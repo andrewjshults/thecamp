@@ -95,7 +95,9 @@ function crawlMaps() {
     const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
     out.push({ path: p, cfg });
     for (const h of cfg.hotspots || []) {
-      if (h.targetMap && !seen.has(h.targetMap)) { seen.add(h.targetMap); queue.push(h.targetMap); }
+      for (const link of [h.targetMap, h.passage && h.passage.targetMap]) {
+        if (link && !seen.has(link)) { seen.add(link); queue.push(link); }
+      }
     }
   }
   return out;
@@ -248,9 +250,9 @@ async function backToPlaying(tab) {
       if (await tab.state() === 'fighting') await tab.ev('endFight && endFight()');
       continue;
     }
-    if (s === 'bankModal' || s === 'kitchenModal') {
+    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop') {
       // These pop-ups are HTML: Esc in the page is handled by their own listeners
-      await tab.ev(s === 'bankModal' ? 'closeBank()' : 'closeKitchenModal()');
+      await tab.ev(s === 'bankModal' ? 'closeBank()' : s === 'swordShop' ? 'closeSwordShop()' : 'closeKitchenModal()');
       continue;
     }
     if (s === 'itemAction' || s === 'usingItem' || s === 'interacting' || s === 'talking') {
@@ -366,26 +368,98 @@ async function singlePlayer(context) {
   await tab.shot('fight');
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
+  await secondCamp(tab);
 
   // Some progress to save, so resuming has something to bring back
-  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; dishesMade = ['sandwich'];
+  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; dishesMade = ['sandwich'];
     customRecipes = [{ id: 'custom_1', name: 'Tomato Surprise', needs: ['tomato', 'bread'], map: 'assets/camp_kitchen.json' }];
     completedUses = [{ hotspotId: 'tree', hotspotName: 'Tree', itemId: 'rope', itemName: 'Rope', itemEmoji: '🪢', text: 'Climbed!' }];
     backpack.push({ id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }); writeSave();`);
   await tab.key('Escape');
   await tab.key('y');
   await tab.until('state === GameState.CHARACTER_SELECT');
-  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; dishesMade = []; customRecipes = []`);
+  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; dishesMade = []; customRecipes = []`);
   await tab.key('Enter');
   await tab.until('state === GameState.RESUME_PROMPT');
   await tab.shot('resume-prompt');
   await tab.key('r');
   await tab.until('state === GameState.PLAYING');
   tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
-    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, bossWins, bankBalance })`),
+    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins })`),
     save: await tab.ev(SAVES_SORTED) });
   await taps(tab);
   await tab.page.close();
+}
+
+// The Second Camp: beating the top-level Blob opens the cave's secret passage;
+// through it (with a sidekick) to the Marshmallows; buy a sword; get caught
+// with no sword → sent back, and the passage shuts again
+async function secondCamp(tab) {
+  const L2 = 'assets/camp_level2.json';
+  const standAt = id => tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === ${JSON.stringify(id)});
+    player.x = o.x + o.width / 2; player.y = o.y + o.height / 2; tapTarget = null; })()`);
+  // Win a fight against the level 5 Blob: the passage opens
+  await tab.ev(`bossWins = ${5}; resetMapBoss(); startFight(); fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(500);
+  await tab.shot('l2-unlocked');
+  tab.note({ step: 'l2-unlock', open: await tab.ev('level2Open'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  // A sidekick comes through the cave too
+  await tab.ev(`makeSidekick(npcOnThisMap('red_scout'))`);
+  await standAt('cave');
+  await tab.run(200);
+  tab.note({ step: 'l2-cave-hint', near: await tab.ev('nearbyObject && nearbyObject.id') });
+  await tab.shot('l2-cave-open');
+  await tab.key(' ');
+  await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(L2)}`, 'the second camp');
+  await tab.run(2500);
+  await tab.shot('l2-arrived');
+  tab.note({ step: 'l2-arrived', sidekick: await tab.ev('sidekick && sidekick.npc.id') });
+  // Out come the Marshmallows; the kid catches you and it's a fight
+  await tab.ev('mallows.foes.forEach(m => { m.homeUntil = 0; }); mallows.graceUntil = 0');
+  await tab.run(200);
+  await tab.ev(`(() => { const m = mallows.foes.find(m => m.def.kid); const p = mallowPos(m); player.x = p.x + 30; player.y = p.y; })()`);
+  await tab.until('state === GameState.FIGHTING', 'a Marshmallow fight', 10000);
+  await tab.run(3500);
+  await tab.shot('l2-fight');
+  await tab.ev(`fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(300);
+  tab.note({ step: 'l2-won', foe: await tab.ev('fight.foe.id'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  // Ember's Sword Shop: pay with backpack coins, get change
+  await tab.ev(`switchMap('assets/sword_shop.json', null)`);
+  await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/sword_shop.json'`);
+  await tab.ev(`backpack = backpack.filter(i => !isCoin(i)); backpack.push({ ...BANK_COIN }, { ...BANK_COIN },
+    { id: 'twenty_dollar_coin', name: '$20 Coin', emoji: '🪙', coin: true, value: 20 })`);
+  await standAt('shop_counter');
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(500);
+  await tab.page.click('[data-sword=rainbow]');      // too pricey
+  await tab.page.click('[data-sword=ice]');
+  await tab.run(200);
+  await tab.shot('l2-sword-shop');
+  tab.note({ step: 'l2-shop', state: await tab.state(), sword: await tab.ev('swordKind + " " + swordRating'),
+    wallet: await tab.ev('walletTotal()'), says: await tab.ev("shopSaysEl.textContent") });
+  await tab.ev('closeSwordShop()');
+  // Caught with no sword: lost straight away, back to the first camp, passage shut
+  await tab.ev(`switchMap(${JSON.stringify(L2)}, 'cave_exit')`);
+  await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(L2)}`);
+  await tab.run(300);
+  await tab.ev(`swordRating = 0; backpack = backpack.filter(i => i.id !== 'sword');
+    mallows.foes.forEach(m => { m.homeUntil = 0; }); mallows.graceUntil = 0`);
+  await tab.run(200);
+  await tab.ev(`(() => { const m = mallows.foes.find(m => !m.def.kid); const p = mallowPos(m); player.x = p.x + 30; player.y = p.y;
+    mallows.foes.filter(o => o !== m).forEach(o => { o.where = 'home'; o.homeUntil = Infinity; }); })()`);
+  await tab.until(`state === GameState.FIGHTING && fight.phase === 'result'`, 'an instant loss', 10000);
+  await tab.shot('l2-no-sword');
+  tab.note({ step: 'l2-no-sword', lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`, 'back at the first camp');
+  tab.note({ step: 'l2-sent-back', open: await tab.ev('level2Open') });
+  await tab.ev('swordKind = "plain"; swordRating = 100; writeSave()');
 }
 
 // Clicking / tapping instead of keys (the same code handles touch)
