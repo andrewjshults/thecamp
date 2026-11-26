@@ -130,6 +130,9 @@ function randomWanderTarget() {
 
 function updateMallows() {
   nearMallow = null;
+  // Bosses off (exploration mode): they stay away, and start over (with a
+  // few seconds' grace) once they're back on
+  if (foesOff()) { mallows.map = null; return; }
   const cfg = mallowCfg();
   if (!cfg || !player.character || !mallowLair()) return;
   const now = performance.now();
@@ -219,7 +222,7 @@ function stepMallow(m, now, k) {
 // `auto`: it caught you. With no sword you can't pick a fight, but if it
 // catches you, you lose straight away.
 function engageMallow(m, auto) {
-  if (state !== GameState.PLAYING || bossEngage || doorOpening) return;
+  if (state !== GameState.PLAYING || bossEngage || doorOpening || foesOff()) return;
   let noSword = false;
   if (swordRating <= 0 && !equipSpareSword()) {
     if (!auto) {

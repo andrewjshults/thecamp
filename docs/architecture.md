@@ -37,7 +37,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
-| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `sword-shop/`, `sword.js` |
+| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `sword-shop/`, `explore/`, `sword.js` |
 | `src/mp/` | The start menu and multiplayer over PubNub |
 | `src/tools/` | Dev mode (the hotspot editor) |
 | `src/main.js` | The game loop and start-up (loads last) |
@@ -57,6 +57,7 @@ functions. Each shared function loops over what's registered:
 | `registerGameState(NAME, { draw, onKey, onTap, inWorld, inputs })` | the game loop, `keydown`, `handleCanvasTap`, `mpInWorld` | A screen or pop-up. New names are added to `GameState` |
 | `registerHotspotKind({ match, interact, hint }, { first })` | `handleInteract`, the hint above a hotspot in `drawGame` | A hotspot that does its own thing on Space/tap (portals, stations, the bank, the cave). `first: true` checks it before the kinds already registered |
 | `registerMapFoe(near)` | `playingKey`, `playingTap`, `drawPeople` | Something on the map you can pick a fight with: `near()` returns null or `{ engage, hit, drawHint }` (the Blob, the Marshmallows) |
+| `registerFoesOff(isOff)` | the Blob and the Marshmallows (`foesOff()`) | Turning the bosses off for a while (exploration mode) |
 | `registerMapPeople(list)` | `drawPeople` | Things drawn sorted by feet `y` with the people: `list()` returns `[{ y, draw }]` |
 | `registerMapLayer(z, draw)` | `drawGame` | Drawn over the map picture, under people (map coordinates) |
 | `registerScreenLayer(z, draw)` | `drawGame` | Drawn over people, under the HUD (screen coordinates) |

@@ -28,18 +28,18 @@ onGameEvent('fightOver', ({ foe, won, level, res }) => {
   level2Open = true;
 });
 
+function goThroughPassage(obj) {
+  if (doorOpening || bossEngage) return;
+  switchMap(obj.passage.targetMap, obj.passage.targetHotspot);
+}
 registerHotspotKind({
   match: obj => !!obj.passage && level2Open,
-  interact(obj) {
-    if (doorOpening || bossEngage) return;
-    switchMap(obj.passage.targetMap, obj.passage.targetHotspot);
-  },
+  interact: obj => goThroughPassage(obj),
   hint: () => isTouchDevice() ? '🕳️ [ TAP ] Secret passage!' : '🕳️ [ SPACE ] Secret passage!'
 }, { first: true });
 
 // A purple glow swirling in the cave's mouth while the passage is open
 function drawPassageGlow() {
-  if (!level2Open) return;
   const c = interactiveObjects.find(o => o.passage);
   if (!c) return;
   const now = performance.now();
@@ -65,4 +65,4 @@ function drawPassageGlow() {
   }
   ctx.restore();
 }
-registerMapLayer(21, () => drawPassageGlow());
+registerMapLayer(21, () => { if (level2Open) drawPassageGlow(); });

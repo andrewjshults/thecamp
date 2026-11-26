@@ -120,6 +120,12 @@ function nearbyFoe() {
 function mapPeopleExtras() {
   return MAP_PEOPLE.flatMap(list => list());
 }
+// registerFoesOff(isOff): isOff() returns true while the bosses should leave
+// you alone (exploration mode): they hide, don't chase or catch you, and you
+// can't pick a fight. Each foe checks foesOff().
+const FOES_OFF = [];
+function registerFoesOff(isOff) { FOES_OFF.push(isOff); }
+function foesOff() { return FOES_OFF.some(isOff => isOff()); }
 
 // --- Multiplayer messages ---
 // What to do when a message of type `t` arrives on the world's channel (see the

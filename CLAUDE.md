@@ -74,6 +74,8 @@ Several changes are often made at once on separate branches, so:
 - [Multiplayer over PubNub: messages, shared items, the shared Blob](docs/multiplayer.md)
 - [The Second Camp: the cave's secret passage, the Marshmallow bosses](docs/level-two.md)
 - [Ember's Sword Shop: the four swords you can buy](docs/sword-shop.md)
+- [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
+- [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.

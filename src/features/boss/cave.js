@@ -72,7 +72,7 @@ function drawBossCave() {
     ctx.stroke();
   }
   // glowing eyes when the Blob is home (blinking now and then)
-  if (mapBoss.map === currentMapPath && mapBoss.where === 'home') {
+  if (mapBoss.map === currentMapPath && mapBoss.where === 'home' && !foesOff()) {
     const blink = (now % 3200) < 160;
     const ey = mBottom - mh * 0.45;
     const look = Math.sin(now / 900) * mw * 0.05;
