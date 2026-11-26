@@ -49,7 +49,9 @@ const log = (...a) => console.log('  ', ...a);
 // timetoken and hands it to every tab in that order, like PubNub does.
 const FAKE_PUBNUB = `
 window.__pn = new Set();
+window.__mpSeen = {};   // message types this tab has received
 window.__pnDeliver = (ev) => {
+  window.__mpSeen[ev.message.t] = (window.__mpSeen[ev.message.t] || 0) + 1;
   for (const pn of window.__pn) {
     if (!pn.channels.includes(ev.channel)) continue;
     for (const l of pn.listeners) if (l.message) l.message(ev);
@@ -504,6 +506,24 @@ async function multiPlayer(browser) {
     if (mine) for (const k of ['swordRating', 'bankBalance', 'bossWins', 'strengthBoost', 'dishesMade', 'customRecipes']) {
       if (!(k in mine[1])) errors.push(`[mp] the world save is missing ${k}`);
     }
+  }
+
+  // B walks up to A and talks to them
+  await b.ev(`(() => { const a = [...mp.players.values()][0]; player.x = a.x + 80; player.y = a.y; tapTarget = null; })()`);
+  for (let i = 0; i < 10; i++) { await a.run(100); await b.run(100); }
+  await b.ev('startConversation([...mp.players.values()][0])');
+  await b.page.fill('#talkInput', 'hi friend!');
+  await b.page.press('#talkInput', 'Enter');
+  for (let i = 0; i < 30; i++) { await a.run(100); await b.run(100); }
+  const heard = await a.ev(`speechBubbles.map(b => b.lines.map(l => l.words.map(w => w.text).join(' ')).join(' '))`);
+  log('multiplayer: A heard', heard);
+  if (!heard.includes('hi friend!')) errors.push('[mp] A did not hear what B said');
+  await b.key('Escape');
+
+  const seen = await b.ev('window.__mpSeen');
+  log('multiplayer: B received', JSON.stringify(seen));
+  for (const t of ['hello', 'snap', 'pos', 'take', 'boss']) {
+    if (!seen[t]) errors.push(`[mp] B never received a "${t}" message`);
   }
   await context.close();
 }

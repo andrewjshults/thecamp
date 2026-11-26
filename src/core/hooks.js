@@ -34,7 +34,7 @@ function loadSaveFields(save) {
 //   inWorld      true if your camper is still out on the map (friends see you)
 //   inputs       HTML elements you type into: keys there don't drive the game
 // A new state is added to GameState as well, e.g. 'BANK_MODAL' → 'bankModal'.
-const GAME_STATES = {};       // state value → handlers
+const GAME_STATES = Object.create(null);   // state value → handlers
 const TYPING_INPUTS = [];
 function registerGameState(name, handlers) {
   if (!GameState[name]) GameState[name] = name.toLowerCase().replace(/_(\w)/g, (_, c) => c.toUpperCase());
@@ -94,4 +94,13 @@ function addByZ(list, z, fn) {
   let i = list.length;
   while (i > 0 && list[i - 1].z > z) i--;
   list.splice(i, 0, { z, fn });
+}
+
+// --- Multiplayer messages ---
+// What to do when a message of type `t` arrives on the world's channel (see the
+// table in docs/multiplayer.md). fn(message, fromPlayerId, timetoken).
+// `othersOnly`: skip the copy of our own messages that PubNub sends back.
+const MP_MESSAGES = Object.create(null);   // (no prototype: `t` comes from the network)
+function registerMpMessage(t, fn, { othersOnly = false } = {}) {
+  MP_MESSAGES[t] = { fn, othersOnly };
 }

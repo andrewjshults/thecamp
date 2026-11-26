@@ -47,48 +47,42 @@ function mpOnMessage(ev) {
   const known = mp.players.get(from);
   if (known) known.lastSeen = performance.now();
 
-  switch (m.t) {
-    case 'take':
-    case 'drop':
-      if (mp.synced) mpApplyOp(m, from, tt);
-      else mp.buffer.push({ m, from, tt });
-      break;
-    case 'snap':
-      if (m.to === mp.myId) {
-        if (!mp.synced) mpApplySnapshot(m);
-      } else if (mp.snapReplies.has(m.to)) {
-        // someone else already answered that newcomer
-        clearTimeout(mp.snapReplies.get(m.to));
-        mp.snapReplies.delete(m.to);
-      }
-      break;
-    case 'hello':
-      if (from === mp.myId) break;
-      if (mp.present) setTimeout(() => mpSendPos(true), Math.random() * 300);
-      if (mp.synced && !mp.snapReplies.has(from)) {
-        mp.snapReplies.set(from, setTimeout(() => {
-          mp.snapReplies.delete(from);
-          mpSendSnapshot(from);
-        }, 50 + Math.random() * 450));
-      }
-      break;
-    case 'pos':
-      if (from !== mp.myId) mpOnPos(m, from);
-      break;
-    case 'say':
-      if (from !== mp.myId) mpOnSay(m, from);
-      break;
-    case 'bye':
-      if (from !== mp.myId) mpRemovePlayer(from, 'left');
-      break;
-    case 'boss':
-      if (from !== mp.myId) mpOnBossState(m, from);
-      break;
-    case 'bossfight':
-      if (from !== mp.myId) mpOnBossFight(m, from);
-      break;
-  }
+  // Each message type has its handler (registerMpMessage)
+  const handler = MP_MESSAGES[m.t];
+  if (!handler || (handler.othersOnly && from === mp.myId)) return;
+  handler.fn(m, from, tt);
 }
+
+// Item moves: applied by everyone in timetoken order (once we know the world)
+function mpOnItemOp(m, from, tt) {
+  if (mp.synced) mpApplyOp(m, from, tt);
+  else mp.buffer.push({ m, from, tt });
+}
+registerMpMessage('take', mpOnItemOp);
+registerMpMessage('drop', mpOnItemOp);
+// The whole world's items, for a newcomer
+registerMpMessage('snap', m => {
+  if (m.to === mp.myId) {
+    if (!mp.synced) mpApplySnapshot(m);
+  } else if (mp.snapReplies.has(m.to)) {
+    // someone else already answered that newcomer
+    clearTimeout(mp.snapReplies.get(m.to));
+    mp.snapReplies.delete(m.to);
+  }
+});
+// Someone arrived: say where we are, and (one of us) send them the world
+registerMpMessage('hello', (m, from) => {
+  if (mp.present) setTimeout(() => mpSendPos(true), Math.random() * 300);
+  if (mp.synced && !mp.snapReplies.has(from)) {
+    mp.snapReplies.set(from, setTimeout(() => {
+      mp.snapReplies.delete(from);
+      mpSendSnapshot(from);
+    }, 50 + Math.random() * 450));
+  }
+}, { othersOnly: true });
+registerMpMessage('pos', (m, from) => mpOnPos(m, from), { othersOnly: true });
+registerMpMessage('say', (m, from) => mpOnSay(m, from), { othersOnly: true });
+registerMpMessage('bye', (m, from) => mpRemovePlayer(from, 'left'), { othersOnly: true });
 
 function mpCleanItem(it) {
   if (!it || typeof it.id !== 'string' || !it.id) return null;

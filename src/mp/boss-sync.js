@@ -156,3 +156,6 @@ window.addEventListener('pagehide', () => {
     `${encodeURIComponent(mp.channel)}/0/${msg}?uuid=${encodeURIComponent(mp.myId)}&store=0`;
   try { fetch(url, { keepalive: true, mode: 'no-cors' }); } catch (_) { /* best effort */ }
 });
+
+registerMpMessage('boss', (m, from) => mpOnBossState(m, from), { othersOnly: true });
+registerMpMessage('bossfight', (m, from) => mpOnBossFight(m, from), { othersOnly: true });
