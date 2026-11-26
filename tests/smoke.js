@@ -417,6 +417,19 @@ async function secondCamp(tab) {
   await tab.run(2500);
   await tab.shot('l2-arrived');
   tab.note({ step: 'l2-arrived', sidekick: await tab.ev('sidekick && sidekick.npc.id') });
+  // Hiding in the swimming pool: they can't come in, and don't catch you
+  await tab.ev(`(() => { mallows.foes.forEach(m => { m.homeUntil = 0; }); mallows.graceUntil = 0;
+    player.x = 0.6 * scaledMapW; player.y = 0.12 * scaledMapH; tapTarget = null; })()`);
+  await tab.run(200);
+  await tab.ev(`mallows.foes.forEach(m => { m.where = 'out'; m.outUntil = Infinity; m.fx = 0.47; m.fy = 0.12; m.target = { fx: 0.7, fy: 0.12 }; })`);
+  await tab.run(2500);
+  const pool = await tab.ev(`({ fighting: state === GameState.FIGHTING, youSafe: inSafeZone(player.x, player.y),
+    inPool: mallows.foes.filter(m => { const p = mallowPos(m); return safeZoneAt(p.x, p.y); }).length })`);
+  tab.note({ step: 'l2-pool-safe', ...pool });
+  if (pool.fighting || !pool.youSafe || pool.inPool) throw new Error(`a Marshmallow got into the pool: ${JSON.stringify(pool)}`);
+  await tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === 'cave_exit'); player.x = o.x + o.width / 2; player.y = o.y + o.height + 40;
+    mallows.foes.forEach(m => { m.where = 'home'; m.homeUntil = Infinity; m.shout = null; }); })()`);
+  await tab.run(200);
   // Out come the Marshmallows; the kid catches you and it's a fight
   await tab.ev('mallows.foes.forEach(m => { m.homeUntil = 0; }); mallows.graceUntil = 0');
   await tab.run(200);
