@@ -469,3 +469,13 @@ document.getElementById('kmName').addEventListener('submit', (e) => {
   startFreestyle(freestylePending.obj, name);
   closeKitchenModal();
 });
+
+// Kitchen food can't leave the kitchen
+onGameEvent('mapLeave', () => {
+  if (!heldItem) return;
+  if (heldItem.dessert) eatDessert(heldItem, true);   // you paid for it!
+  else kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
+  if (heldItem.draft) draftRecipe = null;            // never eaten, so never finished
+  heldItem = null;
+});
+onGameEvent('camperChosen', () => { heldItem = null; });

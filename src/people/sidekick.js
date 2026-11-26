@@ -207,3 +207,13 @@ function mpSidekickTaken(id) {
 function mpSidekicksHere() {
   return mpPlayersHere().filter(rp => rp.sk).map(rp => rp.sk);
 }
+
+// Your sidekick comes through the door with you; ex-sidekicks walking home stay behind
+onGameEvent('mapArrive', () => {
+  placeSidekickBeside();
+  npcLeavers = [];
+});
+onGameEvent('camperChosen', () => {
+  sidekick = null;
+  npcLeavers = [];
+});

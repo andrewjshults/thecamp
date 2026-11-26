@@ -114,3 +114,18 @@ function registerSceneProps(props) {
   Object.assign(SCENE_PROPS, props);
 }
 
+// --- Game events ---
+// Moments other files want to hear about. onGameEvent(name, fn) listens;
+// the core calls emitGameEvent(name) at that moment:
+//   'camperChosen'  a camper was picked, before their save loads: forget the
+//                   last camper's things (held food, sidekick, chats...)
+//   'playStart'     their save is loaded and they're in the game
+//   'mapLeave'      about to walk out of the current map (switchMap)
+//   'mapArrive'     arrived on a new map and placed on it (switchMap)
+const GAME_EVENT_LISTENERS = Object.create(null);
+function onGameEvent(name, fn) {
+  (GAME_EVENT_LISTENERS[name] = GAME_EVENT_LISTENERS[name] || []).push(fn);
+}
+function emitGameEvent(name, ...args) {
+  for (const fn of GAME_EVENT_LISTENERS[name] || []) fn(...args);
+}

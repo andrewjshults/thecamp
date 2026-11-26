@@ -156,13 +156,7 @@ function selectCharacter(index) {
     return;
   }
   player.character = characters[index];
-  heldItem = null;
-  sidekick = null;
-  npcLeavers = [];
-  resetMapBoss();
-  // Friends don't remember chats with a different character
-  for (const k of Object.keys(conversations)) delete conversations[k];
-  speechBubbles = [];
+  emitGameEvent('camperChosen');
   // Starting position comes from the map's JSON config
   const start = mapConfig.playerStart;
   player.x = scaledMapW * start.px;
@@ -179,7 +173,7 @@ function selectCharacter(index) {
   } else {
     initFreshSave();
     state = GameState.PLAYING;
-    checkSwordSoon();
+    emitGameEvent('playStart');
   }
 }
 
@@ -190,7 +184,7 @@ function resumePendingSave() {
 
   // Apply global state (backpack, journal, per-map hotspot caches)
   applySave(save);
-  checkSwordSoon();
+  emitGameEvent('playStart');
 
   const savedMap = save.currentMap || 'assets/game_design.json';
   if (savedMap !== currentMapPath) {
@@ -209,5 +203,5 @@ function startFreshSave() {
   initFreshSave();
   pendingResumeSave = null;
   state = GameState.PLAYING;
-  checkSwordSoon();
+  emitGameEvent('playStart');
 }

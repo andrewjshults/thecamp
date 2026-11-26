@@ -328,3 +328,9 @@ function localCritterReply(npc, history) {
 }
 
 registerFrameUpdate(30, () => updateConversation());
+
+// Friends don't remember chats with a different character
+onGameEvent('camperChosen', () => {
+  for (const k of Object.keys(conversations)) delete conversations[k];
+  speechBubbles = [];
+});

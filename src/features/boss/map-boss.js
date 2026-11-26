@@ -194,3 +194,4 @@ function drawMapBossShout() {
 registerScreenLayer(20, () => drawMapBossShout());
 // The Blob comes and goes from its cave as it likes (and may ambush you)
 registerMapUpdate(10, () => updateMapBoss());
+onGameEvent('camperChosen', () => resetMapBoss());

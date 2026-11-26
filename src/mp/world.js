@@ -155,7 +155,7 @@ function mpStartPlaying() {
     age: 0
   };
   writeSave();
-  checkSwordSoon();
+  emitGameEvent('playStart');
   if (save && save.currentMap && save.currentMap !== currentMapPath && mp.items[save.currentMap]) {
     switchMap(save.currentMap, null);
   }

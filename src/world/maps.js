@@ -36,13 +36,7 @@ function loadMap(jsonPath, then = GameState.MODE_SELECT) {
 // Saves current state, loads the new map, positions player at targetHotspotId.
 // If targetHotspotId is null, uses the map's playerStart.
 function switchMap(targetPath, targetHotspotId) {
-  // Kitchen food can't leave the kitchen
-  if (heldItem) {
-    if (heldItem.dessert) eatDessert(heldItem, true);   // you paid for it!
-    else kitchenToast(`You leave the ${foodLabel(heldItem.id)} in the kitchen.`);
-    if (heldItem.draft) draftRecipe = null;            // never eaten, so never finished
-    heldItem = null;
-  }
+  emitGameEvent('mapLeave');
   // Stash current map's hotspot items
   allMapSaves[currentMapPath] = { hotspots: hotspotItems };
   writeSave();
@@ -84,8 +78,7 @@ function switchMap(targetPath, targetHotspotId) {
           player.x = scaledMapW * config.playerStart.px;
           player.y = scaledMapH * config.playerStart.py;
         }
-        placeSidekickBeside();
-        npcLeavers   = [];
+        emitGameEvent('mapArrive');
         nearbyObject = null;
         nearbyNpc    = null;
         speechBubbles = [];

@@ -217,3 +217,5 @@ function wearSword(f, n) {
 }
 
 registerMapLayer(50, () => drawLyingSwords());
+// There's always a sword lying somewhere in the world
+onGameEvent('playStart', () => checkSwordSoon());
