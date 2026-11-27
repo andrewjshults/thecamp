@@ -112,6 +112,13 @@ canvas {
 .menuPanel button.purple { background: #8E24AA; }
 .menuPanel button.orange { background: #F57C00; }
 .menuPanel button.blue   { background: #1E88E5; }
+.menuPanel .guideLink {
+  display: block;
+  margin-top: 14px;
+  color: #FFD54F;
+  font-size: 15px;
+  text-decoration: underline;
+}
 .menuPanel button.link {
   background: none;
   box-shadow: none;
