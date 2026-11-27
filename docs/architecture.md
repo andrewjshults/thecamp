@@ -37,7 +37,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
-| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `sword.js` |
+| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `playtime/`, `sword.js` |
 | `src/mp/` | The start menu and multiplayer over PubNub |
 | `src/tools/` | Dev mode (the hotspot editor) |
 | `src/main.js` | The game loop and start-up (loads last) |

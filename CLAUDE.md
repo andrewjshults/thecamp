@@ -78,6 +78,7 @@ Several changes are often made at once on separate branches, so:
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)
 - [Armor and Shelly's Armor Shop: the four kinds you can buy](docs/armor-shop.md)
+- [Play time: the 20-minute limit, the break, the grown-up TOTP code, dev overrides](docs/playtime.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.
