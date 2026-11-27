@@ -69,6 +69,12 @@ Several changes are often made at once on separate branches, so:
   in the boss's `reward` in its map JSON. A new level's boss follows the same
   rule.
 
+## Building a new level
+
+Use the **`build-level`** skill (`.claude/skills/build-level/SKILL.md`): the
+questions to ask first, the files, the passage from the level below, the map
+script, the boss and its tuning, the smoke test and the docs.
+
 ## Docs
 
 - [Architecture, plug-in points, adding a feature, testing](docs/architecture.md)
