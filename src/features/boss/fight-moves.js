@@ -50,6 +50,7 @@ function fightSay(f, text, dur) {
 function playerReach() { return P_REACH + swordStats().reach; }
 // The odds a swing lands / a block holds: strength, plus what your sword adds
 function swingOdds(att, who) {
+  if (who === 'player' && swordStats().hitOdds != null) return swordStats().hitOdds;   // the lava sword: 1 in 5
   return Math.min(0.98, strengthOdds(att.strength) + (who === 'player' ? swordStats().land : 0));
 }
 function guardOdds(f, guard) {
@@ -138,6 +139,10 @@ function resolveHit(f, att, def, who) {
   // a stronger sword knocks off more (power 1.5: 2 💪 half the time)
   const knocks = Math.floor(sw.power) + (sw.power % 1 && Math.random() < sw.power % 1 ? 1 : 0);
   for (let i = 0; i < knocks; i++) loseStrength(f, def, now);
+  if (who === 'player' && sw.oneHit) {           // the lava sword: one hit wins
+    scorer.score = f.toWin;
+    fightPop(f, 'LAVA KNOCKOUT! 🌋', def.x, 340 + def.y, '#FF7043', 1.2);
+  }
   if (who === 'boss') fightSay(f, bossSays('hitPhrases'), 1000);
   else if (Math.random() < 0.7) fightSay(f, bossSays('hurtPhrases'), 900);
   else f.shout = null;

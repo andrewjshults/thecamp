@@ -22,12 +22,13 @@ function update() {
   // Movement (suppressed while backpack overlay is open — arrow keys drive selection)
   let dx = 0, dy = 0;
   player.walking = false;
+  const speed = player.speed * playerSpeedFactor();   // e.g. slower in the slime pit (registerPlayerSpeed)
 
   if (!backpackOpen) {
-    if (keys['ArrowLeft'] || keys['a']) { dx = -player.speed; player.facing = 'left'; player.walking = true; }
-    if (keys['ArrowRight'] || keys['d']) { dx = player.speed; player.facing = 'right'; player.walking = true; }
-    if (keys['ArrowUp'] || keys['w']) { dy = -player.speed; player.walking = true; }
-    if (keys['ArrowDown'] || keys['s']) { dy = player.speed; player.walking = true; }
+    if (keys['ArrowLeft'] || keys['a']) { dx = -speed; player.facing = 'left'; player.walking = true; }
+    if (keys['ArrowRight'] || keys['d']) { dx = speed; player.facing = 'right'; player.walking = true; }
+    if (keys['ArrowUp'] || keys['w']) { dy = -speed; player.walking = true; }
+    if (keys['ArrowDown'] || keys['s']) { dy = speed; player.walking = true; }
   }
 
   // Keyboard cancels tap-to-move
@@ -40,11 +41,11 @@ function update() {
     const tdx = tapTarget.x - player.x;
     const tdy = tapTarget.y - player.y;
     const dist = Math.hypot(tdx, tdy);
-    if (dist < player.speed + 2) {
+    if (dist < speed + 2) {
       tapTarget = null;
     } else {
-      dx = (tdx / dist) * player.speed;
-      dy = (tdy / dist) * player.speed;
+      dx = (tdx / dist) * speed;
+      dy = (tdy / dist) * speed;
       player.facing = tdx < 0 ? 'left' : 'right';
       player.walking = true;
     }

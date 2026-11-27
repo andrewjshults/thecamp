@@ -2,7 +2,9 @@
 // Plain keyword matching, no Claude: if the player's line looks like a
 // question / search and names an item (by a word of its name or its emoji),
 // the NPC says where that item is right now, across every map: hotspots,
-// kitchen stations you can grab or buy it from, and your own backpack.
+// kitchen stations you can grab or buy it from, and your own backpack. Places
+// on the level you're on come first; one on another level says which level
+// ("..., on Level 2"), and levels you haven't unlocked aren't mentioned at all.
 const ITEM_QUESTION_RE = /\?|\b(where|wheres|find|found|seen|see|saw|look|looking|lost|locate|get|got|any|is there)\b/;
 const ITEM_WORD_SKIP = new Set(['the', 'and', 'toy', 'big', 'hot', 'pink', 'fancy', 'comfy', 'lonely', 'little']);
 
@@ -45,33 +47,49 @@ async function itemQuestionReply(history) {
   let configs;
   try { configs = await crawlMapConfigs(); } catch (_) { return null; }
   if (mapConfig && currentMapPath) configs = { ...configs, [currentMapPath]: mapConfig };
+  const levels = mapLevels(configs);
+  const myLevel = levelOfMap(levels, currentMapPath);
 
   // Every item the game knows about (so "haven't seen one" works too),
-  // and where each one is right now (lowercased name → [where phrase])
+  // and where each one is right now (lowercased name → [{ key, phrase, rank }]).
+  // Only on levels you've unlocked; one on another level says which level.
+  // rank: 0 right here, 1 elsewhere on this level, 1 + level on another level.
   const known = new Map(), spots = new Map();
   const learn = it => { if (it && it.name) known.set(it.name.toLowerCase(), it); };
-  const spot = (it, phrase) => {
+  const spot = (it, key, phrase, rank) => {
     learn(it);
     const k = it.name.toLowerCase();
-    (spots.get(k) || spots.set(k, []).get(k)).push(phrase);
+    const list = spots.get(k) || spots.set(k, []).get(k);
+    if (!list.some(s => s.key === key)) list.push({ key, phrase, rank });
+  };
+  const placeOf = path => {
+    const n = levelOfMap(levels, path);
+    if (path === currentMapPath) return { rank: 0, level: '' };
+    if (n === myLevel) return { rank: 1, level: '' };
+    return { rank: 1 + n, level: `, on ${levelLabel(n)}` };
   };
   learn(SWORD_ITEM);
   for (const [path, cfg] of Object.entries(configs)) {
-    const here = path === currentMapPath;
+    const n = levelOfMap(levels, path);
+    const open = levelUnlocked(levels, n);
+    const { rank, level } = placeOf(path);
+    const here = rank === 0;
     const where = (h, verb = 'at') => here
       ? `right here, ${verb} ${theName(h.name)}`
-      : `${verb} ${theName(h.name)} ${mapWhere(cfg)}`;
+      : `${verb} ${theName(h.name)} ${mapWhere(cfg)}${level}`;
     const items = worldItemsFor(path, cfg) || {};
     const foods = (cfg.kitchen && cfg.kitchen.foods) || {};
     if (cfg.boss && cfg.boss.reward) learn(cfg.boss.reward);
     for (const h of cfg.hotspots || []) {
       for (const it of h.items || []) learn(it);
-      for (const it of items[h.id] || []) spot(it, where(h));
       const st = h.station, food = st && foods[st.item];
-      if (food && st.type === 'source') spot(food, `to grab ${where(h, 'from')}`);
+      if (food) learn(food);
+      if (!open) continue;     // a level you haven't unlocked yet: not a word about it
+      for (const it of items[h.id] || []) spot(it, `${path}|${h.id}`, where(h), rank);
+      if (food && st.type === 'source') spot(food, `${path}|${h.id}`, `to grab ${where(h, 'from')}`, rank);
       if (food && st.type === 'shop') {
-        spot(food, here ? 'to buy right here, at the dessert case'
-                        : `to buy at the dessert case ${mapWhere(cfg)}`);
+        spot(food, `${path}|${h.id}`, here ? 'to buy right here, at the dessert case'
+                                           : `to buy at the dessert case ${mapWhere(cfg)}${level}`, rank);
       }
     }
   }
@@ -79,14 +97,16 @@ async function itemQuestionReply(history) {
   const asked = itemsMentioned(said, known).slice(0, 2);
   if (!asked.length) return null;
 
-  // Make sure there's a sword somewhere before saying where it is
-  if (asked.some(it => it.id === SWORD_ITEM.id) && !spots.has('sword')) {
-    const at = await findOrDropSword();
+  // Make sure there's a sword on this level before saying where it is
+  if (asked.some(it => it.id === SWORD_ITEM.id) &&
+      !(spots.get('sword') || []).some(s => s.rank <= 1)) {
+    const at = await findOrDropSword(null, myLevel);
     if (at) {
       const h = (at.cfg.hotspots || []).find(x => x.id === at.hs);
-      spot(SWORD_ITEM, at.path === currentMapPath
-        ? `right here, at ${theName(h ? h.name : 'somewhere')}`
-        : `at ${theName(h ? h.name : 'somewhere')} ${mapWhere(at.cfg)}`);
+      const hn = theName(h ? h.name : 'somewhere');
+      spot(SWORD_ITEM, `${at.path}|${at.hs}`, at.path === currentMapPath
+        ? `right here, at ${hn}`
+        : `at ${hn} ${mapWhere(at.cfg)}`, at.path === currentMapPath ? 0 : 1);
     }
   }
 
@@ -94,7 +114,9 @@ async function itemQuestionReply(history) {
   return asked.map(it => {
     const label = `${it.name} ${it.emoji || ''}`.trim();
     const mine = backpack.some(b => b.name.toLowerCase() === it.name.toLowerCase());
-    const list = [...new Set(spots.get(it.name.toLowerCase()) || [])];
+    // This level first (right here, then the rest of it), then the other levels in order
+    const sorted = (spots.get(it.name.toLowerCase()) || []).slice().sort((a, b) => a.rank - b.rank);
+    const list = [...new Set(sorted.map(s => s.phrase))];
     const places = list.slice(0, 2).join(', and ') + (list.length > 2 ? ', and a few other places' : '');
     if (mine && list.length) return `You've got ${label} in your backpack, ${name}! There's another one ${places}.`;
     if (mine) return `Silly ${name}, ${label} is in your backpack! 🎒`;

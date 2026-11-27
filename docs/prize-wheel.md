@@ -31,12 +31,14 @@ prize picked by `weight` from `WHEEL_PRIZES`:
 | 🪙 $10 Coin (the Blob's, level 1) | 3 | into the backpack |
 | 🪙 $20 Coin (the Marshmallows', level 2) | 2 | |
 | 🪙 $30 Coin (the Brick's, level 3) | 1 | |
-| ✨ Sparkle / 🧊 Ice / 🔥 Flame / 🌈 Rainbow Thunder Sword | 0.8 / 0.6 / 0.4 / 0.2 | in your hand right away |
-| 🥋 Padded Vest / ⛓️ Chain Mail / 🛡️ Knight / 💎 Crystal Armor | 0.8 / 0.6 / 0.4 / 0.2 | worn right away |
+| 🪙 $40 Coin (the Slime Brick's, level 4) | 0.5 | |
+| ✨ Sparkle / 🧊 Ice / 🔥 Flame / ☄️ Comet / 🌈 Rainbow Thunder / ⭐ Star / 🌋 Lava Sword | 0.8 / 0.6 / 0.4 / 0.25 / 0.2 / 0.15 / 0.1 | in your hand right away |
+| 🥋 Padded Vest / ⛓️ Chain Mail / 🛡️ Knight / 💎 Crystal / 🐉 Dragon Scale / 🌟 Star Armor | 0.8 / 0.6 / 0.4 / 0.2 / 0.2 / 0.15 | worn right away |
 
 A coin goes in your backpack, or into the Camp Bank (`bankBalance`) if the
 backpack is full. Swords and armor are the shops' ones
-([sword-shop.md](sword-shop.md), [armor-shop.md](armor-shop.md)), good as new
+([sword-shop.md](sword-shop.md), [armor-shop.md](armor-shop.md), Charlie's in
+[level-four.md](level-four.md)), good as new
 (`giveWheelSword`, `giveWheelArmor`). If what you already have is pricier and
 still works, you keep it instead, and it's made as good as new. All the prizes
 are handed over by `giveWheelPrize`.

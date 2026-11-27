@@ -1,7 +1,6 @@
 {
   "name": "Big Green Tent",
   "where": "in the Big Green Tent",
-  "noSwordDrops": true,
   "playerStart": {
     "px": 0.3,
     "py": 0.65

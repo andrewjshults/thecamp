@@ -36,10 +36,18 @@ function armorSay(text) {
   }
 }
 
+// Which armor this counter sells: its `sells` (a list of ids, or "all"),
+// else every kind that isn't `exclusive` (see swordsForSale)
+function armorForSale(keeper) {
+  const sells = keeper && keeper.sells;
+  return Object.entries(ARMOR_KINDS).filter(([id, a]) =>
+    sells === 'all' ? true : Array.isArray(sells) ? sells.includes(id) : !a.exclusive);
+}
+
 function buildArmorButtons() {
   const list = document.getElementById('armorKinds');
-  if (list.childElementCount) return;
-  for (const [id, a] of Object.entries(ARMOR_KINDS)) {
+  list.innerHTML = '';
+  for (const [id, a] of armorForSale(armorKeeper)) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'blue';
@@ -55,8 +63,10 @@ function openArmorShop(obj) {
   buildArmorButtons();
   document.getElementById('armorKeeperFace').textContent = armorKeeper.emoji || '🐢';
   const who = player.character ? player.character.name : 'camper';
-  armorSay(`Hello, ${who}... I'm ${armorKeeperName()}. My armor can stop a boss's hit! ` +
-    'Pay with the coins in your backpack. Which one would you like?');
+  // a keeper's own `greeting` ({name} = you), or Shelly's
+  armorSay(armorKeeper.greeting ? armorKeeper.greeting.replace(/\{name\}/g, who)
+    : `Hello, ${who}... I'm ${armorKeeperName()}. My armor can stop a boss's hit! ` +
+      'Pay with the coins in your backpack. Which one would you like?');
   armorModalEl.hidden = false;
   state = GameState.ARMOR_SHOP;
   armorModalOpenedAt = performance.now();
@@ -97,7 +107,7 @@ function buyArmor(id) {
   armorSay(`There you go: ${a.emoji} ${a.name}, good as new (${a.max})! ` +
     (old ? `I'll take your old ${old.name} as a trade-in. ` : '') +
     (changeCoins ? `And here's $${changeCoins * BANK_COIN.value} change. ` : '') +
-    'Now that Brick can bonk all it wants! 🛡️');
+    ((armorKeeper && armorKeeper.cheer) || 'Now that Brick can bonk all it wants! 🛡️'));
 }
 
 armorModalEl.addEventListener('click', (e) => {

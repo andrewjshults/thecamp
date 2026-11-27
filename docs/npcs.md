@@ -17,6 +17,8 @@ it pops out of their mouth as a speech bubble, then the NPC replies.
 Replies come from Claude Haiku (`claude-haiku-5-5`, thinking off, effort low,
 `max_tokens` 100). Only the player's latest line is sent, never the history.
 `fetchNpcReply` (`src/people/talk.js`) tries, in order:
+0. answers the game knows itself (`registerNpcAnswer`: the Fourth Camp's code
+   finder tells you door codes, see [level-four.md](level-four.md)), which never reach Claude;
 1. item questions (keyword matching, below), which never reach Claude;
 2. the **PubNub Function** `pubnub/npc-function.js` when `NPC_FUNCTION_URL` in
    `src/people/talk.js` is set (it is), except on localhost
@@ -41,9 +43,13 @@ Claude. `itemQuestionReply()` in `src/people/item-questions.js` (checked first i
 or search (`ITEM_QUESTION_RE`) and names an item by a word of its name or its
 emoji (`itemsMentioned`, roughly plural-insensitive), the NPC says where it is
 right now on every map (`crawlMapConfigs` + `worldItemsFor`): hotspots, kitchen
-`source`/`shop` stations, or your own backpack. If nobody's left a sword
-anywhere, it drops one first (`findOrDropSword`). Lines that don't name an item
-go to Claude / `localNpcReply()` as before.
+`source`/`shop` stations, or your own backpack. It lists the places on the
+level you're on first (right here, then the rest of that level), then the
+other levels in order, and a place on another level says which one ("..., on
+Level 2", `levelLabel`). Levels you haven't unlocked (`levelUnlocked` in
+`src/world/levels.js`) are left out completely. If there's no sword on your
+level, it drops one there first (`findOrDropSword`). Lines that don't name an
+item go to Claude / `localNpcReply()` as before.
 
 **Wandering.** Camper NPCs stroll around their `px`/`py` spot (within
 `NPC_WANDER_RX`/`RY`; `"wander": false` keeps one still). Critters stay put.

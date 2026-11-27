@@ -29,15 +29,23 @@ const WHEEL_PRIZES = [
   { coin: { id: 'ten_dollar_coin',    name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }, weight: 3, color: '#FFD54F' },
   { coin: { id: 'twenty_dollar_coin', name: '$20 Coin', emoji: '🪙', coin: true, value: 20 }, weight: 2, color: '#FFCA28' },
   { coin: { id: 'thirty_dollar_coin', name: '$30 Coin', emoji: '🪙', coin: true, value: 30 }, weight: 1, color: '#FFA000' },
+  { coin: { id: 'forty_dollar_coin',  name: '$40 Coin', emoji: '🪙', coin: true, value: 40 }, weight: 0.5, color: '#FF8F00' },
+  // Ember's (Second Camp) and Charlie's (Fourth Camp) swords
   { sword: 'sparkle', weight: 0.8 },
   { sword: 'ice',     weight: 0.6 },
   { sword: 'flame',   weight: 0.4 },
+  { sword: 'comet',   weight: 0.25 },
   { sword: 'rainbow', weight: 0.2 },
+  { sword: 'star',    weight: 0.15 },
+  { sword: 'lava',    weight: 0.1 },
+  // Shelly's (Third Camp) and Charlie's armor
   { armor: 'vest',    weight: 0.8 },
   { armor: 'chain',   weight: 0.6 },
   { armor: 'knight',  weight: 0.4 },
-  { armor: 'crystal', weight: 0.2 }
-];
+  { armor: 'crystal', weight: 0.2 },
+  { armor: 'dragon',  weight: 0.2 },
+  { armor: 'star',    weight: 0.15 }
+].filter(p => !p.sword || SWORD_KINDS[p.sword]).filter(p => !p.armor || ARMOR_KINDS[p.armor]);
 function wheelPrizeInfo(prize) {
   if (prize.charm) {
     const c = CHARM_KINDS[prize.charm];

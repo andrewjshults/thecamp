@@ -250,9 +250,9 @@ async function backToPlaying(tab) {
       if (await tab.state() === 'fighting') await tab.ev('endFight && endFight()');
       continue;
     }
-    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop' || s === 'armorShop') {
+    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop' || s === 'armorShop' || s === 'codePad' || s === 'codeKeeper') {
       // These pop-ups are HTML: Esc in the page is handled by their own listeners
-      await tab.ev({ bankModal: 'closeBank()', swordShop: 'closeSwordShop()', armorShop: 'closeArmorShop()' }[s] || 'closeKitchenModal()');
+      await tab.ev({ bankModal: 'closeBank()', swordShop: 'closeSwordShop()', armorShop: 'closeArmorShop()', codePad: 'closeCodePad()', codeKeeper: 'closeCodeKeeper()' }[s] || 'closeKitchenModal()');
       continue;
     }
     if (s === 'itemAction' || s === 'usingItem' || s === 'interacting' || s === 'talking') {
@@ -317,7 +317,7 @@ async function singlePlayer(context) {
   for (const { path: mapPath, cfg } of crawlMaps()) {
     await tab.ev(`switchMap(${JSON.stringify(mapPath)}, null)`);
     await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(mapPath)}`, `map ${mapPath}`);
-    await tab.ev('brick.restUntil = Infinity');   // the Brick stays on its throne (thirdCamp() fights it)
+    await tab.ev('brick.restUntil = Infinity; slime.restUntil = Infinity');   // the Brick on its throne, the Slime Brick in its den (thirdCamp() / fourthCamp() fight them)
     await tab.run(2500);   // camera settles
     const slug = path.basename(mapPath, '.json');
     await tab.shot(`map-${slug}`);
@@ -376,27 +376,29 @@ async function singlePlayer(context) {
   await tab.shot('fight');
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
-  await tab.ev('brick.restUntil = 0');
+  await tab.ev('brick.restUntil = 0; slime.restUntil = 0');
   await secondCamp(tab);
   await thirdCamp(tab);
+  await fourthCamp(tab);
   await exploration(tab);
+  await playtime(tab);
 
   // Some progress to save, so resuming has something to bring back
-  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; dishesMade = ['sandwich'];
+  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; level4Open = true; slimeWins = 1; throneUnlocked = true; doorCodes = { bank: 'K7P' }; dishesMade = ['sandwich'];
     customRecipes = [{ id: 'custom_1', name: 'Tomato Surprise', needs: ['tomato', 'bread'], map: 'assets/camp_kitchen.json' }];
     completedUses = [{ hotspotId: 'tree', hotspotName: 'Tree', itemId: 'rope', itemName: 'Rope', itemEmoji: '🪢', text: 'Climbed!' }];
     backpack.push({ id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }); writeSave();`);
   await tab.key('Escape');
   await tab.key('y');
   await tab.until('state === GameState.CHARACTER_SELECT');
-  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; level3Open = false; brickWins = 0; armorKind = null; armorRating = 0; dishesMade = []; customRecipes = []`);
+  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; level3Open = false; brickWins = 0; armorKind = null; armorRating = 0; level4Open = false; slimeWins = 0; throneUnlocked = false; doorCodes = {}; dishesMade = []; customRecipes = []`);
   await tab.key('Enter');
   await tab.until('state === GameState.RESUME_PROMPT');
   await tab.shot('resume-prompt');
   await tab.key('r');
   await tab.until('state === GameState.PLAYING');
   tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
-    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins, level3Open, brickWins, armorKind, armorRating })`),
+    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins, level3Open, brickWins, armorKind, armorRating, level4Open, slimeWins, throneUnlocked, doorCodes })`),
     save: await tab.ev(SAVES_SORTED) });
   await taps(tab);
   await tab.page.close();
@@ -626,6 +628,131 @@ async function thirdCamp(tab) {
   await onMap('assets/game_design.json');
 }
 
+// The Fourth Camp: beating the top-level Brick opens the castle's trapdoor;
+// the slime pit slows you down; the code finder in the Safe Zone; a wrong and
+// a right code at the bank's keypad; the Slime Brick catches you while you're
+// typing a code (and you beat it); the throne key; Charlie's shop sells the
+// Fourth Camp's own swords and armor (Ember's doesn't); caught with no sword →
+// back to the Third Camp, and the trapdoor shuts again
+async function fourthCamp(tab) {
+  const L3 = 'assets/camp_level3.json', L4 = 'assets/camp_level4.json', CASTLE = 'assets/level3_castle.json';
+  const standAt = (id, fy = 0.5) => tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === ${JSON.stringify(id)});
+    player.x = o.x + o.width / 2; player.y = o.y + o.height * ${fy}; tapTarget = null; })()`);
+  const onMap = (p, what) => tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(p)}`, what || p);
+  // Beat the level 15 Brick: the trapdoor opens
+  await tab.ev(`level2Open = true; level3Open = true; switchMap(${JSON.stringify(CASTLE)}, 'exit_door')`);
+  await onMap(CASTLE);
+  await tab.run(300);
+  await tab.ev(`brickWins = 4; startFight(brickFoe()); fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(500);
+  tab.note({ step: 'l4-unlock', open: await tab.ev('level4Open'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  await tab.ev('brick.restUntil = Infinity');
+  await standAt('trapdoor');
+  await tab.run(200);
+  tab.note({ step: 'l4-trapdoor', near: await tab.ev('nearbyObject && nearbyObject.id') });
+  await tab.shot('l4-trapdoor-open');
+  await tab.key(' ');
+  await onMap(L4, 'the fourth camp');
+  await tab.ev('slime.restUntil = Infinity');
+  await tab.run(2500);
+  await tab.shot('l4-arrived');
+  // The slime pit: slower
+  await tab.ev('player.x = scaledMapW * 0.51; player.y = scaledMapH * 0.33');
+  await tab.run(300);
+  tab.note({ step: 'l4-pit', speed: await tab.ev('playerSpeedFactor()'), inPit: await tab.ev('inSlimePit(player.x, player.y)') });
+  await tab.shot('l4-slime-pit');
+  // The code finder in the Safe Zone
+  await standAt('safe_zone', 0.8);
+  await tab.run(200);
+  await tab.key(' ');
+  await onMap('assets/level4_safe_zone.json');
+  await standAt('code_finder', 0.9);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(500);
+  await tab.page.click('[data-lock=bank]');
+  await tab.run(200);
+  await tab.shot('l4-code-finder');
+  tab.note({ step: 'l4-code-finder', state: await tab.state(), says: await tab.ev('keeperSaysEl.textContent'),
+    asked: await tab.ev(`npcGameAnswer({ knowsCodes: true }, "what's the code for the girls bathroom?")`),
+    notCode: await tab.ev(`npcGameAnswer({ knowsCodes: true }, 'where is the sword?')`) });
+  await tab.ev('closeCodeKeeper()');
+  // The bank's keypad: a wrong code, then the right one
+  await tab.ev(`switchMap(${JSON.stringify(L4)}, 'safe_zone')`);
+  await onMap(L4);
+  await standAt('bank', 0.8);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(300);
+  await tab.page.fill('#codePadInput', 'zzz');
+  await tab.page.press('#codePadInput', 'Enter');
+  await tab.run(300);
+  await tab.shot('l4-keypad-wrong');
+  tab.note({ step: 'l4-keypad-wrong', state: await tab.state(), says: await tab.ev('codePadSays.textContent') });
+  await tab.page.fill('#codePadInput', await tab.ev(`codeFor('bank').toLowerCase()`));
+  await tab.page.press('#codePadInput', 'Enter');
+  await onMap('assets/camp_bank.json', 'into the bank with its code');
+  // Typing at the boys' bathroom: the Slime Brick catches you anyway, and you win
+  await tab.ev(`switchMap(${JSON.stringify(L4)}, 'boys_bathroom')`);
+  await onMap(L4);
+  await standAt('boys_bathroom', 0.8);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(200);
+  await tab.page.fill('#codePadInput', 'AB');
+  await tab.ev(`slime.restUntil = 0; slime.where = 'out'; slime.outUntil = Infinity; slime.graceUntil = 0;
+    slime.fx = (player.x + 300) / scaledMapW; slime.fy = player.y / scaledMapH`);
+  await tab.run(600);
+  await tab.shot('l4-keypad-slime');
+  await tab.until('state === GameState.FIGHTING', 'the Slime Brick catches you at the keypad', 15000);
+  tab.note({ step: 'l4-caught-typing', padHidden: await tab.ev('codePadEl.hidden') });
+  await tab.run(3500);
+  await tab.shot('l4-fight');
+  await tab.ev(`fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(300);
+  await tab.shot('l4-won');
+  tab.note({ step: 'l4-won', wins: await tab.ev('slimeWins'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  await tab.ev('slime.restUntil = Infinity; slime.where = "home"');
+  // The throne: locked without the key; take it off its hook, and in you go
+  await standAt('throne', 0.85);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(800);
+  tab.note({ step: 'l4-throne-locked', map: await tab.ev('currentMapPath'), unlocked: await tab.ev('throneUnlocked') });
+  await tab.ev(`pickUpHotspotItem('key_hook', 0)`);
+  await tab.run(200);
+  await tab.shot('l4-key-taken');
+  await standAt('throne', 0.85);
+  await tab.run(200);
+  await tab.key(' ');
+  await onMap('assets/level4_throne.json', 'into the throne room');
+  await tab.run(1500);
+  await tab.shot('l4-throne-room');
+  tab.note({ step: 'l4-throne', unlocked: await tab.ev('throneUnlocked'), keyInPack: await tab.ev(`backpack.some(i => i.id === 'throne_key')`) });
+  // Charlie sells the Fourth Camp's own swords and armor; Ember and Shelly don't
+  tab.note({ step: 'l4-gear',
+    charlie: await tab.ev(`swordsForSale({ sells: 'all' }).map(([id]) => id).concat(armorForSale({ sells: 'all' }).map(([id]) => id))`),
+    ember: await tab.ev(`swordsForSale({}).map(([id]) => id)`), shelly: await tab.ev(`armorForSale({}).map(([id]) => id)`) });
+  // Caught with no sword: lost straight away, back to the Third Camp, trapdoor shut
+  await tab.ev(`switchMap(${JSON.stringify(L4)}, 'throne')`);
+  await onMap(L4);
+  await tab.ev(`swordRating = 0; backpack = backpack.filter(i => i.id !== 'sword'); slime.restUntil = 0; slime.where = 'out';
+    slime.outUntil = Infinity; slime.graceUntil = 0; slime.fx = (player.x + 200) / scaledMapW; slime.fy = player.y / scaledMapH`);
+  await tab.until(`state === GameState.FIGHTING && fight.phase === 'result'`, 'an instant loss to the Slime Brick', 15000);
+  tab.note({ step: 'l4-no-sword', lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await onMap(L3, 'back at the third camp');
+  tab.note({ step: 'l4-sent-back', open: await tab.ev('level4Open') });
+  await tab.ev(`swordKind = "plain"; swordRating = 100; level2Open = false; level3Open = false; mallowWins = 0; brickWins = 0;
+    slimeWins = 0; throneUnlocked = false; brick.restUntil = 0; slime.restUntil = 0; writeSave()`);
+  await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
+  await onMap('assets/game_design.json');
+}
+
 // Exploration mode (E): no bosses, and the cave passage opens without beating the Blob
 async function exploration(tab) {
   const L2 = 'assets/camp_level2.json';
@@ -650,6 +777,66 @@ async function exploration(tab) {
   tab.note({ step: 'explore-off', on: await tab.ev('exploreMode') });
   await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
   await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`);
+}
+
+// The play-time limit: run out walking → the break; a grown-up's code and the
+// slider; a used code; the developer skip; running out mid-fight; the hour's up
+async function playtime(tab) {
+  const info = () => tab.ev(`({ state, left: playtimeLeft(), blocked: playtimeBlocked() })`);
+  tab.note({ step: 'playtime-start', ...await info() });
+  const codeNow = () => tab.ev('totpCode(totpStepAt(Date.now()))');
+  const submitCode = async code => {
+    await tab.page.fill('#ptCodeInput', code);
+    await tab.page.press('#ptCodeInput', 'Enter');
+    await tab.run(300);
+  };
+  // Standing still doesn't count; walking does
+  await tab.ev('playtimeSet(1500)');
+  await tab.run(3000);
+  tab.note({ step: 'playtime-still', ...await info() });
+  await tab.page.keyboard.down('ArrowLeft');
+  await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen');
+  await tab.page.keyboard.up('ArrowLeft');
+  await tab.run(300);
+  await tab.shot('playtime-break');
+  await tab.page.click('[data-pt=code]');
+  await tab.run(200);
+  const right = await codeNow();
+  await submitCode(String((Number(right) + 1) % 1000000).padStart(6, '0'));
+  tab.note({ step: 'playtime-wrong', error: await tab.ev('ptCodeError.textContent') });
+  await submitCode(right);
+  await tab.until('!document.getElementById("ptGrant").hidden', 'the more-time slider');
+  await tab.page.fill('#ptGrantSlider', '35');
+  await tab.run(100);
+  await tab.shot('playtime-grant');
+  await tab.page.click('#ptGrant button[type=submit]');
+  await tab.run(300);
+  tab.note({ step: 'playtime-granted', ...await info() });
+  // The same code can't be used twice; the developer skip works on localhost
+  await tab.ev('playtimeSet(0)');
+  await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen again');
+  await tab.page.click('[data-pt=code]');
+  await submitCode(right);
+  tab.note({ step: 'playtime-reused', error: await tab.ev('ptCodeError.textContent') });
+  await tab.page.click('[data-pt=rest]');
+  await tab.page.click('[data-pt=dev]');
+  await tab.run(300);
+  tab.note({ step: 'playtime-dev-skip', ...await info() });
+  // Running out in a fight: the fight finishes, then the break
+  await tab.ev('playtimeSet(500); resetMapBoss(); startFight()');
+  await tab.run(3500);
+  tab.note({ step: 'playtime-fight', ...await info() });
+  await tab.key('Escape');
+  await tab.run(2500);
+  await tab.key(' ');
+  await tab.run(300);
+  tab.note({ step: 'playtime-after-fight', ...await info() });
+  // An hour later the break is over by itself
+  await tab.ev(`(() => { const d = JSON.parse(localStorage.getItem(PLAYTIME_KEY));
+    d.blockedAt = Date.now() - PLAYTIME_BLOCK_MS; localStorage.setItem(PLAYTIME_KEY, JSON.stringify(d)); })()`);
+  await tab.until('state === GameState.PLAYING', 'the break to end');
+  tab.note({ step: 'playtime-reset', ...await info() });
+  await tab.shot('playtime-reset');
 }
 
 // Clicking / tapping instead of keys (the same code handles touch)

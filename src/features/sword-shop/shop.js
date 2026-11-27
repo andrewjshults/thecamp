@@ -38,11 +38,20 @@ function shopSay(text) {
   }
 }
 
-// One button per sword, built once
+// Which swords this counter sells: its `sells` (a list of ids, or "all"),
+// else every sword that isn't `exclusive` (those are only sold where a shop
+// lists them: Charlie's, on the Fourth Camp)
+function swordsForSale(keeper) {
+  const sells = keeper && keeper.sells;
+  return Object.entries(SHOP_SWORDS).filter(([id, sw]) =>
+    sells === 'all' ? true : Array.isArray(sells) ? sells.includes(id) : !sw.exclusive);
+}
+
+// One button per sword this shop sells (built each time it opens)
 function buildShopButtons() {
   const list = document.getElementById('shopSwords');
-  if (list.childElementCount) return;
-  for (const [id, sw] of Object.entries(SHOP_SWORDS)) {
+  list.innerHTML = '';
+  for (const [id, sw] of swordsForSale(shopKeeper)) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'orange';
@@ -58,8 +67,10 @@ function openSwordShop(obj) {
   buildShopButtons();
   document.getElementById('shopKeeperFace').textContent = shopKeeper.emoji || '🐉';
   const who = player.character ? player.character.name : 'camper';
-  shopSay(`Welcome, ${who}! I'm ${shopKeeperName()}, and I make the best swords in camp. ` +
-    'Pay with the coins in your backpack. Which one do you want?');
+  // a keeper's own `greeting` ({name} = you), or Ember's
+  shopSay(shopKeeper.greeting ? shopKeeper.greeting.replace(/\{name\}/g, who)
+    : `Welcome, ${who}! I'm ${shopKeeperName()}, and I make the best swords in camp. ` +
+      'Pay with the coins in your backpack. Which one do you want?');
   shopModalEl.hidden = false;
   state = GameState.SWORD_SHOP;
   shopModalOpenedAt = performance.now();
@@ -118,7 +129,7 @@ function buySword(id) {
   shopSay(`Here you go: one ${sw.emoji} ${sw.name}, good as new (${sw.max})! ` +
     (old ? `I'll take your old ${old.name} as a trade-in. ` : '') +
     (changeCoins ? `And here's $${changeCoins * BANK_COIN.value} change. ` : '') +
-    'Go get those Marshmallows! 🔥');
+    ((shopKeeper && shopKeeper.cheer) || 'Go get those Marshmallows! 🔥'));
 }
 
 shopModalEl.addEventListener('click', (e) => {

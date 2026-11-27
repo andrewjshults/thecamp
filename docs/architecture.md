@@ -33,11 +33,11 @@ A load-order mistake shows up as soon as the page loads, as a
 | Folder | What's in it |
 |---|---|
 | `src/core/` | The engine: `hooks.js` (plug-in points, below), `util.js`, `state.js` (`GameState`, canvas), `player.js`, `save.js`, `input.js`, `update.js`, `playing.js` (walking around a map), `draw-game.js`, `canvas.js` |
-| `src/world/` | Maps (`maps.js`), `scene` rooms (`scene.js`, `scene-svg.js`, `props/`), hotspots, doors, buildings |
+| `src/world/` | Maps (`maps.js`), which level each map is on (`levels.js`), `scene` rooms (`scene.js`, `scene-svg.js`, `props/`), hotspots, doors, buildings |
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
-| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `prize-wheel/`, `sword.js` |
+| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `level4/`, `sword-shop/`, `armor-shop/`, `explore/`, `playtime/`, `prize-wheel/`, `sword.js` |
 | `src/mp/` | The start menu and multiplayer over PubNub |
 | `src/tools/` | Dev mode (the hotspot editor) |
 | `src/main.js` | The game loop and start-up (loads last) |
@@ -46,6 +46,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `tools/fight-sim.js` | Boss fight simulator (paste into the console) |
 | `tools/make-level2-map.js` | Draws the Second Camp's map, `assets/camp_level2.svg` |
 | `tools/make-level3-map.js` | Draws the Third Camp's map, `assets/camp_level3.svg` |
+| `tools/make-level4-map.js` | Draws the Fourth Camp's map, `assets/camp_level4.svg` |
 
 ## Plug-in points (`src/core/hooks.js`)
 
@@ -57,13 +58,16 @@ functions. Each shared function loops over what's registered:
 | `registerSaveField(key, { save, load })` | `writeSave`, `applySave`, `initFreshSave`, `mpWriteSave`, `mpStartPlaying` | A value saved per camper (see [items.md](items.md)) |
 | `registerGameState(NAME, { draw, onKey, onTap, inWorld, inputs })` | the game loop, `keydown`, `handleCanvasTap`, `mpInWorld` | A screen or pop-up. New names are added to `GameState` |
 | `registerHotspotKind({ match, interact, hint }, { first })` | `handleInteract`, the hint above a hotspot in `drawGame` | A hotspot that does its own thing on Space/tap (portals, stations, the bank, the cave). `first: true` checks it before the kinds already registered |
-| `registerMapFoe(near)` | `playingKey`, `playingTap`, `drawPeople` | Something on the map you can pick a fight with: `near()` returns null or `{ engage, hit, drawHint }` (the Blob, the Marshmallows) |
+| `registerMapFoe(near)` | `playingKey`, `playingTap`, `drawPeople` | Something on the map you can pick a fight with: `near()` returns null or `{ engage, hit, drawHint }` (the Blob, the Marshmallows, the Brick, the Slime Brick) |
 | `registerFoesOff(isOff)` | the Blob and the Marshmallows (`foesOff()`) | Turning the bosses off for a while (exploration mode) |
+| `registerLevelsOpen(isOpen)` | `levelUnlocked` (`levelsAllOpen()`) | Counting every level as unlocked for a while (exploration mode) |
 | `registerMapPeople(list)` | `drawPeople` | Things drawn sorted by feet `y` with the people: `list()` returns `[{ y, draw }]` |
 | `registerMapLayer(z, draw)` | `drawGame` | Drawn over the map picture, under people (map coordinates) |
 | `registerScreenLayer(z, draw)` | `drawGame` | Drawn over people, under the HUD (screen coordinates) |
 | `registerFrameUpdate(z, fn)` | the game loop | Runs every frame, whatever's on screen |
 | `registerMapUpdate(z, fn)` | `update()` | Runs every frame while walking around a map |
+| `registerPlayerSpeed(factor)` | `update()` (`playerSpeedFactor()`) | Walking slower or faster for a while: `factor()` returns × your speed (the Fourth Camp's slime pit) |
+| `registerNpcAnswer(fn)` | `fetchNpcReply` (`npcGameAnswer`) | An NPC answering from the game itself: `fn(npc, line)` returns a reply or null (the code finder's door codes) |
 | `registerPlayerHitGuard(fn)` | `resolveHit` | Stopping a boss's hit just before it lands on you (armor): `fn(fight, now)` returns true |
 | `registerFightLayer(z, draw)` | `drawFight` | Drawn in the fight view: `z` < 50 over the fighters, `z` >= 50 over the HUD |
 | `registerHudBadge(draw)` | `drawHUD` | A badge in the map HUD's top row, after your sword: `draw(x, y)` returns its width |

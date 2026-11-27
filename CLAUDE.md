@@ -62,6 +62,13 @@ Several changes are often made at once on separate branches, so:
 - **Maps:** the dev-mode hotspot editor exports a whole map JSON. Paste it over
   that map's file only, and avoid editing the same map on two branches at once.
 
+## Game rules
+
+- **Boss rewards:** beating a level's boss gives a coin worth the level × $10
+  (the Blob $10, Mega Mallow $20, the Brick $30, the Slime Brick $40). Set it
+  in the boss's `reward` in its map JSON. A new level's boss follows the same
+  rule.
+
 ## Docs
 
 - [Architecture, plug-in points, adding a feature, testing](docs/architecture.md)
@@ -73,12 +80,14 @@ Several changes are often made at once on separate branches, so:
 - [Boss fight: the Glug Glub Blob, strength, levels, swords](docs/boss-fight.md)
 - [Multiplayer over PubNub: messages, shared items, the shared Blob](docs/multiplayer.md)
 - [The Second Camp: the cave's secret passage, the Marshmallow bosses](docs/level-two.md)
-- [Ember's Sword Shop: the four swords you can buy](docs/sword-shop.md)
+- [Ember's Sword Shop: the five swords you can buy](docs/sword-shop.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)
 - [Armor and Shelly's Armor Shop: the four kinds you can buy](docs/armor-shop.md)
 - [The prize wheel after each adventure, and the fight charms you can win](docs/prize-wheel.md)
+- [Play time: the 20-minute limit, the break, the grown-up TOTP code, dev overrides](docs/playtime.md)
+- [The Fourth Camp: door codes, the Safe Zone, the Slime Brick, the throne key, Charlie's shop](docs/level-four.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.

@@ -12,7 +12,8 @@ and Shelly the tortoise 🐢 (a critter NPC you can talk to). A hotspot with an
 "armorShop": { "keeper": "Shelly", "emoji": "🐢" }
 ```
 Space there opens `#armorShopModal` (state `ARMOR_SHOP`): one button per
-kind, with its price and what it does. You pay with the 🪙 coins in your
+kind, with its price and what it does. (Charlie's shop on the Fourth Camp sells
+these too, plus two of its own: see [level-four.md](level-four.md).) You pay with the 🪙 coins in your
 **backpack**, like the sword shop (it uses the sword shop's `coinsToPay`, and
 change comes back in $10 coins, so the prices are in tens). Armor you buy
 replaces what you're wearing (the old one is traded in).

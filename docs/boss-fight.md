@@ -115,14 +115,17 @@ saved per camper; older saves start at 100). Each swing costs
 `SWORD_HIT_WEAR` (4) more: a hit, a blocked swing, or a CLANG on its
 counter-attack, but not a dodge. At 0 it shows "SWORD WORN OUT!" and still
 works until the fight ends. Then you need to find a 🗡️ Sword item
-(`SWORD_ITEM`). There's always at least one lying somewhere in the world.
-`checkSwordSoon` drops one when a game starts or a world finishes syncing, if
-there isn't one. Picking one up drops another at a random spot, on a different
-map when possible (`findOrDropSword` → `dropSword`). These follow portals from
-the main map and skip portals, kitchen stations and the cave. In multiplayer
-the camper who picked it up drops the replacement as a normal `drop`. Every 15s
-a check drops one if none is left (in multiplayer only the lowest player id
-checks, and only after two misses in a row). Picking a sword up re-arms you at
+(`SWORD_ITEM`). There's always at least one lying somewhere on **every
+level** (see Levels below). `checkSwordSoon` drops one on each level that has
+none when a game starts or a world finishes syncing (`swordOnEveryLevel`).
+Picking one up drops another at a random spot on the **same level**, on a
+different map of that level when possible (`findOrDropSword(avoid, level)` →
+`dropSword`). These follow portals from the main map and skip portals,
+passages, kitchen stations, the cave and maps with `"noSwordDrops": true` (the
+shops, the Brick's castle). In multiplayer the camper who picked it up drops
+the replacement as a normal `drop`. Every 15s a check drops one on any level
+that has none left (in multiplayer only the lowest player id checks, and only
+after two misses in a row on that level). Picking a sword up re-arms you at
 100 (`onSwordPickedUp`). Items at hotspots are normally only listed in the
 hotspot's pop-up, so a sword lying at one is also drawn on the map, bobbing and
 glowing (`drawLyingSwords`). A
@@ -133,3 +136,23 @@ the Blob says which map to search, using the map's `where` phrase (e.g. "out at
 the camp"; default "in the <name>"), and drops a new sword if none is left
 anywhere. The map HUD shows "🗡️ 63" (or "Find a sword!"), and the fight HUD has
 a sword bar under your 💪 bar.
+
+## Levels
+
+`src/world/levels.js` works out which level each map is on, from the map
+crawl: the main map is Level 1, a secret `passage` goes up one level and a
+normal portal stays on the same one, so a room is on the lowest level it can
+be reached from (`mapLevels(configs)` → `{ levelOf, locks, max }`,
+`levelOfMap`). So the bank is Level 1, Ember's Sword Shop Level 2 and Shelly's
+Armor Shop Level 3. `levelUnlocked(levels, n)` says whether a camper has
+unlocked level `n`: Level 1, the level you're on and those below it, or a
+level whose passage is open (`passageOpen`, e.g. `level2Open`) when the level
+below it is unlocked too. Exploration mode counts every level as unlocked
+(`registerLevelsOpen`). The sword drops use the levels, and so do the NPCs'
+item answers (see [npcs.md](npcs.md)).
+
+**Rewards go up with the level:** beating a level's boss gives a coin worth
+the level × $10 (its `reward` in the map JSON): the Blob (Level 1) $10, Mega
+Mallow (Level 2) $20, the Brick (Level 3) $30, the Slime Brick (Level 4) $40.
+(Mini Mallow, Mega Mallow's kid, gives $10.)
+

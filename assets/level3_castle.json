@@ -165,6 +165,13 @@
         ]
       },
       {
+        "kind": "trapdoor",
+        "px": 0.69,
+        "py": 0.8,
+        "pw": 0.1,
+        "ph": 0.12
+      },
+      {
         "kind": "throne",
         "px": 0.43,
         "py": 0.12,
@@ -253,6 +260,26 @@
         }
       ],
       "uses": []
+    },
+    {
+      "id": "trapdoor",
+      "name": "Trapdoor",
+      "px": 0.68,
+      "py": 0.77,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "A trapdoor in the floor...",
+      "interactionText": "A heavy trapdoor, shut tight. Something slimy drips up through the cracks... Maybe it opens if you beat the Brick at its very hardest? 🕳️",
+      "items": [],
+      "uses": [],
+      "passage": {
+        "targetMap": "assets/camp_level4.json",
+        "targetHotspot": "passage_back",
+        "lock": "level4",
+        "glow": { "x": 0.5, "y": 0.45 }
+      },
+      "arrive": { "px": 0.74, "py": 0.72 }
     }
   ]
 }

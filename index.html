@@ -120,6 +120,57 @@
     </div>
   </div>
 </div>
+<div id="codePadModal" hidden>
+  <div class="menuPanel codePanel">
+    <h2 id="codePadTitle">🔢 Keypad</h2>
+    <p id="codePadSays"></p>
+    <form id="codePadForm" autocomplete="off">
+      <input id="codePadInput" maxlength="3" placeholder="???" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go">
+      <button type="submit" class="green">Open 🔓</button>
+    </form>
+    <p id="codePadWarn"></p>
+    <button type="button" class="link" data-codepad="close">Cancel</button>
+  </div>
+</div>
+<div id="codeKeeperModal" hidden>
+  <div class="menuPanel">
+    <div class="menuScreen">
+      <h2>🔑 Code Finder</h2>
+      <div id="codeKeeper">
+        <div id="codeKeeperFace">🤖</div>
+        <p id="codeKeeperSays"></p>
+      </div>
+      <div id="codeKeeperLocks"></div>
+      <button type="button" class="link" data-keeper="close">Bye 👋</button>
+    </div>
+  </div>
+</div>
+<div id="playtimeModal" hidden>
+  <div class="menuPanel">
+    <div id="ptRest" class="menuScreen">
+      <div id="ptFace">😴</div>
+      <h2>Time for a break!</h2>
+      <p>You've been playing for a while. Go stretch, get a drink of water, or play outside. The camp will be right here when you come back! 🏕️</p>
+      <button type="button" class="blue" data-pt="code">🔑 Grown-up code<small>Unlock more time</small></button>
+      <button type="button" class="link" data-pt="dev" hidden>🛠️ Developer: skip the break (localhost only)</button>
+    </div>
+    <form id="ptCode" class="menuScreen" hidden autocomplete="off">
+      <h2>🔑 Grown-up code</h2>
+      <p>Type the 6-digit code from the authenticator app.</p>
+      <input id="ptCodeInput" inputmode="numeric" maxlength="6" placeholder="000000" enterkeyhint="go" autocomplete="one-time-code">
+      <div class="menuError" id="ptCodeError"></div>
+      <button type="submit" class="green">Check the code ✅</button>
+      <button type="button" class="link" data-pt="rest">← Back</button>
+    </form>
+    <form id="ptGrant" class="menuScreen" hidden>
+      <h2>⏳ How much more time?</h2>
+      <p id="ptGrantValue"></p>
+      <input id="ptGrantSlider" type="range" min="5" max="60" step="5" value="20">
+      <div id="ptScale"><span>5 min</span><span>60 min</span></div>
+      <button type="submit" class="green">Back to camp! ▶️</button>
+    </form>
+  </div>
+</div>
 <form id="talkBar" hidden autocomplete="off">
   <div id="talkTo"></div>
   <input id="talkInput" maxlength="120" placeholder="Type what you want to say…" enterkeyhint="send">
@@ -136,12 +187,14 @@
 <script src="src/core/state.js"></script>
 
 <script src="src/world/maps.js"></script>
+<script src="src/world/levels.js"></script>
 <script src="src/world/scene.js"></script>
 <script src="src/world/props/basic.js"></script>
 <script src="src/world/props/bathroom.js"></script>
 <script src="src/world/props/hangout.js"></script>
 <script src="src/world/props/level2.js"></script>
 <script src="src/world/props/level3.js"></script>
+<script src="src/world/props/level4.js"></script>
 <script src="src/world/scene-svg.js"></script>
 
 <script src="src/people/characters.js"></script>
@@ -225,9 +278,16 @@
 <script src="src/features/level3/level3.js"></script>
 <script src="src/features/level3/brick.js"></script>
 <script src="src/features/level3/draw-brick.js"></script>
+<script src="src/features/level4/level4.js"></script>
+<script src="src/features/level4/codes.js"></script>
+<script src="src/features/level4/slime-brick.js"></script>
+<script src="src/features/level4/draw-slime-brick.js"></script>
+<script src="src/features/level4/charlie-gear.js"></script>
 <script src="src/features/explore/explore.js"></script>
 <script src="src/features/prize-wheel/charms.js"></script>
 <script src="src/features/prize-wheel/wheel.js"></script>
+<script src="src/features/playtime/totp.js"></script>
+<script src="src/features/playtime/playtime.js"></script>
 
 <script src="src/main.js"></script>
 </body>

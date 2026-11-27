@@ -127,6 +127,13 @@ const FOES_OFF = [];
 function registerFoesOff(isOff) { FOES_OFF.push(isOff); }
 function foesOff() { return FOES_OFF.some(isOff => isOff()); }
 
+// registerLevelsOpen(isOpen): isOpen() returns true while every level counts
+// as unlocked, whatever passages you've opened (exploration mode). See
+// levelUnlocked in src/world/levels.js.
+const LEVELS_OPEN = [];
+function registerLevelsOpen(isOpen) { LEVELS_OPEN.push(isOpen); }
+function levelsAllOpen() { return LEVELS_OPEN.some(isOpen => isOpen()); }
+
 // --- In a fight ---
 //   registerPlayerHitGuard(fn): fn(fight, now) is asked when a boss's swing is
 //     about to land on you (score a point); return true to stop it (armor).
@@ -184,4 +191,26 @@ function onGameEvent(name, fn) {
 }
 function emitGameEvent(name, ...args) {
   for (const fn of GAME_EVENT_LISTENERS[name] || []) fn(...args);
+}
+
+// --- Walking speed ---
+// registerPlayerSpeed(factor): factor() returns how fast you walk right now
+// (1 = normal, 0.5 = half speed: the Fourth Camp's slime pit). update()
+// multiplies them all into your speed.
+const PLAYER_SPEEDS = [];
+function registerPlayerSpeed(factor) { PLAYER_SPEEDS.push(factor); }
+function playerSpeedFactor() { return PLAYER_SPEEDS.reduce((k, f) => k * f(), 1); }
+
+// --- NPC answers from the game itself ---
+// registerNpcAnswer(fn): fn(npc, line) returns a reply (string) when the game
+// knows the answer itself (the code keeper's door codes), or null. Checked
+// first in fetchNpcReply, before item questions and Claude.
+const NPC_ANSWERS = [];
+function registerNpcAnswer(fn) { NPC_ANSWERS.push(fn); }
+function npcGameAnswer(npc, line) {
+  for (const fn of NPC_ANSWERS) {
+    const r = fn(npc, line);
+    if (r) return r;
+  }
+  return null;
 }

@@ -3,7 +3,6 @@
   "where": "at the Second Camp",
   "image": "assets/camp_level2.svg",
   "playerStart": { "px": 0.385, "py": 0.17 },
-  "noSwordDrops": true,
   "marshmallows": {
     "lair": "blob_zone",
     "safeZones": [

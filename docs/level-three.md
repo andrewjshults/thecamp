@@ -28,6 +28,9 @@ every open passage. On the other side, `hole_back` (at the bottom of the
 road) is a normal portal back to `blob_zone`, which has an `arrive` point
 just below the hole.
 
+Beat the Brick at its top level (15) and a trapdoor in the castle floor opens
+the way down to the Fourth Camp (see [level-four.md](level-four.md)).
+
 Lose a fight to the Brick (or run away) and you're sent back to the Second
 Camp's lair, and the passage shuts (`lockLevel3`) until you beat Mega Mallow
 at level 10 again.
@@ -52,7 +55,9 @@ There are no words on the map, and the ground is grass all around the castle.
 | The box (bottom right): a shopping square | `bank` (`"building": "bank"`), `armor_shop`, `fountain` | `camp_bank.json` (the same bank; its door goes back to the first camp), `armor_shop.json` |
 | The road (bottom middle) | `hole_back` | the Second Camp's `blob_zone` |
 
-The map and its rooms have `"noSwordDrops": true`, like the Second Camp's.
+The Third Camp is Level 3 (see [Levels](boss-fight.md#levels)): there's always
+a 🗡️ Sword lying somewhere on it. The Brick Castle and Shelly's Armor Shop have
+`"noSwordDrops": true`, so it's never dropped there.
 
 ## The poison moat
 
