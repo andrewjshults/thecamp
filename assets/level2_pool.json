@@ -226,6 +226,11 @@
           "itemId": "rubber_duck",
           "text": "You set the rubber duck in the pool. Captain Quack salutes it! 🦆",
           "animation": "play"
+        },
+        {
+          "itemId": "balloon",
+          "text": "You let the balloon float on the water. It bobs around like a tiny boat! 🎈",
+          "animation": "play"
         }
       ]
     },
@@ -240,7 +245,18 @@
       "description": "Do a cannonball!",
       "interactionText": "Boing... boing... CANNONBALL! SPLOOOOSH! Captain Quack gives you a 10! 💦",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "goggles_2",
+          "text": "Goggles on! You dive all the way to the bottom and find... a shiny bottle cap. Treasure! 🥽",
+          "animation": "swim"
+        },
+        {
+          "itemId": "pool_noodle",
+          "text": "You jump off the diving board riding the pool noodle like a horse. YEE-HAW! SPLOOSH! 🐴💦",
+          "animation": "play"
+        }
+      ]
     },
     {
       "id": "lifeguard_chair",
@@ -264,7 +280,13 @@
           "emoji": "🧴"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "disco_shades",
+          "text": "Disco Shades on, whistle ready. You're the coolest lifeguard the pool has ever seen! 😎",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "towel_bench",
@@ -283,7 +305,18 @@
           "emoji": "🏖️"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "sunscreen",
+          "text": "You rub on sunscreen. Now you won't turn red like the red tent! 🧴☀️",
+          "animation": "sit"
+        },
+        {
+          "itemId": "juice_box",
+          "text": "You sip a juice box on the towel bench and dry off in the sun. Aaah! 🧃",
+          "animation": "sit"
+        }
+      ]
     },
     {
       "id": "pool_shower",
@@ -296,7 +329,13 @@
       "description": "Rinse off before you swim",
       "interactionText": "BRRR! The pool shower is COLD! You rinse off super fast. 🚿",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "bubble_bath",
+          "text": "You squirt bubble bath in the pool shower. BUBBLES EVERYWHERE! Captain Quack is not amused. 🫧🦆",
+          "animation": "wash"
+        }
+      ]
     }
   ]
 }

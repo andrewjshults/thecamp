@@ -77,16 +77,51 @@ function getItemUseAtHotspot(item, hotspot) {
   return def.uses.find(u => u.itemId === item.id) || null;
 }
 
-function isUseAlreadyDone(itemId, hotspotId) {
-  return completedUses.some(u => u.hotspotId === hotspotId && u.itemId === itemId);
+// Journal entries remember their map, since spot ids repeat between maps (every
+// camp's bathrooms, pools and party rooms). An entry from an older save has no
+// map until assignLegacyUseMaps() gives it one, and until then it counts
+// wherever its spot and item match, as it used to.
+function isUseAlreadyDone(itemId, hotspotId, map = currentMapPath) {
+  return completedUses.some(u => u.hotspotId === hotspotId && u.itemId === itemId &&
+    (u.map === undefined || u.map === map));
 }
 
+// Every map, found by crawlMapConfigs() once a camper starts playing, so the
+// journal counts the adventures of the maps you haven't been to yet as well
+let adventureMapConfigs = {};
+
 function totalUsesCount() {
-  // Count across all cached map configs so the journal progress bar is global
-  return Object.values(allMapConfigs)
+  // Count across every map so the journal progress bar is global
+  return Object.values({ ...adventureMapConfigs, ...allMapConfigs })
     .flatMap(c => c.hotspots)
     .reduce((sum, h) => sum + (h.uses ? h.uses.length : 0), 0);
 }
+
+// Older saves' entries have no map: each goes to the lowest-level map that has
+// that adventure (so a Level 1 bathroom adventure stays Level 1's), and one
+// that no map has any more is kept but counts nowhere.
+function assignLegacyUseMaps(configs) {
+  const legacy = completedUses.filter(u => u.map === undefined);
+  if (!legacy.length) return;
+  const levels = mapLevels(configs);
+  const paths = Object.keys(configs)
+    .map((path, i) => ({ path, i, n: levelOfMap(levels, path) }))
+    .sort((a, b) => a.n - b.n || a.i - b.i)
+    .map(m => m.path);
+  for (const u of legacy) {
+    u.map = paths.find(path => (configs[path].hotspots || []).some(h =>
+      h.id === u.hotspotId && (h.uses || []).some(use => use.itemId === u.itemId))) || null;
+  }
+  writeSave();
+}
+
+onGameEvent('playStart', () => {
+  const camper = player.character;
+  crawlMapConfigs().then(configs => {
+    adventureMapConfigs = configs;
+    if (player.character === camper) assignLegacyUseMaps(configs);
+  }).catch(() => {});
+});
 
 function itemActionButtons() {
   if (!currentItemAction) return [];
@@ -166,6 +201,7 @@ function useItem(item) {
   if (!use) return;
   // Record completion (item stays in backpack)
   const entry = {
+    map: currentMapPath,
     hotspotId: nearbyObject.id,
     hotspotName: nearbyObject.name,
     itemId: item.id,
@@ -242,7 +278,7 @@ registerGameState('USING_ITEM', {
 });
 
 // --- Using items, and the journal of what you've done ---
-let completedUses = [];           // [{ hotspotId, hotspotName, itemId, itemName, itemEmoji, text }]
+let completedUses = [];           // [{ map, hotspotId, hotspotName, itemId, itemName, itemEmoji, text }]
 let currentItemUse = null;        // { item, use, hotspot, timer, animation } — active use dialog
 let itemUseAnimation = 0;         // 0→1 popup scale
 let completionToast = null;       // { age } — all-done celebration

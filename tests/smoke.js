@@ -395,6 +395,7 @@ async function singlePlayer(context) {
   await thirdCamp(tab);
   await fourthCamp(tab);
   await exploration(tab);
+  await adventures(tab);
   await playtime(tab);
 
   // Some progress to save, so resuming has something to bring back
@@ -790,6 +791,68 @@ async function exploration(tab) {
   await tab.run(300);
   tab.note({ step: 'explore-off', on: await tab.ev('exploreMode') });
   await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
+  await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`);
+}
+
+// Adventures (the journal): every level past the first has its own, done with
+// that level's items; the same spot on two maps (every camp has a bathroom)
+// counts twice; an older save's entries go to the lowest-level map
+async function adventures(tab) {
+  const MIN_PER_LEVEL = 15;
+  const perLevel = await tab.ev(`(async () => {
+    const configs = await crawlMapConfigs(), levels = mapLevels(configs), out = {};
+    const itemsOn = {};   // level → itemId → spot ids it starts at
+    for (const [path, cfg] of Object.entries(configs)) {
+      const n = levelOfMap(levels, path), m = itemsOn[n] || (itemsOn[n] = {});
+      for (const h of cfg.hotspots) for (const it of h.items || []) (m[it.id] || (m[it.id] = new Set())).add(h.id);
+    }
+    for (const [path, cfg] of Object.entries(configs)) {
+      const n = levelOfMap(levels, path);
+      for (const h of cfg.hotspots) for (const u of h.uses || []) {
+        const from = itemsOn[n][u.itemId];
+        if (from && !from.has(h.id)) out[n] = (out[n] || 0) + 1;
+      }
+    }
+    return { out, max: levels.max };
+  })()`);
+  tab.note({ step: 'adventures-per-level', ...perLevel });
+  for (let n = 2; n <= perLevel.max; n++) {
+    if ((perLevel.out[n] || 0) < MIN_PER_LEVEL) {
+      errors.push(`Level ${n} has only ${perLevel.out[n] || 0} adventures done with its own items (want ${MIN_PER_LEVEL}+)`);
+    }
+  }
+
+  const BATH1 = 'assets/camp_bathroom.json', BATH2 = 'assets/level2_boys_bathroom.json';
+  const useAt = async (mapPath, spot, item) => {
+    await tab.ev(`switchMap(${JSON.stringify(mapPath)}, null)`);
+    await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(mapPath)}`, `map ${mapPath}`);
+    const before = await tab.ev(`isUseAlreadyDone(${JSON.stringify(item.id)}, ${JSON.stringify(spot)})`);
+    await tab.ev(`(() => { backpack = [${JSON.stringify({ ...item, pickedUpFrom: 'nowhere' })}];
+      nearbyObject = interactiveObjects.find(o => o.id === ${JSON.stringify(spot)}); useItem(backpack[0]); })()`);
+    tab.note({ step: 'adventure-used', map: mapPath, spot, before, state: await tab.state() });
+    await backToPlaying(tab);
+    if (before) errors.push(`${item.id} at ${spot} on ${mapPath} was already done before using it`);
+  };
+  const saved = await tab.ev('({ backpack, completedUses })');
+  await tab.ev('completedUses = []');
+  const glass = { id: 'magnifying_glass', name: 'Magnifying Glass', emoji: '🔍' };
+  await useAt(BATH1, 'spider_corner', glass);
+  await useAt(BATH2, 'spider_corner', glass);
+  const maps = await tab.ev('completedUses.map(u => u.map)');
+  tab.note({ step: 'adventures-two-bathrooms', maps });
+  if (maps.join() !== [BATH1, BATH2].join()) errors.push(`the same adventure in two bathrooms: ${JSON.stringify(maps)}`);
+
+  // An older save's entry (no map) belongs to the first camp's bathroom
+  const legacy = await tab.ev(`(async () => {
+    completedUses = [{ hotspotId: 'spider_corner', hotspotName: 'Spider Corner', itemId: 'flashlight', itemName: 'Flashlight', itemEmoji: '🔦', text: 'Eek!' }];
+    assignLegacyUseMaps(await crawlMapConfigs());
+    return { map: completedUses[0].map, doneHere: isUseAlreadyDone('flashlight', 'spider_corner'), doneThere: isUseAlreadyDone('flashlight', 'spider_corner', ${JSON.stringify(BATH1)}) };
+  })()`);
+  tab.note({ step: 'adventures-legacy', ...legacy });
+  if (legacy.map !== BATH1 || legacy.doneHere || !legacy.doneThere) errors.push(`an older save's adventure: ${JSON.stringify(legacy)}`);
+
+  await tab.ev(`backpack = ${JSON.stringify(saved.backpack)}; completedUses = ${JSON.stringify(saved.completedUses)}; writeSave()`);
+  await tab.ev(`switchMap('assets/game_design.json', null)`);
   await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`);
 }
 

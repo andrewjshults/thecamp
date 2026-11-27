@@ -143,7 +143,11 @@
       "items": [
         { "id": "wish_pebble", "name": "Wishing Pebble", "emoji": "💎" }
       ],
-      "uses": []
+      "uses": [
+        { "itemId": "crown", "text": "You put on the crown and make a royal wish: \"I wish for ice cream for EVERYONE!\" 👑⛲", "animation": "play" },
+        { "itemId": "mirror_tile", "text": "You hold the mirror tile up to the sun. Rainbows dance all over the fountain water! 🪞🌈", "animation": "play" },
+        { "itemId": "party_popper", "text": "POP! Confetti floats on the fountain like little colorful boats. 🎉", "animation": "play" }
+      ]
     }
   ]
 }

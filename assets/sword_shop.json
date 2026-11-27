@@ -227,7 +227,13 @@
       "description": "The four swords for sale",
       "interactionText": "✨ Sparkle Sword $20: lasts longer. 🧊 Ice Sword $40: freezes the boss and blocks better. 🔥 Flame Sword $60: every hit knocks off 2 💪. 🌈 Rainbow Thunder Sword $100: does it ALL! Buy them at the counter.",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "oar",
+          "text": "You hang the oar on the sword rack. Ember laughs so hard a puff of smoke comes out! 🛶😂",
+          "animation": "play"
+        }
+      ]
     },
     {
       "id": "forge",
@@ -246,7 +252,13 @@
           "emoji": "🔨"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "shield",
+          "text": "Ember heats up the old shield and you hammer out the dents. Good as new! 🛡️🔥",
+          "animation": "craft"
+        }
+      ]
     },
     {
       "id": "old_swords",
@@ -265,7 +277,13 @@
           "emoji": "🛡️"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "hammer",
+          "text": "Tink, tink, tink! You tap the dents out of an old sword. It's still too wobbly to fight with... 🔨",
+          "animation": "craft"
+        }
+      ]
     }
   ]
 }

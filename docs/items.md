@@ -30,3 +30,24 @@ registerSaveField('bankBalance', { save: () => bankBalance, load: s => { bankBal
 the default too. The same fields are saved in single player
 (`louisas-game:save:<character>`) and multiplayer
 (`louisas-game:mp:<world>:<character>`).
+
+## Adventures (the Adventure Journal)
+A hotspot's `uses` are its adventures: `{ "itemId", "text", "animation" }`.
+Using that item there for the first time (`useItem` in
+`src/items/backpack.js`) adds an entry to `completedUses` and emits
+`adventureDone` (a [prize wheel](prize-wheel.md) spin). An item can't be used
+at the spot it was picked up from (`pickedUpFrom`, a spot id).
+
+- **Every level has its own**: Levels 2–4 have adventures done with items found
+  on that level (the camp, its rooms, its pool, its shops and bathrooms), plus
+  a few bonus ones for things carried up from Level 1. A new level should too
+  (the `build-level` skill).
+- **Entries remember their map** (`map`), because spot ids repeat between maps
+  (every camp's bathrooms, pools and party rooms): `isUseAlreadyDone(itemId,
+  hotspotId, map = currentMapPath)`. An older save's entries have no `map`;
+  once a camper starts playing, `assignLegacyUseMaps` gives each the
+  lowest-level map that has that adventure (`mapLevels`), and one no map has
+  any more gets `map: null` and counts nowhere.
+- **The journal's total** (`totalUsesCount`) counts every map in the game
+  (`adventureMapConfigs`, from `crawlMapConfigs()` at `playStart`), not just
+  the maps you've been to.

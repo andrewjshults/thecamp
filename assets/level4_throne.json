@@ -180,7 +180,18 @@
           "emoji": "👑"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "safe_pillow",
+          "text": "You put the fluffy pillow on the sticky throne. Now it's comfy... but still a little sticky! 🛏️",
+          "animation": "sit"
+        },
+        {
+          "itemId": "throne_key",
+          "text": "You sit on the throne and hold up the key. You're the boss of the Fourth Camp now! 🗝️👑",
+          "animation": "sit"
+        }
+      ]
     },
     {
       "id": "treasure",
@@ -199,7 +210,18 @@
           "emoji": "💰"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "cookie_l4",
+          "text": "You leave a cookie in the treasure box. Maybe the Slime Brick will be nicer after a snack! 🍪",
+          "animation": "explore"
+        },
+        {
+          "itemId": "slime_jar",
+          "text": "You pour the slime back on the gold. The Slime Brick won't know anything is missing. Sneaky! 🫙",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "level5_portal",

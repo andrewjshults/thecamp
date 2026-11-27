@@ -170,7 +170,18 @@
           "emoji": "⚽"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "whistle_l3",
+          "text": "TWEET! You blow the whistle and Bubbles the whale does a big flip! 🐳",
+          "animation": "play"
+        },
+        {
+          "itemId": "pool_noodle_l3",
+          "text": "You bop Bubbles the whale on the nose with the pool noodle. Bubbles sprays you back! 💦",
+          "animation": "play"
+        }
+      ]
     },
     {
       "id": "little_slide",
@@ -183,7 +194,13 @@
       "description": "Wheee!",
       "interactionText": "You zoom down the slide into the pool. WHEEE! SPLASH! 🛝",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "beach_towel_l3",
+          "text": "You slide down on the beach towel like a sled. ZOOOM! SPLASH! 🏖️",
+          "animation": "play"
+        }
+      ]
     },
     {
       "id": "splash_bench",
@@ -202,7 +219,18 @@
           "emoji": "👒"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "beach_towel_l3",
+          "text": "You wrap up in TWO towels now. You're a cozy towel burrito! 🌯",
+          "animation": "sit"
+        },
+        {
+          "itemId": "lollipop",
+          "text": "You lick a lollipop on the bench while your toes dry in the sun. 🍭",
+          "animation": "eat"
+        }
+      ]
     }
   ]
 }

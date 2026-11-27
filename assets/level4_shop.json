@@ -324,7 +324,13 @@
       "description": "Every sword for sale",
       "interactionText": "✨ $20, 🧊 $40, 🔥 $60, 🌈 $100, 🌋 $200, and only at Charlie's: ☄️ Comet Sword $90 and ⭐ Star Sword $150! Buy them at the sword counter.",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "star_sticker",
+          "text": "You stick a star on the Star Sword. Charlie says it makes it even shinier! ⭐🗡️",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "armor_stands",
@@ -337,7 +343,13 @@
       "description": "The armor for sale",
       "interactionText": "🥋 $30, ⛓️ $50, 🛡️ $70, 💎 $100, and only at Charlie's: 🐉 Dragon Scale Armor $130 and 🌟 Star Armor $150! Buy them at the armor counter.",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "goo_crown",
+          "text": "You put the Goo Crown on the Star Armor. Drip drip... Charlie wipes it with a rag. 👑",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "forge",
@@ -356,7 +368,18 @@
           "emoji": "⭐"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "slime_jar",
+          "text": "Charlie heats the slime in the forge... and it turns into a super bouncy ball! BOING! 🫙",
+          "animation": "craft"
+        },
+        {
+          "itemId": "gold_sack",
+          "text": "Charlie melts a little Goo Gold into a shiny medal, just for you. 🏅",
+          "animation": "craft"
+        }
+      ]
     }
   ]
 }

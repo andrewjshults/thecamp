@@ -226,6 +226,11 @@
           "itemId": "rubber_duck",
           "text": "You set the rubber duck in the pool. Splash salutes it! 🦆",
           "animation": "play"
+        },
+        {
+          "itemId": "slime_jar",
+          "text": "You pour a teeny drop of slime in the pool... and the whole pool turns GREEN! TWEET! goes the lifeguard. 🫙💚",
+          "animation": "swim"
         }
       ]
     },
@@ -240,7 +245,18 @@
       "description": "The giant slide!",
       "interactionText": "You climb allllll the way up... and WHEEEEEE! SPLOOSH! 💦",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "beach_towel_l4",
+          "text": "You slide down on the beach towel. ZOOOM! It's even faster than the slime! 🏖️💦",
+          "animation": "play"
+        },
+        {
+          "itemId": "goggles_2_l4",
+          "text": "Goggles on! You zip down the slide and see bubbles everywhere underwater. 🥽",
+          "animation": "swim"
+        }
+      ]
     },
     {
       "id": "lifeguard_chair",
@@ -264,7 +280,13 @@
           "emoji": "🧴"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "cookie_l4",
+          "text": "You bring the lifeguard a cookie for a snack break. Crunch crunch! 🍪",
+          "animation": "eat"
+        }
+      ]
     },
     {
       "id": "towel_bench",
@@ -283,7 +305,18 @@
           "emoji": "🏖️"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "juice_box_l4",
+          "text": "You sip a juice box and dry off in the sun. So relaxing! 🧃",
+          "animation": "sit"
+        },
+        {
+          "itemId": "sunscreen_l4",
+          "text": "You rub on sunscreen. Now you're safe from the sun AND the slime! 🧴",
+          "animation": "sit"
+        }
+      ]
     },
     {
       "id": "pool_shower",
@@ -296,7 +329,13 @@
       "description": "Rinse off before you swim",
       "interactionText": "BRRR! The pool shower is COLD! You rinse off super fast. 🚿",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "goo_crown",
+          "text": "You wash the goo off the crown. It's REAL gold underneath! ✨👑",
+          "animation": "wash"
+        }
+      ]
     }
   ]
 }

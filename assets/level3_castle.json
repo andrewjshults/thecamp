@@ -259,7 +259,10 @@
           "emoji": "👑"
         }
       ],
-      "uses": []
+      "uses": [
+        { "itemId": "wish_pebble", "text": "You add the wishing pebble to the treasure box. Now the treasure can make wishes too! 💎", "animation": "explore" },
+        { "itemId": "glitter", "text": "You sprinkle glitter all over the gold. The Brick's treasure has NEVER been this sparkly! ✨", "animation": "explore" }
+      ]
     },
     {
       "id": "trapdoor",

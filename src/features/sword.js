@@ -44,7 +44,7 @@ function savedSwordRating(save) {
 }
 registerSaveField('swordRating', { save: () => swordRating, load: s => { swordRating = savedSwordRating(s); } });
 let lastSwordDrops = {};     // level → { path, hs, at } — a multiplayer drop takes a moment to arrive
-const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from allMapConfigs, which the journal counts)
+const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from allMapConfigs, the maps you've loaded)
 
 function hasSpareSword() { return backpack.some(it => it.id === SWORD_ITEM.id); }
 function hasSword() { return swordRating > 0 || hasSpareSword(); }

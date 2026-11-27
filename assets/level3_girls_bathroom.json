@@ -283,6 +283,11 @@
           "itemId": "flashlight",
           "text": "Your flashlight makes the cobweb sparkle like a diamond necklace! ✨🕸️",
           "animation": "explore"
+        },
+        {
+          "itemId": "sunglasses_l3",
+          "text": "You put the sunglasses on the spider. Now it's the coolest spider at camp! 🕷️😎",
+          "animation": "explore"
         }
       ]
     },
@@ -323,6 +328,11 @@
           "itemId": "fancy_hat",
           "text": "You try on the fancy hat in the mirror. Who is that VERY distinguished camper?! 🎩",
           "animation": "play"
+        },
+        {
+          "itemId": "bubble_bath_l3",
+          "text": "You pour bubble bath in the sink. The bubbles grow and grow... and GROW! 🫧",
+          "animation": "wash"
         }
       ]
     },
@@ -346,6 +356,11 @@
         {
           "itemId": "umbrella",
           "text": "You hold the umbrella under the dryer. FLOOMP! It turns inside out! Oops! ☂️",
+          "animation": "play"
+        },
+        {
+          "itemId": "sock_l3",
+          "text": "You hold the lonely sock under the hand dryer. It's warm and toasty now... but still lonely. 🧦",
           "animation": "play"
         }
       ]
@@ -426,6 +441,16 @@
           "itemId": "umbrella",
           "text": "You shower under the umbrella. Clean? No. Dry? YES! Genius! ☂️",
           "animation": "wash"
+        },
+        {
+          "itemId": "toothbrush_l3",
+          "text": "You brush your teeth in the shower. Two jobs at once! So clean! 🪥",
+          "animation": "wash"
+        },
+        {
+          "itemId": "flip_flops_l3",
+          "text": "You wear flip flops in the shower so your feet don't touch the yucky floor. Flip flop, flip flop! 🩴",
+          "animation": "wash"
         }
       ]
     },
@@ -465,6 +490,11 @@
         {
           "itemId": "keys",
           "text": "You drop the car keys in the Lost & Found. Wait... how will the Flying Car fly now?! 🔑",
+          "animation": "explore"
+        },
+        {
+          "itemId": "banana_peel_l3",
+          "text": "You put the banana peel in the Lost & Found. Hmm... nobody is coming back for THAT. 🍌",
           "animation": "explore"
         }
       ]
@@ -536,6 +566,11 @@
           "itemId": "cookie",
           "text": "You share a cookie with the raccoon. Best friends FOREVER! 🍪🦝",
           "animation": "eat"
+        },
+        {
+          "itemId": "bug_spray_l3",
+          "text": "PSSSHT! The flies buzzing around the trash can zoom away. Bye bye, bugs! 🪰",
+          "animation": "explore"
         }
       ]
     }

@@ -230,7 +230,13 @@
       "description": "The four kinds of armor for sale",
       "interactionText": "🥋 Padded Vest $30, ⛓️ Chain Mail $50, 🛡️ Knight Armor $70, 💎 Crystal Armor $100. Armor can stop a boss's hit! Buy it at the counter.",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "crown",
+          "text": "You put the crown on top of the Knight Armor. Now it looks like a king's armor! 👑🛡️",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "forge",
@@ -249,7 +255,13 @@
           "emoji": "🔩"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "gloves",
+          "text": "Shelly fixes the Knight Gloves... very... very... slowly. Tink... tink... DONE! 🧤",
+          "animation": "craft"
+        }
+      ]
     },
     {
       "id": "old_armor",
@@ -268,7 +280,13 @@
           "emoji": "🧤"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "rivets",
+          "text": "You use the rivets to fix a dented old helmet. Clink! Clank! Good as new! 🔩",
+          "animation": "craft"
+        }
+      ]
     }
   ]
 }

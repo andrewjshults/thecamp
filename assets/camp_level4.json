@@ -83,7 +83,10 @@
       "items": [
         { "id": "slime_jar", "name": "Jar of Slime", "emoji": "🫙" }
       ],
-      "uses": []
+      "uses": [
+        { "itemId": "goggles_2_l4", "text": "Goggles on, you peek into the slime... and spot a lost flip flop down there! Ewww! 🥽", "animation": "explore" },
+        { "itemId": "pool_noodle_l4", "text": "You poke the slime with the pool noodle. SLURP! The slime eats half of it! 🫧", "animation": "play" }
+      ]
     },
     {
       "id": "bank",
@@ -169,7 +172,10 @@
       "items": [
         { "id": "throne_key", "name": "Throne Key", "emoji": "🗝️" }
       ],
-      "uses": []
+      "uses": [
+        { "itemId": "goo_crown", "text": "You hang the Goo Crown on the hook. Drip... drip... drip. 👑", "animation": "explore" },
+        { "itemId": "star_sticker", "text": "You stick a star sticker on the key hook. Now it's a FANCY key hook! ⭐", "animation": "explore" }
+      ]
     },
     {
       "id": "throne",
