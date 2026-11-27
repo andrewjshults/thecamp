@@ -373,6 +373,7 @@ async function singlePlayer(context) {
   await secondCamp(tab);
   await thirdCamp(tab);
   await exploration(tab);
+  await playtime(tab);
 
   // Some progress to save, so resuming has something to bring back
   await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; dishesMade = ['sandwich'];
@@ -595,6 +596,66 @@ async function exploration(tab) {
   tab.note({ step: 'explore-off', on: await tab.ev('exploreMode') });
   await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
   await tab.until(`state === GameState.PLAYING && currentMapPath === 'assets/game_design.json'`);
+}
+
+// The play-time limit: run out walking → the break; a grown-up's code and the
+// slider; a used code; the developer skip; running out mid-fight; the hour's up
+async function playtime(tab) {
+  const info = () => tab.ev(`({ state, left: playtimeLeft(), blocked: playtimeBlocked() })`);
+  tab.note({ step: 'playtime-start', ...await info() });
+  const codeNow = () => tab.ev('totpCode(totpStepAt(Date.now()))');
+  const submitCode = async code => {
+    await tab.page.fill('#ptCodeInput', code);
+    await tab.page.press('#ptCodeInput', 'Enter');
+    await tab.run(300);
+  };
+  // Standing still doesn't count; walking does
+  await tab.ev('playtimeSet(1500)');
+  await tab.run(3000);
+  tab.note({ step: 'playtime-still', ...await info() });
+  await tab.page.keyboard.down('ArrowLeft');
+  await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen');
+  await tab.page.keyboard.up('ArrowLeft');
+  await tab.run(300);
+  await tab.shot('playtime-break');
+  await tab.page.click('[data-pt=code]');
+  await tab.run(200);
+  const right = await codeNow();
+  await submitCode(String((Number(right) + 1) % 1000000).padStart(6, '0'));
+  tab.note({ step: 'playtime-wrong', error: await tab.ev('ptCodeError.textContent') });
+  await submitCode(right);
+  await tab.until('!document.getElementById("ptGrant").hidden', 'the more-time slider');
+  await tab.page.fill('#ptGrantSlider', '35');
+  await tab.run(100);
+  await tab.shot('playtime-grant');
+  await tab.page.click('#ptGrant button[type=submit]');
+  await tab.run(300);
+  tab.note({ step: 'playtime-granted', ...await info() });
+  // The same code can't be used twice; the developer skip works on localhost
+  await tab.ev('playtimeSet(0)');
+  await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen again');
+  await tab.page.click('[data-pt=code]');
+  await submitCode(right);
+  tab.note({ step: 'playtime-reused', error: await tab.ev('ptCodeError.textContent') });
+  await tab.page.click('[data-pt=rest]');
+  await tab.page.click('[data-pt=dev]');
+  await tab.run(300);
+  tab.note({ step: 'playtime-dev-skip', ...await info() });
+  // Running out in a fight: the fight finishes, then the break
+  await tab.ev('playtimeSet(500); resetMapBoss(); startFight()');
+  await tab.run(3500);
+  tab.note({ step: 'playtime-fight', ...await info() });
+  await tab.key('Escape');
+  await tab.run(2500);
+  await tab.key(' ');
+  await tab.run(300);
+  tab.note({ step: 'playtime-after-fight', ...await info() });
+  // An hour later the break is over by itself
+  await tab.ev(`(() => { const d = JSON.parse(localStorage.getItem(PLAYTIME_KEY));
+    d.blockedAt = Date.now() - PLAYTIME_BLOCK_MS; localStorage.setItem(PLAYTIME_KEY, JSON.stringify(d)); })()`);
+  await tab.until('state === GameState.PLAYING', 'the break to end');
+  tab.note({ step: 'playtime-reset', ...await info() });
+  await tab.shot('playtime-reset');
 }
 
 // Clicking / tapping instead of keys (the same code handles touch)

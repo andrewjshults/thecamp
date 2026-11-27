@@ -303,3 +303,36 @@ canvas {
 #armorKinds .shopPrice { color: #FFF59D; white-space: nowrap; }
 #armorKinds button.tooPricey { background: #78909c; }
 @media (max-width: 560px) { #armorKinds { grid-template-columns: 1fr; } }
+
+/* --- Play time: the break screen, the grown-up code, more time --- */
+#playtimeModal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 12, 8, 0.82);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#playtimeModal[hidden], #playtimeModal [hidden] { display: none !important; }
+#playtimeModal h2 { font-size: 28px; color: #FFD54F; }
+#ptFace { font-size: 64px; line-height: 1; animation: bankBob 2.4s ease-in-out infinite; }
+#ptCodeInput {
+  font: bold 40px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  letter-spacing: 10px;
+  text-align: center;
+  width: 100%;
+  padding: 8px 4px 8px 14px;
+  border: 3px solid #FFD54F;
+  border-radius: 14px;
+  background: #FFF8E1;
+  color: #3E2723;
+  outline: none;
+  user-select: text;
+}
+#ptCodeInput::placeholder { color: #D7CCC8; }
+#ptGrantValue { font-size: 26px; font-weight: bold; color: #A5D6A7; }
+#ptGrantSlider { width: 100%; accent-color: #43A047; height: 28px; }
+#ptScale { display: flex; justify-content: space-between; font-size: 13px; color: #BCAAA4; margin-top: -8px; }
