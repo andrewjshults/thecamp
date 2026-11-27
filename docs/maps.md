@@ -12,7 +12,7 @@ drawing `scene` rooms, `props/` the room props, `hotspots.js`, `doors.js`,
      (e.g. `"out at the camp"`); default `"in the <name>"`
    - `image` — path to the image (e.g. `"assets/map2.jpg"`; an `.svg` is rasterised once when it
      loads), **or** a `scene` (see below)
-   - `noSwordDrops` — optional, `true` to never drop a new sword here (maps that aren't always open)
+   - `noSwordDrops` — optional, `true` to never drop a new sword here (the shops, the Brick's castle)
    - `playerStart` — `{ "px": 0–1, "py": 0–1 }` fractional spawn point
    - `hotspots` — array of hotspot objects (see schema below)
 3. Connect it with a portal hotspot (`targetMap`, below) on a map that leads there. To start

@@ -28,6 +28,8 @@ for looking around every level without being chased. While it's on
   `drawPassageGlow`). `level2Open` and `level3Open` aren't changed, so
   switching the mode off puts things back as they were. The Second Camp's
   `cave_exit` and the Third Camp's `hole_back` always lead back.
+- **NPCs tell you about items on every level** (`registerLevelsOpen`), since
+  you can get to them all (see [npcs.md](npcs.md)).
 - **The Third Camp's poison moat still works**: it isn't a boss (see
   [level-three.md](level-three.md)).
 - **A green banner at the top of the screen** says "🧭 EXPLORATION MODE"

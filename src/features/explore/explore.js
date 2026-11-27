@@ -26,6 +26,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 registerFoesOff(() => exploreMode);
+registerLevelsOpen(() => exploreMode);   // NPCs tell you about items on every level
 onGameEvent('camperChosen', () => { exploreMode = false; });
 
 // The secret passage, when it isn't open for real (level2.js handles that)

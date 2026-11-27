@@ -41,9 +41,13 @@ Claude. `itemQuestionReply()` in `src/people/item-questions.js` (checked first i
 or search (`ITEM_QUESTION_RE`) and names an item by a word of its name or its
 emoji (`itemsMentioned`, roughly plural-insensitive), the NPC says where it is
 right now on every map (`crawlMapConfigs` + `worldItemsFor`): hotspots, kitchen
-`source`/`shop` stations, or your own backpack. If nobody's left a sword
-anywhere, it drops one first (`findOrDropSword`). Lines that don't name an item
-go to Claude / `localNpcReply()` as before.
+`source`/`shop` stations, or your own backpack. It lists the places on the
+level you're on first (right here, then the rest of that level), then the
+other levels in order, and a place on another level says which one ("..., on
+Level 2", `levelLabel`). Levels you haven't unlocked (`levelUnlocked` in
+`src/world/levels.js`) are left out completely. If there's no sword on your
+level, it drops one there first (`findOrDropSword`). Lines that don't name an
+item go to Claude / `localNpcReply()` as before.
 
 **Wandering.** Camper NPCs stroll around their `px`/`py` spot (within
 `NPC_WANDER_RX`/`RY`; `"wander": false` keeps one still). Critters stay put.

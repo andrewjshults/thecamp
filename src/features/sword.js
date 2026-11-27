@@ -6,9 +6,10 @@
 // up before you can fight again. Until then the Blob ignores you (it won't
 // chase or catch you), and trying to fight it tells you which map to search.
 // A sword picked up while yours still works waits in the backpack as a spare.
-// There's always at least one sword lying somewhere in the world (so in a
-// multiplayer world there's one for whoever needs it): one is dropped when a
-// game starts if there isn't, and picking one up drops another somewhere else.
+// There's always at least one sword lying on every level (so in a multiplayer
+// world there's one for whoever needs it, wherever they are): one is dropped
+// on each level when a game starts if there isn't, and picking one up drops
+// another somewhere else on the same level (levels: src/world/levels.js).
 const SWORD_MAX = 100;
 const SWORD_SWING_WEAR = 1;
 const SWORD_HIT_WEAR = 4;
@@ -42,8 +43,7 @@ function savedSwordRating(save) {
   return Number.isFinite(n) ? clamp(Math.round(n), 0, swordMax()) : swordMax();
 }
 registerSaveField('swordRating', { save: () => swordRating, load: s => { swordRating = savedSwordRating(s); } });
-let swordSearch = null;      // the find-or-drop in progress (it may fetch map files)
-let lastSwordDrop = null;    // { path, hs, at } — a multiplayer drop takes a moment to arrive
+let lastSwordDrops = {};     // level → { path, hs, at } — a multiplayer drop takes a moment to arrive
 const swordMapConfigs = {};  // maps fetched to find a spot (kept apart from allMapConfigs, which the journal counts)
 
 function hasSpareSword() { return backpack.some(it => it.id === SWORD_ITEM.id); }
@@ -62,37 +62,51 @@ function equipSpareSword() {
 
 // A sword just went into the backpack (from hotspot `hs` on map `path`): if
 // yours is worn out, it's your new one. Either way another one turns up
-// somewhere else, so there's still one lying around for the next camper.
+// somewhere else on the same level, so there's still one lying around there
+// for the next camper.
 function onSwordPickedUp(path, hs) {
-  lastSwordDrop = null;
-  const wait = swordSearch || Promise.resolve();
-  wait.then(() => findOrDropSword({ path, hs }));
+  for (const [n, d] of Object.entries(lastSwordDrops)) {
+    if (d && d.path === path && d.hs === hs) delete lastSwordDrops[n];
+  }
+  crawlMapConfigs().then(configs => findOrDropSword({ path, hs }, levelOfMap(mapLevels(configs), path)));
   if (!equipSpareSword()) return;
   const msg = `🗡️ You found a new sword! It's as good as new (${SWORD_MAX}). Now you can fight the Blob again!`;
   if (state === GameState.INTERACTING) interactionHintText = msg;
   else useToast = { text: msg, age: 0 };
 }
 
-function findSword(configs) {
+// Every sword lying on level `n`: [{ path, hs }]
+function swordsOnLevel(configs, levels, n) {
+  const out = [];
   for (const [path, cfg] of Object.entries(configs)) {
+    if (levelOfMap(levels, path) !== n) continue;
     const items = worldItemsFor(path, cfg);
     for (const [hs, list] of Object.entries(items)) {
-      if ((list || []).some(it => it.id === SWORD_ITEM.id)) return { path, hs };
+      if ((list || []).some(it => it.id === SWORD_ITEM.id)) out.push({ path, hs });
     }
   }
-  if (lastSwordDrop && performance.now() - lastSwordDrop.at < 10000) return lastSwordDrop;
+  return out;
+}
+
+// A sword lying on level `n` (or one that's just been dropped there)
+function findSword(configs, levels, n) {
+  const found = swordsOnLevel(configs, levels, n)[0];
+  if (found) return found;
+  const last = lastSwordDrops[n];
+  if (last && performance.now() - last.at < 10000) return last;
   return null;
 }
 
-// Put a new sword at a random spot (one you can open and pick things up from).
-// `avoid` ({ path, hs }): where one was just picked up — try another map.
-function dropSword(configs, avoid) {
+// Put a new sword at a random spot on level `n` (one you can open and pick
+// things up from). `avoid` ({ path, hs }): where one was just picked up — try
+// another map on that level.
+function dropSword(configs, levels, n, avoid) {
   const spots = {};
   for (const [path, cfg] of Object.entries(configs)) {
-    if (cfg.noSwordDrops) continue;     // e.g. the second camp, which isn't always open
+    if (cfg.noSwordDrops || levelOfMap(levels, path) !== n) continue;     // e.g. the shops
     const items = worldItemsFor(path, cfg);
     const cave = cfg.boss && cfg.boss.cave;
-    const ok = (cfg.hotspots || []).filter(h => !h.targetMap && !h.station && !h.bank && h.id !== cave &&
+    const ok = (cfg.hotspots || []).filter(h => !h.targetMap && !h.passage && !h.station && !h.bank && h.id !== cave &&
       !(avoid && avoid.path === path && avoid.hs === h.id) &&
       (items[h.id] || []).length < HOTSPOT_CAPACITY);
     if (ok.length) spots[path] = ok.map(h => h.id);
@@ -111,22 +125,30 @@ function dropSword(configs, avoid) {
     ms.hotspots[hs].push({ ...SWORD_ITEM });
   }
   writeSave();
-  lastSwordDrop = { path, hs, at: performance.now() };
-  return lastSwordDrop;
+  lastSwordDrops[n] = { path, hs, at: performance.now() };
+  return lastSwordDrops[n];
 }
 
-// Where's a sword I can pick up? Drops a new one if there isn't one anywhere.
-function findOrDropSword(avoid) {
-  if (!swordSearch) {
-    swordSearch = crawlMapConfigs()
-      .then(configs => {
-        if (!swordWorldReady()) return null;     // changed maps / left while loading: next check will do it
-        const at = findSword(configs) || dropSword(configs, avoid);
-        return at ? { ...at, cfg: configs[at.path] } : null;
-      })
-      .finally(() => { swordSearch = null; });
-  }
-  return swordSearch;
+// Where's a sword I can pick up on level `n` (default: the level you're on)?
+// Drops a new one there if there isn't one. Resolves to { path, hs, cfg, level }
+// or null. (Finding and dropping happen together once the maps are in, so two
+// searches at once can't both drop one.)
+function findOrDropSword(avoid, n) {
+  return crawlMapConfigs().then(configs => {
+    if (!swordWorldReady()) return null;     // changed maps / left while loading: next check will do it
+    const levels = mapLevels(configs);
+    const level = n || levelOfMap(levels, currentMapPath);
+    const at = findSword(configs, levels, level) || dropSword(configs, levels, level, avoid);
+    return at ? { ...at, cfg: configs[at.path], level } : null;
+  });
+}
+
+// Make sure there's a sword lying on every level
+function swordOnEveryLevel() {
+  return crawlMapConfigs().then(configs => {
+    const { max } = mapLevels(configs);
+    for (let n = 1; n <= max; n++) findOrDropSword(null, n);
+  });
 }
 
 // Is everything loaded enough to look for (and drop) a sword?
@@ -134,11 +156,11 @@ function swordWorldReady() {
   return !!player.character && mpInWorld() && (!mp.active || mp.synced);
 }
 
-// A game just started: make sure a sword is lying somewhere (once things load)
+// A game just started: make sure a sword is lying on every level (once things load)
 function checkSwordSoon() {
   let tries = 0;
   const go = () => {
-    if (swordWorldReady()) findOrDropSword();
+    if (swordWorldReady()) swordOnEveryLevel();
     else if (++tries < 30) setTimeout(go, 500);
   };
   setTimeout(go, 500);
@@ -146,15 +168,19 @@ function checkSwordSoon() {
 
 // And keep checking, in case one went missing (a friend left before dropping
 // the next one...). In a multiplayer world only one computer checks — the
-// lowest player id — and only after two misses in a row, so a sword that's on
-// its way from a friend isn't doubled up.
-let swordCheckMisses = 0;
+// lowest player id — and only after two misses in a row on a level, so a
+// sword that's on its way from a friend isn't doubled up.
+const swordCheckMisses = {};   // level → misses in a row
 setInterval(() => {
-  if (!swordWorldReady() || swordSearch) return;
+  if (!swordWorldReady()) return;
   if (mp.active && [...mp.players.keys()].some(id => id < mp.myId)) return;
   crawlMapConfigs().then(configs => {
-    if (findSword(configs)) { swordCheckMisses = 0; return; }
-    if (!mp.active || ++swordCheckMisses >= 2) { swordCheckMisses = 0; findOrDropSword(); }
+    const levels = mapLevels(configs);
+    for (let n = 1; n <= levels.max; n++) {
+      if (findSword(configs, levels, n)) { swordCheckMisses[n] = 0; continue; }
+      swordCheckMisses[n] = (swordCheckMisses[n] || 0) + 1;
+      if (!mp.active || swordCheckMisses[n] >= 2) { swordCheckMisses[n] = 0; findOrDropSword(null, n); }
+    }
   });
 }, 15000);
 

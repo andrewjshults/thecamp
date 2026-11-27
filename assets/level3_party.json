@@ -1,7 +1,6 @@
 {
   "name": "Party Hall",
   "where": "in the Party Hall",
-  "noSwordDrops": true,
   "playerStart": {
     "px": 0.3,
     "py": 0.65

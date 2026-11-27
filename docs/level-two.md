@@ -54,10 +54,10 @@ so move them together. An `.svg` map image is rasterised once when it loads
 | (not drawn) Bank, on the pool deck | `bank` (`"building": "bank"`) | `camp_bank.json`, the same bank; its door goes back to the first camp |
 | (not drawn) Sword shop, on the pool deck | `sword_shop` | `sword_shop.json` |
 
-The rooms come back out to their hotspot here. The map and its rooms
-have `"noSwordDrops": true`: a new 🗡️ Sword is never dropped on the Second
-Camp (it isn't always open), so a worn-out sword means a trip back to the first
-camp, or a visit to the sword shop.
+The rooms come back out to their hotspot here. The Second Camp is Level 2
+(see [Levels](boss-fight.md#levels)), so there's always a 🗡️ Sword lying
+somewhere on it, and picking one up here drops the next one on the Second Camp
+too. Ember's Sword Shop has `"noSwordDrops": true`, so it's never dropped there.
 
 ## The Marshmallows
 

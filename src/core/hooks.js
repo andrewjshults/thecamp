@@ -127,6 +127,13 @@ const FOES_OFF = [];
 function registerFoesOff(isOff) { FOES_OFF.push(isOff); }
 function foesOff() { return FOES_OFF.some(isOff => isOff()); }
 
+// registerLevelsOpen(isOpen): isOpen() returns true while every level counts
+// as unlocked, whatever passages you've opened (exploration mode). See
+// levelUnlocked in src/world/levels.js.
+const LEVELS_OPEN = [];
+function registerLevelsOpen(isOpen) { LEVELS_OPEN.push(isOpen); }
+function levelsAllOpen() { return LEVELS_OPEN.some(isOpen => isOpen()); }
+
 // --- In a fight ---
 //   registerPlayerHitGuard(fn): fn(fight, now) is asked when a boss's swing is
 //     about to land on you (score a point); return true to stop it (armor).

@@ -33,7 +33,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | Folder | What's in it |
 |---|---|
 | `src/core/` | The engine: `hooks.js` (plug-in points, below), `util.js`, `state.js` (`GameState`, canvas), `player.js`, `save.js`, `input.js`, `update.js`, `playing.js` (walking around a map), `draw-game.js`, `canvas.js` |
-| `src/world/` | Maps (`maps.js`), `scene` rooms (`scene.js`, `scene-svg.js`, `props/`), hotspots, doors, buildings |
+| `src/world/` | Maps (`maps.js`), which level each map is on (`levels.js`), `scene` rooms (`scene.js`, `scene-svg.js`, `props/`), hotspots, doors, buildings |
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
@@ -59,6 +59,7 @@ functions. Each shared function loops over what's registered:
 | `registerHotspotKind({ match, interact, hint }, { first })` | `handleInteract`, the hint above a hotspot in `drawGame` | A hotspot that does its own thing on Space/tap (portals, stations, the bank, the cave). `first: true` checks it before the kinds already registered |
 | `registerMapFoe(near)` | `playingKey`, `playingTap`, `drawPeople` | Something on the map you can pick a fight with: `near()` returns null or `{ engage, hit, drawHint }` (the Blob, the Marshmallows) |
 | `registerFoesOff(isOff)` | the Blob and the Marshmallows (`foesOff()`) | Turning the bosses off for a while (exploration mode) |
+| `registerLevelsOpen(isOpen)` | `levelUnlocked` (`levelsAllOpen()`) | Counting every level as unlocked for a while (exploration mode) |
 | `registerMapPeople(list)` | `drawPeople` | Things drawn sorted by feet `y` with the people: `list()` returns `[{ y, draw }]` |
 | `registerMapLayer(z, draw)` | `drawGame` | Drawn over the map picture, under people (map coordinates) |
 | `registerScreenLayer(z, draw)` | `drawGame` | Drawn over people, under the HUD (screen coordinates) |
