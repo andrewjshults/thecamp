@@ -81,7 +81,7 @@
         { "id": "earmuffs", "name": "Earmuffs", "emoji": "🎧" }
       ],
       "uses": [
-        { "itemId": "flashlight", "text": "You read comics under the blanket with your flashlight. Best sleepover EVER! 🔦", "animation": "sleep" },
+        { "itemId": "flashlight_2", "text": "You read comics under the blanket with the spare flashlight. Best sleepover EVER! 🔦", "animation": "sleep" },
         { "itemId": "night_light", "text": "You plug in the night light. The red tent glows soft and orange... no Marshmallows hiding in the dark tonight! 🕯️", "animation": "sleep" },
         { "itemId": "pillow_fort_blanket", "text": "You drape the fluffy blanket over the bunk and make a secret blanket fort. Password: S'MORES! 🛌", "animation": "sleep" }
       ]
