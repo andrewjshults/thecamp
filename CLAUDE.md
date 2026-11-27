@@ -92,9 +92,9 @@ script, the boss and its tuning, the adventures, the smoke test and the docs.
 - [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)
 - [Armor and Shelly's Armor Shop: the four kinds you can buy](docs/armor-shop.md)
 - [The prize wheel after each adventure, and the fight charms you can win](docs/prize-wheel.md)
-- [Play time: the 20-minute limit, the break, the grown-up TOTP code, dev overrides](docs/playtime.md)
+- [Play time: the 15-minute limit, the break, the grown-up TOTP code, dev overrides](docs/playtime.md)
 - [The Fourth Camp: door codes, the Safe Zone, the Slime Brick, the throne key, Charlie's shop](docs/level-four.md)
-- [The How to Play booklet and video (`guide/`), and remaking their pictures](docs/guide.md)
+- [The How to Play booklet and video (`guide/`), the start menu's video pop-up, remaking their pictures](docs/guide.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.

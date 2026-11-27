@@ -17,7 +17,10 @@
       <button type="button" class="green" data-act="single">🏕️ Single Player<small>Explore the camp on your own</small></button>
       <button type="button" class="purple" data-act="multi">👫 Multi Player<small>Play with friends on other computers</small></button>
       <div class="menuError" id="modeError"></div>
-      <a class="guideLink" href="guide/" target="_blank" rel="noopener">📖 How to play: the booklet and video</a>
+      <div class="guideRow">
+        <button type="button" class="guideBtn" data-guide="video">▶️ Watch how to play</button>
+        <a class="guideBtn" href="guide/" target="_blank" rel="noopener">📖 Read the booklet</a>
+      </div>
     </div>
     <div id="menuMulti" class="menuScreen" hidden>
       <p>Play with friends!</p>
@@ -43,6 +46,21 @@
       <p class="small">Check the code with your friend. Their game needs to be open in that world.</p>
       <button type="button" class="blue" data-act="join">🔑 Try another code</button>
       <button type="button" class="orange" data-act="joinAnyway">Go in anyway</button>
+    </div>
+  </div>
+</div>
+<div id="guideVideoModal" hidden role="dialog" aria-modal="true" aria-label="How to play video">
+  <div class="guideVideoPanel">
+    <div class="guideVideoTop">
+      <h2>▶️ How to play</h2>
+      <button type="button" class="guideClose" data-guide="close" aria-label="Close">✕</button>
+    </div>
+    <video id="guideVideo" controls playsinline preload="none" poster="guide/img/video-poster.jpg">
+      <source src="guide/how-to-play.mp4" type="video/mp4">
+    </video>
+    <div class="guideVideoBottom">
+      <a href="guide/" target="_blank" rel="noopener">📖 Read the booklet for every tip</a>
+      <button type="button" class="green" data-guide="close">Let's play! 🏕️</button>
     </div>
   </div>
 </div>
@@ -289,6 +307,7 @@
 <script src="src/features/prize-wheel/wheel.js"></script>
 <script src="src/features/playtime/totp.js"></script>
 <script src="src/features/playtime/playtime.js"></script>
+<script src="src/features/guide/guide-video.js"></script>
 
 <script src="src/main.js"></script>
 </body>

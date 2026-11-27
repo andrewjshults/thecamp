@@ -112,13 +112,6 @@ canvas {
 .menuPanel button.purple { background: #8E24AA; }
 .menuPanel button.orange { background: #F57C00; }
 .menuPanel button.blue   { background: #1E88E5; }
-.menuPanel .guideLink {
-  display: block;
-  margin-top: 14px;
-  color: #FFD54F;
-  font-size: 15px;
-  text-decoration: underline;
-}
 .menuPanel button.link {
   background: none;
   box-shadow: none;
@@ -405,3 +398,55 @@ canvas {
 }
 #codeKeeperLocks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 @media (max-width: 560px) { #codeKeeperLocks { grid-template-columns: 1fr; } }
+
+/* ---- How to play: the start menu's guide buttons and the video pop-up ---- */
+.guideRow { display: flex; gap: 10px; margin-top: 4px; }
+.menuPanel .guideBtn {
+  flex: 1;
+  font: bold 15px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: #5D4037;
+  color: #FFD54F;
+  border: 2px solid #8D6E63;
+  box-shadow: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menuPanel .guideBtn:hover, .menuPanel .guideBtn:focus-visible { background: #6D4C41; outline: 3px solid #FFD54F; transform: none; }
+#guideVideoModal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 12, 8, 0.75);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#guideVideoModal[hidden] { display: none; }
+.guideVideoPanel {
+  width: min(960px, 100%, calc((100vh - 170px) * 16 / 9));
+  min-width: min(320px, 100%);
+  background: #3E2723;
+  border: 3px solid #8D6E63;
+  border-radius: 18px;
+  box-shadow: 0 0 0 6px rgba(62, 39, 35, 0.5), 0 12px 30px rgba(0, 0, 0, 0.5);
+  padding: 12px 14px 14px;
+  color: #FFECB3;
+}
+.guideVideoTop, .guideVideoBottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.guideVideoTop h2 { margin: 0 0 8px 4px; font-size: 24px; color: #FFD54F; }
+.guideClose {
+  background: none; border: none; color: #BCAAA4; font-size: 24px; cursor: pointer; padding: 0 6px 6px;
+}
+.guideClose:hover, .guideClose:focus-visible { color: #fff; }
+#guideVideo { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; }
+.guideVideoBottom { margin-top: 10px; flex-wrap: wrap; }
+.guideVideoBottom a { color: #FFD54F; font-size: 15px; }
+.guideVideoBottom button {
+  font: bold 18px 'Comic Sans MS', 'Chalkboard SE', cursive;
+  padding: 9px 18px; border: none; border-radius: 12px; color: #fff; background: #43A047; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}

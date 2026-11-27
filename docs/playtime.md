@@ -11,9 +11,13 @@ pop-up is `#playtimeModal` in `index.html`, styled in its own block in
   (`louisas-game:playtime`), not in a camper's save: switching campers or
   going multiplayer doesn't reset it. Two open tabs count down the same timer
   (`ptFlush` re-reads before writing).
-- It starts at `PLAYTIME_LIMIT_MS` (20 minutes) and **only counts while you're
-  walking on a map or in a fight** (`playtimeCounting`): standing still,
-  talking, the journal, shops and menus don't count. A frame counts at most
+- It starts at `PLAYTIME_LIMIT_MS` (15 minutes) and **only counts while
+  you're playing** (`playtimeCounting`): on a map, talking, in the journal,
+  shops, menus and pop-ups it counts until `PLAYTIME_IDLE_MS` (10 seconds)
+  after your last key press, tap or step (`ptActiveAt`; walking, turning
+  around and tap-to-move all count), then pauses until you do something. A
+  fight always counts. The camper picker, resume and mode screens
+  (`PLAYTIME_NOT_PLAYING`) and door/boss-shout moments don't count. A frame counts at most
   `PLAYTIME_MAX_FRAME_MS`, so a tab that was asleep doesn't eat time.
 - When it runs out you get the **break screen** (`playtimeBlock`, game state
   `PLAYTIME_BLOCKED`). The check only happens while walking around a map
