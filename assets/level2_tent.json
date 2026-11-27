@@ -237,6 +237,11 @@
           "itemId": "comic_book",
           "text": "You read the comic book with everyone in their sleeping bags. Giggle fit! 📚",
           "animation": "sleep"
+        },
+        {
+          "itemId": "stuffed_unicorn",
+          "text": "You tuck the Stuffed Unicorn into the sleeping bag next to you. Goodnight, unicorn! 🦄💤",
+          "animation": "sleep"
         }
       ]
     },
@@ -262,7 +267,18 @@
           "emoji": "🧩"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "yo_yo_2",
+          "text": "You show everyone your rainbow yo-yo tricks: walk the dog, around the world... TA-DA! 🪀",
+          "animation": "play"
+        },
+        {
+          "itemId": "flashlight_2",
+          "text": "You shine the spare flashlight to the very bottom of the chest... and find a lost marble! 🔦",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "snack_rug",
@@ -281,7 +297,23 @@
           "emoji": "🍫"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "playing_cards",
+          "text": "You deal a game of Go Fish on the snack rug. \"Got any... cookies?\" \"Go fish!\" 🃏",
+          "animation": "play"
+        },
+        {
+          "itemId": "cake_slice",
+          "text": "You bring a slice of birthday cake to the midnight snack rug. Shhh... quiet chewing! 🍰",
+          "animation": "eat"
+        },
+        {
+          "itemId": "juice_box",
+          "text": "SLURRRP! You finish the juice box so loud that everyone giggles. Shhh! 🧃",
+          "animation": "eat"
+        }
+      ]
     }
   ]
 }

@@ -287,7 +287,18 @@
           "emoji": "🛏️"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "gold_sack",
+          "text": "You count all your Goo Gold on the comfy couch. One, two, three... a LOT! 💰",
+          "animation": "sit"
+        },
+        {
+          "itemId": "beach_towel_l4",
+          "text": "You use the beach towel as a blanket and take a cozy nap. Nothing slimy here! 🏖️💤",
+          "animation": "sleep"
+        }
+      ]
     },
     {
       "id": "snack_box",
@@ -311,7 +322,18 @@
           "emoji": "🧃"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "star_sticker",
+          "text": "You put a star sticker on the snack box: BEST SNACKS IN THE FOURTH CAMP! ⭐",
+          "animation": "eat"
+        },
+        {
+          "itemId": "slime_jar",
+          "text": "Is that green jelly?! NO! It's slime! You put the lid back on super fast. Bleh! 🫙",
+          "animation": "eat"
+        }
+      ]
     }
   ]
 }

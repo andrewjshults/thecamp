@@ -252,6 +252,11 @@
           "itemId": "flashlight",
           "text": "You shine your flashlight on the disco ball. A MILLION sparkles! ✨",
           "animation": "play"
+        },
+        {
+          "itemId": "glitter",
+          "text": "You toss glitter at the spinning disco ball. It's a SPARKLE STORM! ✨🪩",
+          "animation": "play"
         }
       ]
     },
@@ -276,6 +281,16 @@
         {
           "itemId": "glow_stick",
           "text": "You wave the glow stick on the dance floor. RAVE PARTY! 🪄✨",
+          "animation": "play"
+        },
+        {
+          "itemId": "kazoo",
+          "text": "BZZZ-BZZ-BZZZ! You play the kazoo and everyone does the kazoo conga line! 🎺",
+          "animation": "play"
+        },
+        {
+          "itemId": "water_wings",
+          "text": "You wear water wings on the dance floor and do the floaty-flappy dance. Disco Dolly LOVES it! 🦾",
           "animation": "play"
         }
       ]
@@ -302,7 +317,18 @@
           "emoji": "🎉"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "lollipop",
+          "text": "You stick the lollipop on top of the cake. Now it's a lollipop-cake! Yum! 🍭🎂",
+          "animation": "eat"
+        },
+        {
+          "itemId": "crown",
+          "text": "You wear the crown to cut the cake. The birthday king or queen gets the FIRST slice! 👑🎂",
+          "animation": "eat"
+        }
+      ]
     },
     {
       "id": "presents",
@@ -321,7 +347,13 @@
           "emoji": "🎺"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "beach_ball",
+          "text": "You try to wrap the beach ball. It's round, so everyone guesses right away: \"IT'S A BALL!\" 🎁",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "pinata",
@@ -340,7 +372,13 @@
           "emoji": "🍭"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "gloves",
+          "text": "Knight Gloves on! You give the piñata a mighty knightly WHACK! 🧤🍬",
+          "animation": "play"
+        }
+      ]
     }
   ]
 }

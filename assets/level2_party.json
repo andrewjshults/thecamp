@@ -252,6 +252,16 @@
           "itemId": "glow_stick",
           "text": "You wave the glow stick on the dance floor. RAVE PARTY! 🪄✨",
           "animation": "play"
+        },
+        {
+          "itemId": "balloon",
+          "text": "You dance with the balloon and try to keep it in the air. Don't let it touch the floor! 🎈",
+          "animation": "play"
+        },
+        {
+          "itemId": "party_hat",
+          "text": "Party hat on! You do the birthday boogie in the middle of the dance floor. 🎉🕺",
+          "animation": "play"
         }
       ]
     },
@@ -282,6 +292,11 @@
           "itemId": "party_blower",
           "text": "TOOT TOOT! You blow the party blower and everyone sings! 🥳",
           "animation": "play"
+        },
+        {
+          "itemId": "glow_stick",
+          "text": "You stick the glow stick in the cake like a magic candle. Make a wish! ✨🎂",
+          "animation": "eat"
         }
       ]
     },
@@ -307,7 +322,18 @@
           "emoji": "🫧"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "puzzle",
+          "text": "You wrap up the puzzle as a present for the birthday camper. A surprise in every piece! 🧩🎁",
+          "animation": "explore"
+        },
+        {
+          "itemId": "comic_book",
+          "text": "You wrap up the comic book with a big bow. The birthday camper LOVES comics! 📚🎁",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "pinata",
@@ -326,7 +352,18 @@
           "emoji": "🍬"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "hammer",
+          "text": "BONK! One tap with the hammer and the piñata bursts! Candy rains down everywhere! 🔨🍬",
+          "animation": "play"
+        },
+        {
+          "itemId": "oar",
+          "text": "You swing the oar like a giant bat... WHACK! The piñata spins round and round! 🛶",
+          "animation": "play"
+        }
+      ]
     }
   ]
 }

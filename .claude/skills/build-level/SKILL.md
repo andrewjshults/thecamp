@@ -122,6 +122,11 @@ layout. Rules:
 - Exit hotspots: `targetMap` back to `camp_levelN.json`, `targetHotspot` = the
   hotspot you came in through, plus an `arrive` point outside the door.
 - `"noSwordDrops": true` on shops and the boss's room.
+- **Adventures**: give the camp and its rooms `uses` (see `docs/items.md`)
+  that are done with **this level's own items**, 2–4 per spot that isn't a
+  door, a counter or a fight, and never at the spot the item starts at. A few
+  bonus ones for items carried up from lower levels are fine too. The smoke
+  test (`adventures`) fails a level with fewer than 15 of its own.
 
 ## 6. The boss
 

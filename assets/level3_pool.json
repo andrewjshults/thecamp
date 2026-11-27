@@ -226,6 +226,16 @@
           "itemId": "rubber_duck",
           "text": "You set the rubber duck in the pool. Lily salutes it! 🦆",
           "animation": "play"
+        },
+        {
+          "itemId": "water_wings",
+          "text": "You put on the water wings and float like a happy little boat. 🦾",
+          "animation": "swim"
+        },
+        {
+          "itemId": "beach_ball",
+          "text": "You play beach ball catch in the pool. Bonk! It bounces off your head! ⚽",
+          "animation": "play"
         }
       ]
     },
@@ -240,7 +250,18 @@
       "description": "The giant slide!",
       "interactionText": "You climb allllll the way up... and WHEEEEEE! SPLOOSH! 💦",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "pool_noodle_l3",
+          "text": "You ride the pool noodle down the water slide... SUPER FAST! WHOOOSH! 🪱💦",
+          "animation": "play"
+        },
+        {
+          "itemId": "goggles_2_l3",
+          "text": "Goggles on! You go down the slide with your eyes wide open the whole way. SPLASH! 🥽",
+          "animation": "swim"
+        }
+      ]
     },
     {
       "id": "lifeguard_chair",
@@ -264,7 +285,13 @@
           "emoji": "🧴"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "sun_hat",
+          "text": "You put on the sun hat. Now you look like a REAL lifeguard! 👒",
+          "animation": "explore"
+        }
+      ]
     },
     {
       "id": "towel_bench",
@@ -283,7 +310,18 @@
           "emoji": "🏖️"
         }
       ],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "sunscreen_l3",
+          "text": "You rub on sunscreen so you don't get sunburned. Slippy slidey! 🧴",
+          "animation": "sit"
+        },
+        {
+          "itemId": "cupcake",
+          "text": "You eat a cupcake on the towel bench. Pool + cupcakes = the best day! 🧁",
+          "animation": "eat"
+        }
+      ]
     },
     {
       "id": "pool_shower",
@@ -296,7 +334,13 @@
       "description": "Rinse off before you swim",
       "interactionText": "BRRR! The pool shower is COLD! You rinse off super fast. 🚿",
       "items": [],
-      "uses": []
+      "uses": [
+        {
+          "itemId": "glitter",
+          "text": "You rinse off all the party glitter... well, almost all of it. You're still a little sparkly! ✨🚿",
+          "animation": "wash"
+        }
+      ]
     }
   ]
 }
