@@ -1,5 +1,5 @@
 // ============================================================
-// SHOP SWORDS — the four swords you can buy at Ember's Sword Shop
+// SHOP SWORDS — the five swords you can buy at Ember's Sword Shop
 // ============================================================
 // Added to SWORD_KINDS (src/features/sword.js), next to the plain sword you
 // find lying around. Each one wears out like the plain sword (1 per swing, 4
@@ -30,6 +30,14 @@ const SHOP_SWORDS = {
     land: 0.04, power: 1.5, reach: 20, speed: 1.1, pierce: 0.2, guard: 0.03,
     blade: '#E1BEE7', glow: '#BA68C8',
     about: 'Lasts 400! Swings faster, hits harder, blocks better, and can SMASH through a glowing wind-up.'
+  },
+  // All or nothing: only 1 swing in 5 lands (however strong you are), but a
+  // hit wins the fight. It blocks just like the plain sword.
+  lava: {
+    name: 'Lava Sword', emoji: '🌋', price: 200, max: 250,
+    hitOdds: 0.2, oneHit: true,
+    blade: '#FF8A65', glow: '#DD2C00',
+    about: 'Lasts 250. Only 1 swing in 5 lands, but one hit beats the boss! Blocks like a plain sword.'
   }
 };
 Object.assign(SWORD_KINDS, SHOP_SWORDS);
