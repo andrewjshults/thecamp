@@ -1,7 +1,6 @@
 {
   "name": "Birthday Party Tent",
   "where": "in the Birthday Party Tent",
-  "noSwordDrops": true,
   "playerStart": {
     "px": 0.3,
     "py": 0.65

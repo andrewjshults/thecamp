@@ -3,7 +3,6 @@
   "where": "at the Third Camp",
   "image": "assets/camp_level3.svg",
   "playerStart": { "px": 0.47, "py": 0.83 },
-  "noSwordDrops": true,
   "poisonMoat": {
     "outer": { "cx": 0.47, "cy": 0.53, "rx": 0.24, "ry": 0.25 },
     "island": { "cx": 0.47, "cy": 0.52, "rx": 0.17, "ry": 0.17 },

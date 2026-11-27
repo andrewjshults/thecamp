@@ -1,7 +1,6 @@
 {
   "name": "Swimming Pool",
   "where": "at the Third Camp's Swimming Pool",
-  "noSwordDrops": true,
   "playerStart": {
     "px": 0.3,
     "py": 0.6

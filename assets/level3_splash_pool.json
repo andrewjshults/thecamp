@@ -1,7 +1,6 @@
 {
   "name": "Splash Pool",
   "where": "at the Splash Pool",
-  "noSwordDrops": true,
   "playerStart": {
     "px": 0.1,
     "py": 0.4
