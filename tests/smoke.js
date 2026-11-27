@@ -790,10 +790,10 @@ async function playtime(tab) {
     await tab.page.press('#ptCodeInput', 'Enter');
     await tab.run(300);
   };
-  // Just after you stop walking it keeps counting for PLAYTIME_IDLE_MS, then
-  // standing still doesn't count; walking does
+  // It keeps counting for PLAYTIME_IDLE_MS after your last key press, tap or
+  // step, then standing still doesn't count; walking does
   // (you stopped 8 seconds ago, so 2 more count, then 2 don't)
-  await tab.ev('playtimeSet(60000); ptMovedAt = performance.now() - 8000');
+  await tab.ev('playtimeSet(60000); ptActiveAt = performance.now() - 8000');
   await tab.run(1000);
   const grace = await info();
   tab.note({ step: 'playtime-grace', ...grace });
@@ -805,6 +805,13 @@ async function playtime(tab) {
   if (grace.left > 59500 || idle.left > 58200 || still.left !== idle.left) {
     throw new Error(`play time idle pause went wrong: ${JSON.stringify({ grace, idle, still })}`);
   }
+  // A menu counts too: opening the journal is a key press, and time in it counts
+  await tab.key('j');
+  await tab.run(2000);
+  const menu = await info();
+  await tab.key('j');
+  tab.note({ step: 'playtime-menu', ...menu });
+  if (still.left - menu.left < 1900) throw new Error(`play time didn't count in the journal: ${JSON.stringify({ still, menu })}`);
   await tab.ev('playtimeSet(1500)');
   await tab.page.keyboard.down('ArrowLeft');
   await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen');

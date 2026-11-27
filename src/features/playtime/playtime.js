@@ -3,9 +3,9 @@
 // ============================================================
 // Every camper on this browser shares one timer (it isn't part of a save):
 //   - it starts at PLAYTIME_LIMIT_MS and only counts down while you're
-//     walking around a map or in a fight. After you stop walking it keeps
-//     counting for PLAYTIME_IDLE_MS, then standing still, talking, pop-ups
-//     and menus don't count
+//     playing: walking or turning around, talking, menus, shops and pop-ups,
+//     or a fight. With no key press or tap for PLAYTIME_IDLE_MS it pauses
+//     (a fight always counts)
 //   - when it runs out you get the break screen (#playtimeModal). Mid-fight,
 //     you finish the fight first and the break screen comes up after it
 //   - the break lasts PLAYTIME_BLOCK_MS, then the timer is full again. The
@@ -23,7 +23,7 @@ const PLAYTIME_BLOCK_MS = 60 * 60 * 1000;
 const PLAYTIME_BREAK_MS = 60 * 60 * 1000;
 const PLAYTIME_GRANT_MIN = 5, PLAYTIME_GRANT_MAX = 60;   // the slider, in minutes
 const PLAYTIME_FLUSH_MS = 2000;       // how often the count is written down
-const PLAYTIME_IDLE_MS = 10 * 1000;   // standing still keeps counting this long after you stop
+const PLAYTIME_IDLE_MS = 10 * 1000;   // keeps counting this long after your last key press, tap or step
 const PLAYTIME_MAX_FRAME_MS = 250;    // a frame can't count more than this (tab was asleep)
 const PLAYTIME_TRIES = 5, PLAYTIME_LOCK_MS = 60 * 1000;   // wrong codes before a 1-minute wait
 const PLAYTIME_ON_LOCALHOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
@@ -74,7 +74,12 @@ function ptWrite(d) {
 let ptData = ptRead();
 let ptPending = 0;          // counted ms not written down yet
 let ptLastFrame = null;
-let ptMovedAt = null;       // performance.now() of the last frame you were walking
+let ptActiveAt = null;      // performance.now() of your last key press, tap or step
+
+// Any key press or tap (walking, turning around, talking, menus...) is playing
+for (const ev of ['keydown', 'pointerdown']) {
+  window.addEventListener(ev, () => { ptActiveAt = performance.now(); }, { capture: true, passive: true });
+}
 let ptFlushedAt = 0;
 let playtimeOff = false;    // localhost only: ?playtime=off
 
@@ -94,17 +99,20 @@ function ptFlush() {
 function playtimeLeft() { return Math.max(0, ptData.left - ptPending); }
 function playtimeBlocked() { return ptData.blockedAt !== null; }
 
-// Does this frame count? Walking on a map (or standing still on it for up to
-// PLAYTIME_IDLE_MS after you stop), or fighting
+// The screens before and around playing don't count
+const PLAYTIME_NOT_PLAYING = ['LOADING', 'CHARACTER_SELECT', 'RESUME_PROMPT', 'MODE_SELECT', 'PLAYTIME_BLOCKED'];
+
+// Does this frame count? A fight does; anywhere else (the map, talking, menus,
+// shops) counts until PLAYTIME_IDLE_MS after your last key press, tap or step
 function playtimeCounting() {
   if (playtimeOff || devMode || !player.character) return false;
+  if (state === GameState.FIGHTING) return !!fight && fight.phase !== 'result';
+  if (PLAYTIME_NOT_PLAYING.some(s => state === GameState[s])) return false;
   if (state === GameState.PLAYING) {
     if (doorOpening || bossEngage) return false;
-    if (player.walking) { ptMovedAt = performance.now(); return true; }
-    return ptMovedAt !== null && performance.now() - ptMovedAt < PLAYTIME_IDLE_MS;
+    if (player.walking) ptActiveAt = performance.now();   // also tap-to-move, with no key held
   }
-  if (state === GameState.FIGHTING) return !!fight && fight.phase !== 'result';
-  return false;
+  return ptActiveAt !== null && performance.now() - ptActiveAt < PLAYTIME_IDLE_MS;
 }
 
 function playtimeFrame() {
