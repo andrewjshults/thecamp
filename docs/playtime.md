@@ -19,6 +19,8 @@ pop-up is `#playtimeModal` in `index.html`, styled in its own block in
   `PLAYTIME_BLOCKED`). The check only happens while walking around a map
   (`state === PLAYING`), so **a fight that's going on finishes first** and the
   break screen comes up when you're back on the map after the result.
+  The state is `away: true`, so in a multiplayer world friends see "💤 name"
+  and we only send a `pos` once a minute (see docs/multiplayer.md).
 - The break lasts `PLAYTIME_BLOCK_MS` (1 hour), then the timer is full again
   and play carries on by itself (`ptRead` notices, `playtimeResume(null)`).
   The break screen does **not** show how long is left.

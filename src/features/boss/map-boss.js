@@ -70,11 +70,11 @@ function updateMapBoss() {
   const pos = mapBossPos();
   const dist = Math.hypot(player.x - pos.x, player.y - pos.y);
   // In a multiplayer world it chases whichever camper is closest
-  // (campers without a sword aren't worth chasing)
+  // (campers without a sword, or away from the game, aren't worth chasing)
   const chase = { x: player.x, y: player.y, dist: state === GameState.PLAYING && hasSword() && !foesOff() ? dist : Infinity };
   for (const rp of mpPlayersHere()) {
     const d = Math.hypot(rp.x - pos.x, rp.y - pos.y);
-    if (!rp.fighting && rp.sword !== false && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
+    if (!rp.fighting && !rp.away && rp.sword !== false && d < chase.dist) Object.assign(chase, { x: rp.x, y: rp.y, dist: d });
   }
   if (mapBoss.where === 'out' && now > mapBoss.outUntil) mapBoss.where = 'returning';
 

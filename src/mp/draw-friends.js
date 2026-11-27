@@ -27,7 +27,8 @@ function drawNameTag(rp) {
   const head = speakerHead(rp);
   ctx.font = 'bold 12px "Comic Sans MS", cursive';
   ctx.textAlign = 'center';
-  const label = rp.fighting ? `⚔️ ${rp.name} is fighting the Blob!` : `⭐ ${rp.name}`;
+  const label = rp.fighting ? `⚔️ ${rp.name} is fighting the Blob!`
+    : rp.away ? `💤 ${rp.name}` : `⭐ ${rp.name}`;
   const w = ctx.measureText(label).width + 14;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
   roundRect(head.x - w / 2, head.top - 30, w, 20, 6);

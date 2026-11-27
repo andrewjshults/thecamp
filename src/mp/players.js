@@ -1,6 +1,7 @@
 // --- Remote players ---
 // { id, remote: true, char, name, color, map, tx/ty (latest 0–1 position),
-//   fx/fy (smoothed), x/y (map px), facing, walking, rotation, held, frame }
+//   vx/vy + at (their speed, and when we heard: see mpPredicted),
+//   fx/fy (smoothed), x/y (map px), facing, walking, rotation, held, away, frame }
 function mpOnPos(m, from) {
   const ch = characterByName(m.char);
   if (!ch || typeof m.map !== 'string') return;
@@ -12,9 +13,15 @@ function mpOnPos(m, from) {
     rp = { id: from, remote: true, frame: 0, frameTimer: 0 };
     mp.players.set(from, rp);
   }
+  // Just came into our room (or we just met): they need our `pos` now, as
+  // we only send it often while a friend is in the room
+  const arrivedHere = (isNew || rp.map !== m.map) && m.map === currentMapPath;
+  if (mpInWorld() && (isNew || arrivedHere)) mpSendPosSoon();
   if (isNew || rp.map !== m.map) { rp.fx = x; rp.fy = y; }   // pop in, don't slide across the map
   Object.assign(rp, {
     char: ch, name: ch.name, color: ch.color, map: m.map, tx: x, ty: y,
+    vx: mpVelIn(m.vx), vy: mpVelIn(m.vy), at: performance.now(),
+    away: !!m.aw,
     facing: m.f === 'left' ? 'left' : 'right',
     walking: !!m.w,
     rotation: [0, 90, 180, 270].includes(m.r) ? m.r : 0,
@@ -25,6 +32,7 @@ function mpOnPos(m, from) {
   });
   rp.x = rp.fx * scaledMapW;
   rp.y = rp.fy * scaledMapH;
+  if (arrivedHere) mpBossHandOver();
   mpOnFriendSidekick(rp, m.sk, isNew);
   if (rp.fighting && !mapBoss.busyWith && m.map === mpBossMap()) {
     mpOnBossFight({ on: true, map: m.map }, from);   // we joined while they were fighting
@@ -47,6 +55,7 @@ function mpOnFriendSidekick(rp, sk, isNew) {
   }
   Object.assign(rp.sk, {
     char: ch, name: ch.name, color: ch.color, tx: x, ty: y,
+    vx: mpVelIn(sk.vx), vy: mpVelIn(sk.vy), at: performance.now(),
     facing: sk.f === 'left' ? 'left' : 'right', walking: !!sk.w
   });
   rp.sk.x = rp.sk.fx * scaledMapW;
@@ -113,21 +122,22 @@ function mpOnSay(m, from) {
 // Called every frame
 function mpTick() {
   if (!mp.active) return;
+  const now = performance.now();
+  if (scaledMapW) {
+    mpTrackVel(mp.vel, player.x / scaledMapW, player.y / scaledMapH, now);
+    if (sidekick) mpTrackVel(mp.skVel, sidekick.x / scaledMapW, sidekick.y / scaledMapH, now);
+  }
   mpSendPos(false);
   mpTickBoss();
   for (const rp of mp.players.values()) {
-    rp.fx += (rp.tx - rp.fx) * 0.2;
-    rp.fy += (rp.ty - rp.fy) * 0.2;
-    rp.x = rp.fx * scaledMapW;
-    rp.y = rp.fy * scaledMapH;
     for (const a of rp.sk ? [rp, rp.sk] : [rp]) {
-      if (a !== rp) {
-        a.fx += (a.tx - a.fx) * 0.2;
-        a.fy += (a.ty - a.fy) * 0.2;
-        a.x = a.fx * scaledMapW;
-        a.y = a.fy * scaledMapH;
-      }
-      const moving = a.walking || Math.hypot(a.tx - a.fx, a.ty - a.fy) > 0.002;
+      // Glide toward where they've probably walked to since we heard
+      const p = mpPredicted(a, now);
+      a.fx += (p.x - a.fx) * 0.2;
+      a.fy += (p.y - a.fy) * 0.2;
+      a.x = a.fx * scaledMapW;
+      a.y = a.fy * scaledMapH;
+      const moving = a.walking || Math.hypot(p.x - a.fx, p.y - a.fy) > 0.002;
       if (moving) {
         if (++a.frameTimer > 8) { a.frame = (a.frame + 1) % 4; a.frameTimer = 0; }
       } else {

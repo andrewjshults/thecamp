@@ -1,6 +1,18 @@
 // --- Receiving ---
 function mpOnStatus(st) {
   const c = st && st.category;
+  if (c === 'PNBadRequestCategory' && mp.filterOn && mp.pubnub) {
+    // PubNub didn't take our filter: carry on without it (we ignore our own
+    // messages anyway, they just cost more)
+    console.warn('PubNub filter rejected; subscribing without it', st);
+    mp.filterOn = false;
+    try {
+      mp.pubnub.setFilterExpression(null);
+      mp.pubnub.unsubscribeAll();
+      mp.pubnub.subscribe({ channels: [mp.channel] });
+    } catch (err) { console.warn('PubNub resubscribe failed', err); }
+    return;
+  }
   if (c === 'PNConnectedCategory' || c === 'PNReconnectedCategory' || c === 'PNSubscriptionChangedCategory') {
     mp.connected = true;
     if (mp.connectWaiter) {
@@ -70,14 +82,19 @@ registerMpMessage('snap', m => {
     mp.snapReplies.delete(m.to);
   }
 });
-// Someone arrived: say where we are, and (one of us) send them the world
+// Someone arrived: say where we are, and (one of us) send them the world.
+// The lowest player id answers first; the others only if it hasn't after a
+// while (it might not have the world yet itself).
 registerMpMessage('hello', (m, from) => {
-  if (mp.present) setTimeout(() => mpSendPos(true), Math.random() * 300);
+  mpSendPosSoon();
   if (mp.synced && !mp.snapReplies.has(from)) {
+    const ids = [mp.myId, ...mp.players.keys()].filter(id => id !== from).sort();
+    const rank = ids.indexOf(mp.myId);
+    const wait = rank === 0 ? 30 + Math.random() * 100 : 700 * rank + Math.random() * 300;
     mp.snapReplies.set(from, setTimeout(() => {
       mp.snapReplies.delete(from);
       mpSendSnapshot(from);
-    }, 50 + Math.random() * 450));
+    }, wait));
   }
 }, { othersOnly: true });
 registerMpMessage('pos', (m, from) => mpOnPos(m, from), { othersOnly: true });
@@ -99,10 +116,14 @@ function mpApplySnapshot(m) {
   if (!m.items || typeof m.items !== 'object') return;
   let at = 0n;
   try { at = BigInt(m.at || 0); } catch (_) { /* treat as 0 */ }
+  // `d`: only the hotspots that differ from the map JSON were sent
   const items = {};
+  if (m.d) {
+    for (const [path, cfg] of Object.entries(mp.mapConfigs)) items[path] = restoreOrDefaultHotspots(cfg, {});
+  }
   for (const [path, hotspots] of Object.entries(m.items)) {
     if (!hotspots || typeof hotspots !== 'object') continue;
-    const out = {};
+    const out = items[path] || {};
     for (const [hsId, list] of Object.entries(hotspots)) {
       if (Array.isArray(list)) out[hsId] = list.map(mpCleanItem).filter(Boolean).slice(0, HOTSPOT_CAPACITY);
     }

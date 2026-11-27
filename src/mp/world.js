@@ -62,9 +62,11 @@ async function mpOpen(code) {
   const pn = new PubNub({
     publishKey: PUBNUB_PUBLISH_KEY,
     subscribeKey: PUBNUB_SUBSCRIBE_KEY,
-    userId: mp.myId
+    userId: mp.myId,
+    filterExpression: mpFilterExpression()   // don't send our own messages back (see mpMeta)
   });
   mp.pubnub = pn;
+  mp.filterOn = true;
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => { mp.connectWaiter = null; reject(new Error('timeout')); }, 12000);
     mp.connectWaiter = {
@@ -88,13 +90,15 @@ function mpLeave() {
   }
   clearTimeout(mp.joinTimer);
   clearTimeout(mp.cacheTimer);
+  clearTimeout(mp.posSoonTimer);
+  mp.posSoonTimer = null;
   for (const t of mp.snapReplies.values()) clearTimeout(t);
   if (mp.cacheTimer) mpCacheWorld();
   const pn = mp.pubnub;
   if (pn) {
     const done = () => { try { pn.unsubscribeAll(); pn.destroy(); } catch (_) { /* already gone */ } };
     if (mp.present) {
-      pn.publish({ channel: mp.channel, message: { t: 'bye', from: mp.myId }, storeInHistory: false })
+      pn.publish({ channel: mp.channel, message: { t: 'bye', from: mp.myId }, meta: mpMeta('bye'), storeInHistory: false })
         .catch(() => {}).finally(done);
     } else {
       done();
@@ -109,7 +113,8 @@ function mpLeave() {
     active: false, code: null, channel: null, pubnub: null,
     connected: false, wasDisconnected: false, synced: false,
     lastOpTT: 0n, buffer: [], items: {}, lastTaker: {},
-    present: false, lastPosAt: 0, lastPosKey: '',
+    present: false, lastPosAt: -Infinity, lastPosKey: '', lastPosUrgent: '', lastPosOffMap: '',
+    vel: {}, skVel: {}, filterOn: false,
     joinTimer: null, joinExtended: false, onSynced: null, cacheTimer: null
   });
   mp.players.clear();

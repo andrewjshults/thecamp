@@ -35,6 +35,7 @@ registerGameState('PLAYTIME_BLOCKED', {
   draw: () => drawGame(),
   onKey: () => {},          // no way out with the keyboard
   inWorld: true,            // friends see you standing still, taking a break
+  away: true,               // ...with a 💤, and we only tell them now and then
   inputs: [ptModalEl]
 });
 

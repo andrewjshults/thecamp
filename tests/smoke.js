@@ -49,23 +49,40 @@ const log = (...a) => console.log('  ', ...a);
 // timetoken and hands it to every tab in that order, like PubNub does.
 const FAKE_PUBNUB = `
 window.__pn = new Set();
-window.__mpSeen = {};   // message types this tab has received
+window.__mpSeen = {};   // message types this tab has received (after its filter)
+window.__mpOwn = 0;     // ...of them, our own that weren't take/drop (the filter should stop these)
+window.__mpSent = {};   // message types this tab has published
+// PubNub's subscribe filter, for the simple expressions the game uses:
+// meta.<field> ==/!= "<value>", joined with ||
+window.__pnFilter = (expr, meta) => !expr || expr.split('||').some(c => {
+  const m = c.trim().match(/^meta\\.(\\w+)\\s*(==|!=)\\s*"([^"]*)"$/);
+  if (!m) throw new Error('fake PubNub: bad filter ' + c);
+  const v = meta && meta[m[1]];
+  return m[2] === '==' ? v === m[3] : (v !== undefined && v !== m[3]);
+});
 window.__pnDeliver = (ev) => {
-  window.__mpSeen[ev.message.t] = (window.__mpSeen[ev.message.t] || 0) + 1;
   for (const pn of window.__pn) {
     if (!pn.channels.includes(ev.channel)) continue;
+    if (!window.__pnFilter(pn.filter, ev.userMetadata)) continue;
+    window.__mpSeen[ev.message.t] = (window.__mpSeen[ev.message.t] || 0) + 1;
+    if (ev.publisher === pn.userId && !['take', 'drop'].includes(ev.message.t)) window.__mpOwn++;
     for (const l of pn.listeners) if (l.message) l.message(ev);
   }
 };
 window.PubNub = class {
-  constructor(o) { this.userId = o.userId; this.listeners = []; this.channels = []; window.__pn.add(this); }
+  constructor(o) {
+    this.userId = o.userId; this.filter = o.filterExpression || null;
+    this.listeners = []; this.channels = []; window.__pn.add(this);
+  }
+  setFilterExpression(f) { this.filter = f; }
   addListener(l) { this.listeners.push(l); }
   subscribe({ channels }) {
     this.channels = channels;
     setTimeout(() => this.listeners.forEach(l => l.status && l.status({ category: 'PNConnectedCategory' })), 20);
   }
-  publish({ channel, message }) {
-    return window.__pnPublish(channel, JSON.parse(JSON.stringify(message)), this.userId)
+  publish({ channel, message, meta }) {
+    window.__mpSent[message.t] = (window.__mpSent[message.t] || 0) + 1;
+    return window.__pnPublish(channel, JSON.parse(JSON.stringify(message)), this.userId, meta || null)
       .then(timetoken => ({ timetoken }));
   }
   unsubscribeAll() { this.channels = []; }
@@ -724,9 +741,9 @@ async function multiPlayer(browser) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const tabs = [];
   let tt = 16000000000000000n;
-  await context.exposeBinding('__pnPublish', async (_src, channel, message, publisher) => {
+  await context.exposeBinding('__pnPublish', async (_src, channel, message, publisher, meta) => {
     tt += 1n;
-    const ev = { channel, message, publisher, timetoken: String(tt) };
+    const ev = { channel, message, publisher, userMetadata: meta, timetoken: String(tt) };
     for (const t of tabs) t.page.evaluate(e => window.__pnDeliver(e), ev).catch(() => {});
     return String(tt);
   });
@@ -741,6 +758,14 @@ async function multiPlayer(browser) {
   const code = await a.ev('mp.code');
   await a.key('Enter');
   await a.until('state === GameState.PLAYING');
+  // Alone in the world, walking about: nobody to tell, so (almost) nothing goes out
+  await a.page.keyboard.down('ArrowRight');
+  await a.run(3000);
+  await a.page.keyboard.up('ArrowRight');
+  await a.run(200);
+  const alonePos = await a.ev('window.__mpSent.pos || 0');
+  log('multiplayer: A sent', alonePos, 'pos while alone');
+  if (alonePos > 1) errors.push(`[mp] A sent ${alonePos} pos messages with nobody else in the world`);
 
   const b = await newTab(context, 'mpB', 222);
   tabs.push(b);
@@ -755,6 +780,34 @@ async function multiPlayer(browser) {
   await b.key('Enter');
   await b.until('state === GameState.PLAYING');
   for (let i = 0; i < 40; i++) { await a.run(100); await b.run(100); }
+
+  const sameItems = await a.ev('JSON.stringify(mp.items)') === await b.ev('JSON.stringify(mp.items)');
+  if (!sameItems) errors.push('[mp] B joined with different world items than A');
+
+  // B walks while A watches: ~4 pos a second, with a speed A uses to predict
+  const sentBefore = await b.ev('window.__mpSent.pos || 0');
+  const walkStart = await b.ev('performance.now()');
+  await b.page.keyboard.down('ArrowLeft');
+  for (let i = 0; i < 8; i++) { await a.run(100); await b.run(100); }
+  const walkView = await a.ev('(() => { const p = [...mp.players.values()][0]; return { vx: p.vx, walking: p.walking }; })()');
+  await b.page.keyboard.up('ArrowLeft');
+  for (let i = 0; i < 3; i++) { await a.run(100); await b.run(100); }
+  const walkPos = await b.ev('window.__mpSent.pos || 0') - sentBefore;
+  const walkSecs = (await b.ev('performance.now()') - walkStart) / 1000;
+  log(`multiplayer: B walking sent ${walkPos} pos in ${walkSecs.toFixed(1)}s; A saw`, JSON.stringify(walkView));
+  if (walkPos > walkSecs * 4 + 3) errors.push(`[mp] B sent ${walkPos} pos messages in ${walkSecs.toFixed(1)}s of walking`);
+  if (!walkView.walking || !(walkView.vx < -0.01)) errors.push('[mp] A did not get B\'s walking speed');
+
+  // B's tab goes into the background: A sees them away
+  await b.ev(`(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    document.dispatchEvent(new Event('visibilitychange')); })()`);
+  for (let i = 0; i < 5; i++) { await a.run(100); await b.run(100); }
+  const awayView = await a.ev('[...mp.players.values()][0].away');
+  await b.ev(`(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); })()`);
+  for (let i = 0; i < 5; i++) { await a.run(100); await b.run(100); }
+  const backView = await a.ev('[...mp.players.values()][0].away');
+  log('multiplayer: A sees B away', awayView, '→ back', !backView);
+  if (!awayView || backView) errors.push('[mp] A did not see B go away and come back');
 
   const seesB = await a.ev('[...mp.players.values()].map(p => p.char && p.char.name)');
   const seesA = await b.ev('[...mp.players.values()].map(p => p.char && p.char.name)');
@@ -790,10 +843,35 @@ async function multiPlayer(browser) {
   if (!heard.includes('hi friend!')) errors.push('[mp] A did not hear what B said');
   await b.key('Escape');
 
+  // The Blob comes out: its keeper sends ~3 `boss` a second, the other tab
+  // predicts its walk in between and ends up about where the keeper has it
+  const [keeper, other] = await a.ev('mpRunsBoss()') ? [a, b] : [b, a];
+  const bossBefore = await other.ev('window.__mpSeen.boss || 0');
+  const bossStart = await keeper.ev('performance.now()');
+  await keeper.ev("Object.assign(mapBoss, { where: 'home', homeUntil: 0 })");
+  for (let i = 0; i < 15; i++) { await keeper.run(100); await other.run(100); }
+  const kb = await keeper.ev('({ w: mapBoss.where, x: mapBoss.fx, y: mapBoss.fy })');
+  const ob = await other.ev('({ w: mapBoss.where, x: mapBoss.fx, y: mapBoss.fy })');
+  const bossMsgs = await other.ev('window.__mpSeen.boss || 0') - bossBefore;
+  const bossSecs = (await keeper.ev('performance.now()') - bossStart) / 1000;
+  const gap = Math.hypot(kb.x - ob.x, kb.y - ob.y);
+  log(`multiplayer: Blob ${kb.w} (keeper) / ${ob.w} (other), ${gap.toFixed(3)} apart; ${bossMsgs} boss in ${bossSecs.toFixed(1)}s`);
+  if (kb.w !== 'out' || ob.w !== 'out') errors.push(`[mp] the Blob didn't come out for both tabs (${kb.w} / ${ob.w})`);
+  if (gap > 0.03) errors.push(`[mp] the two tabs' Blobs are ${gap.toFixed(3)} of the map apart`);
+  if (bossMsgs > bossSecs * 3.4 + 3) errors.push(`[mp] ${bossMsgs} boss messages in ${bossSecs.toFixed(1)}s`);
+  await keeper.ev('resetMapBoss(60000)');
+  for (let i = 0; i < 3; i++) { await keeper.run(100); await other.run(100); }
+
   const seen = await b.ev('window.__mpSeen');
   log('multiplayer: B received', JSON.stringify(seen));
-  for (const t of ['hello', 'snap', 'pos', 'take', 'boss']) {
+  for (const t of ['snap', 'pos', 'take', 'boss']) {
     if (!seen[t]) errors.push(`[mp] B never received a "${t}" message`);
+  }
+  if (!(await a.ev('window.__mpSeen.hello'))) errors.push('[mp] A never received B\'s "hello"');
+  if ((await a.ev('window.__mpSeen.snap')) > 0) errors.push('[mp] A got its own "snap" back');
+  for (const t of [a, b]) {
+    const own = await t.ev('window.__mpOwn');
+    if (own) errors.push(`[mp] ${t.name} got ${own} of its own messages back (only take/drop should echo)`);
   }
   await context.close();
 }

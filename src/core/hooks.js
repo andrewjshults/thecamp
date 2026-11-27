@@ -32,6 +32,8 @@ function loadSaveFields(save) {
 //   onKey(e)     a key was pressed
 //   onTap(x, y)  a click or tap on the canvas, in screen px
 //   inWorld      true if your camper is still out on the map (friends see you)
+//   away         true if you're out on the map but not playing (a break): in
+//                multiplayer, friends see a 💤 and hear from you less often
 //   inputs       HTML elements you type into: keys there don't drive the game
 // A new state is added to GameState as well, e.g. 'BANK_MODAL' → 'bankModal'.
 const GAME_STATES = Object.create(null);   // state value → handlers
