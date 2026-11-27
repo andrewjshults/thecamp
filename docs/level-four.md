@@ -135,7 +135,7 @@ The map's `slimeBrick` object:
   "id": "slime_brick", "name": "Slime Brick", "aka": "King of Goo", "label": "SLIME",
   "size": 1.2, "chase": 3.0, "wander": 1.8, "sniff": 620,
   "firstOut": [6000, 11000], "outFor": [40000, 60000], "restFor": [9000, 18000],
-  "pointsToWin": 10, "reward": { "$50 coin" }, "phrases": [], "hitPhrases": [], ...
+  "pointsToWin": 10, "reward": { "$40 coin" }, "phrases": [], "hitPhrases": [], ...
 }
 ```
 **The Slime Brick** is a wobbly green jelly brick with a crown, googly eyes
@@ -151,7 +151,7 @@ no spare) it wins straight away. Each camper's computer runs its own Slime
 Brick, also in a multiplayer world. The fight is in a slime swamp
 (`drawSlimeArena`).
 
-Win → a $50 coin (or it waits at the den if your backpack is full), and
+Win → a $40 coin (Level 4 × $10; or it waits at the den if your backpack is full), and
 `slimeWins` goes up. Lose or run away → it eats the coins in your backpack,
 and you're sent back to the Third Camp with the trapdoor shut (above).
 

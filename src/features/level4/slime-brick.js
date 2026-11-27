@@ -16,7 +16,7 @@
 // you there the keypad closes and it's a fight. With no sword you lose
 // straight away. Each camper's computer runs its own Slime Brick.
 //
-// Win → a $50 coin, and it gets one level tougher. Lose or run away → it eats
+// Win → a $40 coin (Level 4 × $10), and it gets one level tougher. Lose or run away → it eats
 // the coins in your backpack, you're sent back to the Third Camp, and the
 // castle's trapdoor shuts until you beat the Brick at its top level again.
 //

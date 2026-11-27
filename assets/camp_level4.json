@@ -26,7 +26,7 @@
     "outFor": [40000, 60000],
     "restFor": [9000, 18000],
     "pointsToWin": 10,
-    "reward": { "id": "fifty_dollar_coin", "name": "$50 Coin", "emoji": "🪙", "coin": true, "value": 50 },
+    "reward": { "id": "forty_dollar_coin", "name": "$40 Coin", "emoji": "🪙", "coin": true, "value": 40 },
     "phrases": [
       "SLIME TIME!",
       "me ooze yous!",
