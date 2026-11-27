@@ -62,6 +62,12 @@ Several changes are often made at once on separate branches, so:
 - **Maps:** the dev-mode hotspot editor exports a whole map JSON. Paste it over
   that map's file only, and avoid editing the same map on two branches at once.
 
+## Building a new level
+
+Use the **`build-level`** skill (`.claude/skills/build-level/SKILL.md`): the
+questions to ask first, the files, the passage from the level below, the map
+script, the boss and its tuning, the smoke test and the docs.
+
 ## Docs
 
 - [Architecture, plug-in points, adding a feature, testing](docs/architecture.md)

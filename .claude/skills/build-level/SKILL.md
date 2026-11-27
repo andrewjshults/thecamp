@@ -1,0 +1,211 @@
+---
+name: build-level
+description: Build a new level (a new "camp") for Louisa's game from a drawing or a description. Covers the questions to ask first, the map drawing script, the passage from the level below, the level's boss, its rooms, shops and special mechanics, the smoke test and the docs. Use when asked to add, build or design a new level/camp, or to turn a drawing of a level into the game.
+---
+
+# Building a new level
+
+Each level is a camp you reach through a secret passage that opens when you
+beat the level below's boss at its top level. Levels 2 and 3 are the
+references on `main` (`docs/level-two.md`, `docs/level-three.md`,
+`src/features/level2/`, `src/features/level3/`). Level 4, where it's merged,
+is the most complete example (`docs/level-four.md`, `src/features/level4/`):
+door codes, a key lock, a roaming boss, a shop with exclusive gear.
+
+Read `CLAUDE.md` and `docs/architecture.md` first. The rules there (new
+feature → new files, hook in with `register...`, never add feature branches to
+shared functions) apply to everything below. Below, `N` is the new level, `P`
+is the level below (`N - 1`).
+
+## 1. Ask before building
+
+Louisa's drawings leave gaps, and the user prefers questions to guesses. Read
+the drawing carefully: list every area, label and small sketch (keypads,
+keys, stars, arrows, prices). Then ask, in one `AskUserQuestion` call with a
+recommended option first, about whatever is unclear. Usually:
+
+- **Getting in:** beat level P's boss at its top level → a passage opens
+  (recommended, the same as every level so far), or something else?
+- **The way out / next level:** if the drawing points to level N+1 and it
+  doesn't exist yet, show a "coming soon" placeholder (recommended)?
+- **The boss:** where it lives, whether it stays home (like the Brick in its
+  castle) or roams the map (like the Marshmallows), what's safe from it.
+- **Special mechanics** in the request (codes, keys, hazards): exact rules,
+  e.g. typed every time or remembered, per camper or shared.
+
+Decide small things yourself (names of new characters and items, colours,
+which drawn labels are only decoration) and list them in the final summary as
+"things I decided without asking".
+
+## 2. Files for level N
+
+| What | Where |
+|---|---|
+| Opening the passage, the level's hazards and locks | `src/features/levelN/levelN.js` |
+| The boss on the map and in a fight | `src/features/levelN/<boss>.js` |
+| Drawing the boss, its home and its fight arena | `src/features/levelN/draw-<boss>.js` |
+| Other features (codes, gear...) | `src/features/levelN/<feature>.js` |
+| Scene props for the new rooms | `src/world/props/levelN.js` (a **new** props file) |
+| The map + its drawing | `assets/camp_levelN.json`, `assets/camp_levelN.svg` |
+| The script that draws the map | `tools/make-levelN-map.js` |
+| Rooms | `assets/levelN_<room>.json` |
+| Docs | `docs/level-N.md` (named like the others: `level-two.md`, `level-three.md`...) |
+
+Script tags go in `index.html`: the props file after the other
+`src/world/props/*.js`, the feature files after the last level's feature
+files. Add one line for the doc to the list in `CLAUDE.md`, a row for the map
+script to the `tools/` part of the folder table in `docs/architecture.md`, and
+the props to the list in `docs/maps.md`.
+
+## 3. The passage up from level P
+
+Follow `level3.js` (or `level4.js`):
+
+```js
+let levelNOpen = false;
+registerSaveField('levelNOpen', { save: () => levelNOpen, load: s => { levelNOpen = !!s.levelNOpen; } });
+PASSAGE_LOCKS.levelN = () => levelNOpen;
+function lockLevelN() { levelNOpen = false; }
+onGameEvent('fightOver', ({ foe, won, level, res }) => {
+  if (foe.id !== '<level P boss id>' || !won || level < <P_BOSS>_LEVEL_MAX) return;
+  res.lines.push({ text: '🕳️ ... opened! ...', color: '#CE93D8' });
+  levelNOpen = true;
+});
+```
+
+- Put a hotspot with a `passage` on one of level P's maps:
+  `"passage": { "targetMap": "assets/camp_levelN.json", "targetHotspot": "<back hotspot>", "lock": "levelN", "glow": { "x", "y" } }`.
+  Give it `interactionText` for while it's shut. `mapLevels` (in
+  `src/world/levels.js`) counts a passage as one level up, so nothing else
+  is needed for levels, sword drops, item questions or exploration mode.
+- **Don't put the passage where the boss sits.** Space next to a boss starts a
+  fight before any hotspot (`playingKey` asks `nearbyFoe()` first). Level 4
+  uses a trapdoor on the castle floor, not the throne.
+- On level N, a normal portal (`targetMap`) goes back down to the passage.
+- When level N's boss beats you: `lockLevelN()`, eat the backpack coins
+  (`gobbleBackpackCoins`), and `switchMap` back to level P.
+
+## 4. The map drawing (`tools/make-levelN-map.js`)
+
+Copy `tools/make-level3-map.js` (or `make-level4-map.js`) and change the
+layout. Rules:
+
+- It uses the game's own marker pen (`scenePen` from `src/world/scene.js`),
+  at 3300×2400 (`S = W / 2400`), with a seeded `rnd()` so it comes out the same
+  every time.
+- **Read positions from the map JSON** (`hotspots`, doors, zones), so moving a
+  hotspot and re-running the script keeps the two in step. Write the JSON
+  first, then the script.
+- **No words on the map**: emoji stickers and pictures instead of labels.
+- Draw trails in the fill layer first (`p.fill.push(<path>)`) so buildings sit
+  on top. Keep grass tufts off buildings: they're ink and land over the
+  fills.
+- Doors are drawn closed at their hotspot's `door` rect; the game swings them
+  open. Things that change (a key on its hook, keypads, the bank) are drawn
+  by the game in a map layer, not in the SVG.
+- Leave room for where the player arrives (`arrive`, `playerStart`): not on a
+  roof or over a hole.
+- **Look at it.** Render the SVG with
+  `node .claude/skills/build-level/scripts/render-svg.js assets/camp_levelN.svg <out.png>`
+  and read the PNG. Fix overlaps before going on.
+
+## 5. Rooms
+
+- Copy a room from level P with
+  `node .claude/skills/build-level/scripts/copy-room.js assets/levelP_pool.json assets/levelN_pool.json P N`:
+  it rewrites links to `camp_levelP.json`, the camp's name ("Third Camp" →
+  "Fourth Camp") and the `_lP` item ids, and lists the NPCs to replace.
+  **Every NPC id must be unique across the game**: replace copied NPCs with
+  new ones (a critter with `emoji`, `what`, `personality`, `localReplies`).
+- New rooms are `scene` maps (see `docs/maps.md`). New prop kinds go in
+  `src/world/props/levelN.js`.
+- Exit hotspots: `targetMap` back to `camp_levelN.json`, `targetHotspot` = the
+  hotspot you came in through, plus an `arrive` point outside the door.
+- `"noSwordDrops": true` on shops and the boss's room.
+
+## 6. The boss
+
+- **Levels carry on**: level P's boss tops out at some level `M`; level N's
+  boss runs `M + 1` to `M + 5` (`<BOSS>_LEVEL_MIN/MAX`, `<boss>Wins` saved, a
+  `<boss>Tuning(level)` between `<BOSS>_TUNE_LOW` and `_TUNE_TOP`).
+- **The reward is a coin worth N × $10** (the rule in `CLAUDE.md`): its
+  `reward` in the map JSON, e.g. for level 5 `{ "id": "fifty_dollar_coin", "name": "$50 Coin", "emoji": "🪙", "coin": true, "value": 50 }`.
+- **Stays home** (like the Brick): `brick.js` is the pattern. **Roams the
+  map** (like the Marshmallows or the Slime Brick): `mallows.js` /
+  `slime-brick.js`, with `safeZones` it can't enter.
+- The foe object (`id, def, level, noSword, tune, label, intro, draw, arena,
+  begin, finish, end, after`) is described above `blobFoe`. No sword: it wins
+  straight away (`begin`).
+- Hook in with `registerMapFoe` (Space / tap to fight), `registerMapPeople`
+  (draw it with the people), a screen layer for its shouts, and a
+  `registerMapUpdate`, or a `registerFrameUpdate` if it must keep moving while
+  a pop-up is open (the Slime Brick hunts you while you type a code; check
+  `state` yourself and stop in `devMode`).
+- Check `foesOff()` everywhere it moves, catches or is drawn (exploration
+  mode), and add it to `docs/exploration-mode.md`.
+- Add a **test hook** that keeps it home: `<boss>.restUntil = Infinity` (the
+  map crawl in the smoke test sets it on every map).
+- A fresh look: a new drawing function, new poses, a new arena. Don't reuse
+  another boss's look.
+
+### Tuning
+
+Use `tools/fight-sim.js` against the dev server:
+`node .claude/skills/build-level/scripts/sim.js '[{"tune":"slimeTuning(16)","bot":"good"}]'`
+(run `npm run dev` first). Targets, from the levels so far:
+
+- the "good" bot with a plain sword at strength 10: about the same or a bit
+  under level P's top boss at its first level (~30%), falling to ~18–20% at
+  the top level;
+- the best gear in the game lifts the good bot to ~85–90%;
+- a new sword or armor should beat the cheaper ones it's priced above.
+
+Put the table of results in `docs/level-N.md`.
+
+## 7. Shops and new gear
+
+- Counters are hotspots with `swordShop` / `armorShop`. A counter can say what
+  it sells (`"sells": "all"` or a list of ids) and what its keeper says
+  (`greeting` with `{name}`, `cheer`), where Level 4's shop changes are merged.
+- New swords and armor go in a new file (like `charlie-gear.js`), added to
+  `SHOP_SWORDS` + `SWORD_KINDS` / `ARMOR_KINDS`, with `exclusive: true` if
+  only this level's shop sells them. Prices in tens (change is given in $10
+  coins).
+
+## 8. Hotspots that do their own thing
+
+Use `registerHotspotKind({ match, interact, hint }, { first: true })` for
+locked doors and the like (`first` so it wins over the plain portal kind).
+Level 4's `codeLock` (keypad, state `CODE_PAD`) and `keyLock` (an item that
+unlocks a door for good) are the examples. New pop-ups: an HTML block in
+`index.html`, a CSS block in `styles.css`, `registerGameState` with `inputs`
+for anything you type into, and close it on Escape.
+
+An NPC that answers from the game itself (codes, facts): `registerNpcAnswer`.
+
+## 9. The smoke test (`tests/smoke.js`)
+
+- Add an `async function levelNCamp(tab)` after the last level's, and call it
+  after it in `singlePlayer`. Cover: the passage opening (force a win against
+  level P's boss at its top level), going through, each mechanic (both the
+  right and wrong way), the boss catching you and a win, a loss with no sword
+  sending you back with the passage shut, and finally reset what you changed.
+- In the map crawl, add the boss's `restUntil = Infinity` next to the others.
+- Add any new pop-up state to `backToPlaying`.
+- Add new saved values to the "some progress to save" step, its reset and
+  the `resumed` note.
+- `npm test` must pass. **Don't create or edit files in the repo while it
+  runs**: the dev server's live reload reloads the page and the run aborts with
+  "Execution context was destroyed". Write drafts in the scratchpad.
+
+## 10. Finish
+
+- `npm run build:npc` (new NPCs and maps), and tell the user the PubNub
+  Function has to be pasted again.
+- `docs/level-N.md`: getting there, the map table (area → hotspot → leads
+  to), each mechanic, the boss (JSON, behaviour, levels, tuning table), test
+  hooks. Link it from the level below's doc and from any doc you touched.
+- Look at the screenshots from the smoke test (`--shots DIR`) for the new
+  map, the boss and every pop-up.
+- In the summary: what was built, the decisions made without asking, and
+  anything the user has to do.
