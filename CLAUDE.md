@@ -73,7 +73,7 @@ Several changes are often made at once on separate branches, so:
 - [Boss fight: the Glug Glub Blob, strength, levels, swords](docs/boss-fight.md)
 - [Multiplayer over PubNub: messages, shared items, the shared Blob](docs/multiplayer.md)
 - [The Second Camp: the cave's secret passage, the Marshmallow bosses](docs/level-two.md)
-- [Ember's Sword Shop: the four swords you can buy](docs/sword-shop.md)
+- [Ember's Sword Shop: the five swords you can buy](docs/sword-shop.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)

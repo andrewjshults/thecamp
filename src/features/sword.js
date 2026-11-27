@@ -20,11 +20,13 @@ const SWORD_ITEM = { id: 'sword', name: 'Sword', emoji: '🗡️' };
 // lands), reach (arena units), speed (× how fast you recover from a swing),
 // power (strength a hit knocks off the boss; 1.5 = 2 half the time), stun (× how long a hit stuns
 // it), pierce (chance to smash through an armored wind-up), guard (added to
-// the odds your block holds) }. Every kind wears out the same way.
+// the odds your block holds, hitOdds (if set: the odds a swing lands, whatever
+// your strength — instead of strength + land), oneHit (a hit wins the fight
+// straight away) }. Every kind wears out the same way.
 const SWORD_KINDS = {
   plain: { name: 'Sword', emoji: '🗡️', max: SWORD_MAX }
 };
-const SWORD_STATS_PLAIN = { land: 0, reach: 0, speed: 1, power: 1, stun: 1, pierce: 0, guard: 0 };
+const SWORD_STATS_PLAIN = { land: 0, reach: 0, speed: 1, power: 1, stun: 1, pierce: 0, guard: 0, hitOdds: null, oneHit: false };
 let swordKind = 'plain';
 let swordRating = SWORD_MAX;
 function swordKindDef(id) { return SWORD_KINDS[id || swordKind] || SWORD_KINDS.plain; }
