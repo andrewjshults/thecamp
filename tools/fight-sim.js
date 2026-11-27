@@ -16,6 +16,8 @@
 // The Third Camp's Brick (src/features/level3/brick.js) and armor
 // (src/features/armor-shop/armor.js): { armor } in the same argument, e.g.
 //   simMany(brickTuning(13), 'good', 300, 10, { sword: 'rainbow', armor: 'knight' })
+// The Fourth Camp's Slime Brick (src/features/level4/slime-brick.js) and Charlie's gear:
+//   simMany(slimeTuning(16), 'good', 300, 10, { sword: 'star', armor: 'dragon' })
 //
 // → { win: % the player won, dur: average seconds, wear: sword wear per fight,
 //     loserPts: points the loser got, timeouts }

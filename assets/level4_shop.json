@@ -1,0 +1,362 @@
+{
+  "name": "Charlie's Armor & Swords",
+  "where": "in Charlie's Armor & Swords",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "charlie",
+      "name": "Charlie",
+      "emoji": "🦊",
+      "color": "#ef6c00",
+      "size": 0.11,
+      "px": 0.5,
+      "py": 0.44,
+      "wander": false,
+      "what": "a quick, clever fox who runs the Armor & Swords shop at the Fourth Camp",
+      "personality": "Quick, clever and cheerful. Loves stars. Sells every sword from Ember's shop and every armor from Shelly's shop, plus things nobody else has: the Comet Sword ($90), the Star Sword ($150), Dragon Scale Armor ($130) and Star Armor ($150). You pay with the coins in your backpack. Knows the Slime Brick is the toughest boss yet.",
+      "localReplies": {
+        "hello": [
+          "Hey hey, {name}! Welcome to Charlie's! 🦊",
+          "Swords AND armor, {name}! What do you need?",
+          "Ooh, a customer! Hi, {name}!"
+        ],
+        "bye": [
+          "Bye, {name}! Go get that Slime Brick! ⭐",
+          "Come back when your sword is worn out!",
+          "Stay sharp, {name}! 🦊"
+        ],
+        "question": [
+          "Hmm! Good question! Want to buy a sword while you think? ⭐",
+          "I only know about swords and armor!",
+          "Clever question, {name}! I have no idea!"
+        ],
+        "any": [
+          "The Star Sword is the best sword in ALL the camps! ⭐",
+          "Dragon Scale Armor lasts SO long! 🐉",
+          "Pay with the coins in your backpack, and I'll take your old stuff in trade.",
+          "The Slime Brick is gooey but TOUGH. Get some armor!"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#6d4c41",
+      "stripe": "#4e342e"
+    },
+    "wall": {
+      "pattern": "planks",
+      "color": "#ffcc80"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "planks",
+      "color": "#8d6e63",
+      "skirting": "#3e2723"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#6d4c41"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#ef6c00",
+        "text": "SHING!"
+      },
+      {
+        "kind": "swordRack",
+        "px": 0.14,
+        "py": 0.1,
+        "pw": 0.26,
+        "ph": 0.3,
+        "swords": [
+          {
+            "emoji": "✨",
+            "blade": "#fff9c4"
+          },
+          {
+            "emoji": "🧊",
+            "blade": "#b3e5fc"
+          },
+          {
+            "emoji": "🔥",
+            "blade": "#ffcc80"
+          },
+          {
+            "emoji": "🌈",
+            "blade": "#e1bee7"
+          },
+          {
+            "emoji": "🌋",
+            "blade": "#ff8a65"
+          },
+          {
+            "emoji": "☄️",
+            "blade": "#ffe0b2"
+          },
+          {
+            "emoji": "⭐",
+            "blade": "#fff59d"
+          }
+        ]
+      },
+      {
+        "kind": "sign",
+        "text": "SWORDS",
+        "px": 0.18,
+        "py": 0.42,
+        "pw": 0.16,
+        "ph": 0.06,
+        "color": "#ffab91",
+        "rotate": -2
+      },
+      {
+        "kind": "sign",
+        "text": "CHARLIE'S",
+        "px": 0.43,
+        "py": 0.07,
+        "pw": 0.18,
+        "ph": 0.08,
+        "color": "#fff176",
+        "rotate": 2
+      },
+      {
+        "kind": "banner",
+        "px": 0.46,
+        "py": 0.17,
+        "pw": 0.05,
+        "ph": 0.18,
+        "color": "#90caf9",
+        "emoji": "⭐"
+      },
+      {
+        "kind": "banner",
+        "px": 0.54,
+        "py": 0.17,
+        "pw": 0.05,
+        "ph": 0.18,
+        "color": "#ef9a9a",
+        "emoji": "⭐"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.64,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#b2ebf2",
+        "emoji": "💎"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.71,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#81c784",
+        "emoji": "🐉"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.78,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#fff59d",
+        "emoji": "🌟"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.85,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#eceff1",
+        "emoji": "🛡️"
+      },
+      {
+        "kind": "sign",
+        "text": "ARMOR",
+        "px": 0.7,
+        "py": 0.42,
+        "pw": 0.15,
+        "ph": 0.06,
+        "color": "#90caf9",
+        "rotate": 2
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.16,
+        "py": 0.56,
+        "pw": 0.26,
+        "ph": 0.2,
+        "color": "#8d6e63",
+        "items": [
+          "🗡️",
+          "🪙"
+        ],
+        "board": [
+          "✨ 20  🧊 40  🔥 60",
+          "🌈 100  🌋 200",
+          "☄️ 90  ⭐ 150"
+        ]
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.62,
+        "py": 0.56,
+        "pw": 0.26,
+        "ph": 0.2,
+        "color": "#607d8b",
+        "items": [
+          "🛡️",
+          "🛎️"
+        ],
+        "board": [
+          "🥋 30  ⛓️ 50  🛡️ 70",
+          "💎 100",
+          "🐉 130  🌟 150"
+        ]
+      },
+      {
+        "kind": "forge",
+        "px": 0.42,
+        "py": 0.68,
+        "pw": 0.14,
+        "ph": 0.3
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Fourth Camp",
+      "interactionText": {
+        "px": 0.07,
+        "py": 0.63
+      },
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level4.json",
+      "targetHotspot": "You head back out to the Fourth Camp. Watch out for slime!"
+    },
+    {
+      "id": "sword_counter",
+      "name": "Charlie's Sword Counter",
+      "px": 0.16,
+      "py": 0.54,
+      "pw": 0.26,
+      "ph": 0.24,
+      "action": "explore",
+      "description": "Buy a sword!",
+      "interactionText": "Charlie spins a sword around. Shing!",
+      "items": [],
+      "uses": [],
+      "swordShop": {
+        "keeper": "Charlie",
+        "emoji": "🦊",
+        "sells": "all",
+        "cheer": "Go show that Slime Brick who's boss! ⭐",
+        "greeting": "Hey hey, {name}! I'm Charlie! I've got every sword in camp, and two you can only get here: ☄️ and ⭐! Pay with the coins in your backpack."
+      }
+    },
+    {
+      "id": "armor_counter",
+      "name": "Charlie's Armor Counter",
+      "px": 0.62,
+      "py": 0.54,
+      "pw": 0.26,
+      "ph": 0.24,
+      "action": "explore",
+      "description": "Buy armor!",
+      "interactionText": "Charlie knocks on a breastplate. Clang!",
+      "items": [],
+      "uses": [],
+      "armorShop": {
+        "keeper": "Charlie",
+        "emoji": "🦊",
+        "sells": "all",
+        "cheer": "Go show that Slime Brick who's boss! ⭐",
+        "greeting": "Armor time, {name}! I've got all of Shelly's armor, plus 🐉 Dragon Scale and 🌟 Star Armor, only here! Pay with the coins in your backpack."
+      }
+    },
+    {
+      "id": "sword_rack",
+      "name": "Sword Rack",
+      "px": 0.14,
+      "py": 0.08,
+      "pw": 0.26,
+      "ph": 0.34,
+      "action": "explore",
+      "description": "Every sword for sale",
+      "interactionText": "✨ $20, 🧊 $40, 🔥 $60, 🌈 $100, 🌋 $200, and only at Charlie's: ☄️ Comet Sword $90 and ⭐ Star Sword $150! Buy them at the sword counter.",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "armor_stands",
+      "name": "Armor Stands",
+      "px": 0.63,
+      "py": 0.1,
+      "pw": 0.29,
+      "ph": 0.4,
+      "action": "explore",
+      "description": "The armor for sale",
+      "interactionText": "🥋 $30, ⛓️ $50, 🛡️ $70, 💎 $100, and only at Charlie's: 🐉 Dragon Scale Armor $130 and 🌟 Star Armor $150! Buy them at the armor counter.",
+      "items": [],
+      "uses": []
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "px": 0.42,
+      "py": 0.66,
+      "pw": 0.14,
+      "ph": 0.32,
+      "action": "explore",
+      "description": "Where the stars are made",
+      "interactionText": "The forge glows gold. Charlie is hammering a star onto a shield! ⭐🔨",
+      "items": [
+        {
+          "id": "star_sticker",
+          "name": "Star Sticker",
+          "emoji": "⭐"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

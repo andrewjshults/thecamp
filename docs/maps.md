@@ -54,7 +54,8 @@ boxes and emoji strings), `toyChest` (`peek` toys, `label`, `color`, `lid`) and
 `lifeguardChair`, `sleepingBag` (`color`, `pillow`), `swordRack` (`swords: [{ emoji, blade }]`),
 `shopCounter` (`board` lines, `items`) and `forge`. For the Third Camp's rooms
 (`src/world/props/level3.js`): `waterSlide` (`flip`, `color`), `throne`, `torch`, `banner`
-(`color`, `emoji`) and `armorStand` (`color`, `emoji`). Hotspots are separate: they're placed over
+(`color`, `emoji`) and `armorStand` (`color`, `emoji`). For the Fourth Camp's rooms
+(`src/world/props/level4.js`): `trapdoor` (in the Brick's castle), `codeScreen` and `slimeThrone`. Hotspots are separate: they're placed over
 the props by hand.
 
 The red house in the top-left of the main map (hotspot `red_house`, with a
@@ -78,6 +79,9 @@ Portal hotspots have `"targetMap"` (the map JSON it leads to) and
   through it (default: the hotspot's centre).
 - `"door": { "px", "py", "pw", "ph", "color", "inside": "🚽" }` — the door
   drawn on the map; it swings open (with a CREEEAK!) before the map switches.
+
+A portal can also be locked: `"codeLock"` (a door code) or `"keyLock"` (a key item), see
+[level-four.md](level-four.md).
 
 A `"passage": { "targetMap", "targetHotspot" }` is a way to another map that
 only opens later (its `lock`, see [level-three.md](level-three.md)): the Blob's cave leads to the Second Camp once you've beaten

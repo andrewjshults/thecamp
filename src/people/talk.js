@@ -269,6 +269,12 @@ async function postNpc(url, body, contentType) {
 }
 
 async function fetchNpcReply(npc, history) {
+  // Things the game knows itself (registerNpcAnswer: the code keeper's door codes)
+  const gameAnswer = npcGameAnswer(npc, (history[history.length - 1] || { text: '' }).text);
+  if (gameAnswer) {
+    await new Promise(r => setTimeout(r, 400 + Math.random() * 500));
+    return gameAnswer;
+  }
   // "Where's the sword?" — answered from the game's own item data, never Claude
   const itemAnswer = await itemQuestionReply(history);
   if (itemAnswer) {

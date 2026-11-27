@@ -1,0 +1,317 @@
+{
+  "name": "Safe Zone",
+  "where": "in the Safe Zone",
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "beep",
+      "name": "Beep",
+      "emoji": "🤖",
+      "color": "#546e7a",
+      "size": 0.12,
+      "px": 0.56,
+      "py": 0.47,
+      "knowsCodes": true,
+      "wander": false,
+      "what": "a friendly little robot who is the code finder in the Safe Zone at the Fourth Camp",
+      "personality": "Says BEEP and BOOP a lot. Very helpful and a bit nervous. Knows the secret code for every door at the Fourth Camp (Charlie's Armor & Swords, the bank, and the bathrooms) and tells campers when they ask. Knows the Slime Brick can't come into the Safe Zone, and that the key to the Slime Brick's throne hangs outside the throne.",
+      "localReplies": {
+        "hello": [
+          "BEEP BOOP! Hi, {name}! You are safe in here! 🤖",
+          "Beep! Welcome to the Safe Zone, {name}!",
+          "BOOP! Need a door code, {name}?"
+        ],
+        "bye": [
+          "Beep beep! Run fast, {name}!",
+          "BOOP! Watch out for the Slime Brick!",
+          "Remember your codes, {name}! 🔑"
+        ],
+        "question": [
+          "Beep? Ask me for a code! Like \"what is the code for the bank?\"",
+          "Computing... BOOP! Ask me about a door code!",
+          "My circuits only know door codes! Beep!"
+        ],
+        "any": [
+          "The Slime Brick can NOT come in here! Beep!",
+          "Every door at this camp has a code. I know them all! 🔑",
+          "The throne needs a KEY, not a code. It hangs outside the throne! 🗝️",
+          "Ask me: \"what is the code for Charlie's shop?\" BOOP!"
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#2e7d32",
+      "stripe": "#1b5e20"
+    },
+    "wall": {
+      "pattern": "stripes",
+      "color": "#e8f5e9",
+      "stripe": "#c8e6c9",
+      "dot": "#a5d6a7"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "tiles",
+      "color": "#b3e5fc",
+      "skirting": "#1b5e20"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#c5e1a5",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#43a047"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#43a047",
+        "text": "SAFE!"
+      },
+      {
+        "kind": "sign",
+        "text": "SAFE ZONE",
+        "px": 0.17,
+        "py": 0.08,
+        "pw": 0.2,
+        "ph": 0.09,
+        "color": "#b2ff59",
+        "rotate": -2
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🛡️",
+        "px": 0.2,
+        "py": 0.22,
+        "pw": 0.12,
+        "ph": 0.2
+      },
+      {
+        "kind": "codeScreen",
+        "px": 0.44,
+        "py": 0.08,
+        "pw": 0.24,
+        "ph": 0.3
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.42,
+        "py": 0.4,
+        "pw": 0.28,
+        "ph": 0.2,
+        "color": "#78909c",
+        "items": [
+          "🔑",
+          "🔢",
+          "🛎️"
+        ],
+        "board": [
+          "ASK ME FOR",
+          "A DOOR CODE!"
+        ]
+      },
+      {
+        "kind": "couch",
+        "px": 0.74,
+        "py": 0.32,
+        "pw": 0.22,
+        "ph": 0.2,
+        "color": "#81c784",
+        "dark": "#388e3c",
+        "pillows": [
+          "#fff176",
+          "#90caf9"
+        ]
+      },
+      {
+        "kind": "beanBag",
+        "px": 0.16,
+        "py": 0.66,
+        "pw": 0.12,
+        "ph": 0.14,
+        "color": "#ffb74d"
+      },
+      {
+        "kind": "rug",
+        "px": 0.36,
+        "py": 0.68,
+        "pw": 0.3,
+        "ph": 0.24,
+        "colors": [
+          "#a5d6a7",
+          "#fff59d",
+          "#a5d6a7"
+        ]
+      },
+      {
+        "kind": "box",
+        "px": 0.8,
+        "py": 0.72,
+        "pw": 0.12,
+        "ph": 0.14,
+        "label": "SNACKS",
+        "peek": [
+          "🍪",
+          "🧃"
+        ]
+      },
+      {
+        "kind": "window",
+        "px": 0.83,
+        "py": 0.1,
+        "pw": 0.1,
+        "ph": 0.15
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Fourth Camp",
+      "interactionText": {
+        "px": 0.17,
+        "py": 0.505
+      },
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level4.json",
+      "targetHotspot": "You peek outside... no slime? GO!"
+    },
+    {
+      "id": "code_finder",
+      "name": "Beep's Code Finder",
+      "px": 0.42,
+      "py": 0.08,
+      "pw": 0.28,
+      "ph": 0.54,
+      "action": "explore",
+      "description": "Ask for a door code!",
+      "interactionText": "Beep the robot beeps and boops at you.",
+      "items": [],
+      "uses": [],
+      "codeKeeper": {
+        "keeper": "Beep",
+        "emoji": "🤖",
+        "locks": [
+          {
+            "id": "shop",
+            "name": "Charlie's Armor & Swords",
+            "emoji": "⚔️",
+            "words": [
+              "charlie",
+              "armor",
+              "armour",
+              "sword",
+              "shop",
+              "store"
+            ]
+          },
+          {
+            "id": "bank",
+            "name": "the Camp Bank",
+            "emoji": "🏦",
+            "words": [
+              "bank",
+              "money"
+            ]
+          },
+          {
+            "id": "boys",
+            "name": "the boys' bathroom",
+            "emoji": "👦",
+            "words": [
+              "boy",
+              "bathroom",
+              "toilet",
+              "potty"
+            ]
+          },
+          {
+            "id": "girls",
+            "name": "the girls' bathroom",
+            "emoji": "👧",
+            "words": [
+              "girl",
+              "bathroom",
+              "toilet",
+              "potty"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "couch",
+      "name": "Comfy Couch",
+      "px": 0.74,
+      "py": 0.3,
+      "pw": 0.22,
+      "ph": 0.24,
+      "action": "sleep",
+      "description": "A safe place for a rest",
+      "interactionText": "You flop on the couch. Nothing slimy can get you here. Ahhh. 😌",
+      "items": [
+        {
+          "id": "safe_pillow",
+          "name": "Fluffy Pillow",
+          "emoji": "🛏️"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "snack_box",
+      "name": "Snack Box",
+      "px": 0.79,
+      "py": 0.7,
+      "pw": 0.14,
+      "ph": 0.18,
+      "action": "eat",
+      "description": "Snacks for brave campers",
+      "interactionText": "A box of snacks for campers hiding from the Slime Brick!",
+      "items": [
+        {
+          "id": "cookie_l4",
+          "name": "Cookie",
+          "emoji": "🍪"
+        },
+        {
+          "id": "juice_box_l4",
+          "name": "Juice Box",
+          "emoji": "🧃"
+        }
+      ],
+      "uses": []
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "name": "Fourth Camp",
+  "where": "at the Fourth Camp",
+  "image": "assets/camp_level4.svg",
+  "playerStart": { "px": 0.645, "py": 0.67 },
+  "slimePit": {
+    "cx": 0.51, "cy": 0.33, "rx": 0.135, "ry": 0.215,
+    "slow": 0.45
+  },
+  "slimeBrick": {
+    "lair": "slime_den",
+    "safeZones": [
+      { "px": 0.012, "py": 0.29, "pw": 0.226, "ph": 0.225,
+        "grumblePhrases": ["no fair! safe zone!", "me wait out here...", "come out, little snack!", "blub blub... grrr"] }
+    ],
+    "sendTo": { "map": "assets/camp_level3.json", "hotspot": "castle_door" },
+    "id": "slime_brick",
+    "name": "Slime Brick",
+    "aka": "King of Goo",
+    "label": "SLIME",
+    "size": 1.2,
+    "chase": 3.0,
+    "wander": 1.8,
+    "sniff": 620,
+    "firstOut": [6000, 11000],
+    "outFor": [40000, 60000],
+    "restFor": [9000, 18000],
+    "pointsToWin": 10,
+    "reward": { "id": "fifty_dollar_coin", "name": "$50 Coin", "emoji": "🪙", "coin": true, "value": 50 },
+    "phrases": [
+      "SLIME TIME!",
+      "me ooze yous!",
+      "blub blub BRICK!",
+      "sticky sticky!",
+      "you stuck now!",
+      "me the KING!",
+      "gooey gotcha!",
+      "SPLORCH!",
+      "no codes for yous!",
+      "drip drip drip..."
+    ],
+    "hitPhrases": ["SPLAT!", "slimed ya!", "hehe! gooey!", "GLORP!"],
+    "hurtPhrases": ["OW me goo!", "me dripping!", "no squish king!", "splooch... ow", "me crown wobble!"],
+    "missPhrases": ["too slippy!", "hold still!", "come back to goo!"],
+    "dodgePhrases": ["boing! jelly!", "me too squishy!", "bounce off goo!", "hehe! wobbly!"],
+    "winPhrases": ["SLIME KING WINS!", "all sticky now!", "blub blub CHAMPION!"],
+    "fledPhrases": ["run run, sticky feet!", "me keep shinies! blub!"]
+  },
+  "hotspots": [
+    {
+      "id": "passage_back",
+      "name": "Trapdoor Tunnel",
+      "px": 0.61, "py": 0.545, "pw": 0.07, "ph": 0.09,
+      "action": "enter",
+      "description": "The tunnel back up to the Brick's castle",
+      "interactionText": "You climb back up the tunnel into the Brick's castle.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level3_castle.json",
+      "targetHotspot": "trapdoor",
+      "arrive": { "px": 0.645, "py": 0.67 }
+    },
+    {
+      "id": "pool_gate",
+      "name": "Swimming Pool",
+      "px": 0.09, "py": 0.17, "pw": 0.07, "ph": 0.1,
+      "action": "enter",
+      "description": "Go through the gate for a swim!",
+      "interactionText": "SPLASH! You head into the pool.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level4_pool.json",
+      "targetHotspot": "exit_gate",
+      "arrive": { "px": 0.125, "py": 0.32 }
+    },
+    {
+      "id": "slime_pit",
+      "name": "Slime Pit",
+      "px": 0.42, "py": 0.2, "pw": 0.18, "ph": 0.24,
+      "action": "explore",
+      "description": "Rings and rings of sticky green slime...",
+      "interactionText": "Ewww! The slime is SO sticky. It's hard to walk in here! Something bubbles up from the middle... 🫧",
+      "items": [
+        { "id": "slime_jar", "name": "Jar of Slime", "emoji": "🫙" }
+      ],
+      "uses": []
+    },
+    {
+      "id": "bank",
+      "name": "Camp Bank",
+      "px": 0.775, "py": 0.025, "pw": 0.12, "ph": 0.16,
+      "action": "enter",
+      "description": "The same Camp Bank, with all your money! It needs a code.",
+      "interactionText": "You head inside the Camp Bank.",
+      "items": [],
+      "uses": [],
+      "building": "bank",
+      "codeLock": "bank",
+      "door": { "px": 0.826, "py": 0.115, "pw": 0.018, "ph": 0.05, "color": "#2e7d32", "inside": "🏦" },
+      "targetMap": "assets/camp_bank.json",
+      "targetHotspot": "exit_door"
+    },
+    {
+      "id": "safe_zone",
+      "name": "Safe Zone",
+      "px": 0.04, "py": 0.33, "pw": 0.17, "ph": 0.16,
+      "action": "enter",
+      "description": "The Slime Brick can't come in here! The code finder is inside.",
+      "interactionText": "You run into the Safe Zone. Phew!",
+      "items": [],
+      "uses": [],
+      "door": { "px": 0.155, "py": 0.4, "pw": 0.03, "ph": 0.075, "color": "#43a047", "inside": "🛡️" },
+      "targetMap": "assets/level4_safe_zone.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.17, "py": 0.505 }
+    },
+    {
+      "id": "charlie_shop",
+      "name": "Charlie's Armor & Swords",
+      "px": 0.07, "py": 0.55, "pw": 0.31, "ph": 0.43,
+      "action": "enter",
+      "description": "Swords AND armor! It needs a code.",
+      "interactionText": "You step into Charlie's shop. Clank! Shing!",
+      "items": [],
+      "uses": [],
+      "codeLock": "shop",
+      "door": { "px": 0.2, "py": 0.83, "pw": 0.06, "ph": 0.15, "color": "#6d4c41", "inside": "⚔️" },
+      "targetMap": "assets/level4_shop.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.23, "py": 0.99 }
+    },
+    {
+      "id": "boys_bathroom",
+      "name": "Boys' Bathroom",
+      "px": 0.4, "py": 0.72, "pw": 0.12, "ph": 0.27,
+      "action": "bathroom",
+      "description": "The boys' bathroom. It needs a code.",
+      "interactionText": "You go into the boys' bathroom.",
+      "items": [],
+      "uses": [],
+      "codeLock": "boys",
+      "door": { "px": 0.43, "py": 0.875, "pw": 0.035, "ph": 0.11, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level4_boys_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.447, "py": 0.99 }
+    },
+    {
+      "id": "girls_bathroom",
+      "name": "Girls' Bathroom",
+      "px": 0.53, "py": 0.72, "pw": 0.13, "ph": 0.27,
+      "action": "bathroom",
+      "description": "The girls' bathroom. It needs a code.",
+      "interactionText": "You go into the girls' bathroom.",
+      "items": [],
+      "uses": [],
+      "codeLock": "girls",
+      "door": { "px": 0.6, "py": 0.875, "pw": 0.035, "ph": 0.11, "color": "#ffffff", "inside": "🚽" },
+      "targetMap": "assets/level4_girls_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.617, "py": 0.99 }
+    },
+    {
+      "id": "key_hook",
+      "name": "Key Hook",
+      "px": 0.705, "py": 0.53, "pw": 0.045, "ph": 0.09,
+      "action": "explore",
+      "description": "Something shiny is hanging on a hook...",
+      "interactionText": "A big golden key hangs on a curly hook outside the Slime Brick's throne. 🗝️",
+      "items": [
+        { "id": "throne_key", "name": "Throne Key", "emoji": "🗝️" }
+      ],
+      "uses": []
+    },
+    {
+      "id": "throne",
+      "name": "Slime Brick Throne",
+      "px": 0.775, "py": 0.47, "pw": 0.16, "ph": 0.24,
+      "action": "enter",
+      "description": "The Slime Brick's throne. It's locked with a key!",
+      "interactionText": "You unlock the throne's big gate. CLICK!",
+      "items": [],
+      "uses": [],
+      "keyLock": { "itemId": "throne_key", "hook": "key_hook" },
+      "door": { "px": 0.832, "py": 0.6, "pw": 0.05, "ph": 0.11, "color": "#33691e", "inside": "👑" },
+      "targetMap": "assets/level4_throne.json",
+      "targetHotspot": "exit_door",
+      "arrive": { "px": 0.857, "py": 0.75 }
+    },
+    {
+      "id": "slime_den",
+      "name": "Slime Brick Den",
+      "px": 0.74, "py": 0.79, "pw": 0.2, "ph": 0.19,
+      "action": "fight",
+      "description": "Where the Slime Brick lives...",
+      "interactionText": "A big round hole full of slime. Something with goopy eyes is down there... 👀",
+      "items": [],
+      "uses": []
+    }
+  ]
+}
