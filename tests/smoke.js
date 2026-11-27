@@ -289,6 +289,20 @@ async function singlePlayer(context) {
   await tab.run(500);
   await tab.shot('01-menu');
 
+  // How to play: the video pop-up opens over the menu, Esc closes it
+  await tab.page.click('[data-guide=video]');
+  await tab.run(300);
+  await tab.shot('01-guide-video');
+  const guide = await tab.ev(`({ open: !guideVideoModal.hidden, src: guideVideo.querySelector('source').getAttribute('src'),
+    booklet: document.querySelector('a.guideBtn').getAttribute('href') })`);
+  await tab.page.keyboard.press('Escape');
+  await tab.run(100);
+  guide.closed = await tab.ev('guideVideoModal.hidden && guideVideo.paused');
+  tab.note({ step: 'guide-video', ...guide });
+  if (!guide.open || !guide.closed || guide.src !== 'guide/how-to-play.mp4' || guide.booklet !== 'guide/') {
+    throw new Error(`the how-to-play video pop-up went wrong: ${JSON.stringify(guide)}`);
+  }
+
   await tab.page.click('[data-act=single]');
   await tab.until('state === GameState.CHARACTER_SELECT');
   await tab.key('ArrowRight');
