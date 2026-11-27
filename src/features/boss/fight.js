@@ -159,6 +159,7 @@ function startFight(foe) {
   }
   state = GameState.FIGHTING;
   if (foe.begin) foe.begin(fight);
+  emitGameEvent('fightStart', fight);
 }
 
 registerGameState('FIGHTING', {

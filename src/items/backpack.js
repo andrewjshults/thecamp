@@ -165,14 +165,16 @@ function useItem(item) {
   const use = getItemUseAtHotspot(item, nearbyObject);
   if (!use) return;
   // Record completion (item stays in backpack)
-  completedUses.push({
+  const entry = {
     hotspotId: nearbyObject.id,
     hotspotName: nearbyObject.name,
     itemId: item.id,
     itemName: item.name,
     itemEmoji: item.emoji || '?',
     text: use.text
-  });
+  };
+  completedUses.push(entry);
+  emitGameEvent('adventureDone', entry);
   writeSave();
   // Check for all-done celebration
   if (completedUses.length === totalUsesCount()) {

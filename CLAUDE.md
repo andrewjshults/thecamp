@@ -78,6 +78,7 @@ Several changes are often made at once on separate branches, so:
 - [Exploration mode (E): no bosses, move between the levels](docs/exploration-mode.md)
 - [The Third Camp: the hole in the Marshmallows' lair, the poison moat, the Brick](docs/level-three.md)
 - [Armor and Shelly's Armor Shop: the four kinds you can buy](docs/armor-shop.md)
+- [The prize wheel after each adventure, and the fight charms you can win](docs/prize-wheel.md)
 
 Keep a feature's doc up to date when you change it: names of functions and
 constants in the docs are how the code is found.

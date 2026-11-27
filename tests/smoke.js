@@ -260,6 +260,12 @@ async function backToPlaying(tab) {
       continue;
     }
     if (s === 'confirmDialog') { await tab.key('n'); continue; }
+    if (s === 'prizeWheel') {
+      await tab.key(' ');      // spin, wait for it to land, then OK
+      await tab.run(4500);
+      await tab.key(' ');
+      continue;
+    }
     await tab.run(500);
   }
   throw new Error(`[${tab.name}] stuck in state ${await tab.state()}`);
@@ -364,6 +370,7 @@ async function singlePlayer(context) {
   // A full fight with a sidekick, then come back as the same camper (resume)
   await tab.ev('switchMap("assets/game_design.json", null)');
   await tab.until('state === GameState.PLAYING && currentMapPath === "assets/game_design.json"');
+  await prizeWheel(tab);
   await tab.ev('resetMapBoss(); startFight()');
   await tab.run(3000);
   await tab.shot('fight');
@@ -393,6 +400,54 @@ async function singlePlayer(context) {
     save: await tab.ev(SAVES_SORTED) });
   await taps(tab);
   await tab.page.close();
+}
+
+// The prize wheel after an adventure, then a fight with one of each charm
+async function prizeWheel(tab) {
+  await tab.ev('wheelLuck = WHEEL_MAX_WINS - WHEEL_LUCK_PER_ADVENTURE; emitGameEvent("adventureDone", {})');
+  await tab.until('state === GameState.PRIZE_WHEEL', 'the prize wheel');
+  await tab.run(400);
+  await tab.shot('wheel-ready');
+  tab.note({ step: 'wheel', wins: await tab.ev('wheel.slots.filter(Boolean).length') });
+  await tab.key(' ');
+  await tab.run(1500);
+  await tab.shot('wheel-spinning');
+  await tab.run(3000);
+  await tab.shot('wheel-landed');
+  tab.note({ step: 'wheel-landed', result: await tab.ev('wheel.result'), luck: await tab.ev('wheelLuck'), charms: await tab.ev('charms') });
+  await tab.key(' ');
+  if (await tab.state() !== 'playing') throw new Error('the prize wheel did not close');
+  // Shop gear: a better sword / armor is yours; a worse one polishes yours instead
+  const gear = await tab.ev(`(() => {
+    swordKind = 'flame'; swordRating = 10; armorKind = null; armorRating = 0;
+    const worse = giveWheelSword('sparkle'), keptSword = swordKind, swordAfter = swordRating;
+    const better = giveWheelSword('rainbow');
+    const armor = giveWheelArmor('chain');
+    const r = { keptSword, swordAfter, sword: swordKind, armor: armorKind, armorRating, worse, better, armorText: armor };
+    swordKind = 'plain'; swordRating = SWORD_MAX; armorKind = null; armorRating = 0;
+    return r;
+  })()`);
+  tab.note({ step: 'wheel-gear', gear });
+  if (gear.keptSword !== 'flame' || gear.swordAfter !== 250 || gear.sword !== 'rainbow' || gear.armor !== 'chain' || gear.armorRating !== 160) {
+    throw new Error(`wheel gear prizes went wrong: ${JSON.stringify(gear)}`);
+  }
+  // A fight with every charm: +4 strength, a bubble, honey, a polished sword
+  await tab.ev(`charms = { potion: 1, bubble: 1, honey: 1, polish: 1 }; swordRating = 50; resetMapBoss(); startFight()`);
+  const start = await tab.ev('({ strength: fight.p.strength, sword: swordRating, bubbles: fight.charms.bubbles, charms })');
+  if (start.strength !== 14 || start.sword !== 100 || start.bubbles !== 2) throw new Error(`charms didn't work: ${JSON.stringify(start)}`);
+  await tab.run(2500);
+  await tab.shot('fight-charms');
+  await tab.ev(`(() => { const r = Math.random; Math.random = () => 0; try { fight.b.x = fight.p.x + 220; fight.p.act = 'idle';
+    resolveHit(fight, fight.b, fight.p, 'boss'); } finally { Math.random = r; } })()`);
+  await tab.ev('fight.p.strength = 2');
+  await tab.run(200);
+  const after = await tab.ev('({ bossScore: fight.b.score, bubbles: fight.charms.bubbles, strength: fight.p.strength, charms })');
+  tab.note({ step: 'charm-fight', start, after });
+  if (after.bossScore !== 0 || after.bubbles !== 1 || after.strength !== 7) throw new Error(`bubble/honey didn't work: ${JSON.stringify(after)}`);
+  await tab.ev(`fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(300);
+  await tab.shot('fight-charms-result');
+  await backToPlaying(tab);
 }
 
 // The Second Camp: beating the top-level Blob opens the cave's secret passage;

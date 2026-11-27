@@ -19,7 +19,7 @@ other file needs updating.
 Besides the backpack, the journal (`completedUses`) and the hotspots' items,
 each feature saves its own values per camper: `dishesMade`, `customRecipes`,
 `strengthBoost` (kitchen), `swordRating` (sword), `bossWins` (Blob fight),
-`bankBalance` (bank). Each is registered once, next to its variable:
+`bankBalance` (bank), `charms` and `wheelLuck` ([prize wheel](prize-wheel.md)). Each is registered once, next to its variable:
 
 ```js
 let bankBalance = 0;

@@ -37,7 +37,7 @@ A load-order mistake shows up as soon as the page loads, as a
 | `src/people/` | Characters, NPCs, talking, speech bubbles, wandering, sidekicks |
 | `src/items/` | The backpack and item use, coins |
 | `src/ui/` | Screens and overlays drawn on the canvas: loading, character select, HUD, journal, dialogs |
-| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `sword.js` |
+| `src/features/` | One folder (or file) per feature: `kitchen/`, `bank/`, `boss/`, `level2/`, `level3/`, `sword-shop/`, `armor-shop/`, `explore/`, `prize-wheel/`, `sword.js` |
 | `src/mp/` | The start menu and multiplayer over PubNub |
 | `src/tools/` | Dev mode (the hotspot editor) |
 | `src/main.js` | The game loop and start-up (loads last) |
@@ -69,7 +69,7 @@ functions. Each shared function loops over what's registered:
 | `registerHudBadge(draw)` | `drawHUD` | A badge in the map HUD's top row, after your sword: `draw(x, y)` returns its width |
 | `registerMpMessage(t, fn, { othersOnly })` | `mpOnMessage` | A multiplayer message type (see [multiplayer.md](multiplayer.md)) |
 | `registerSceneProps({ kind(pen, box, prop) })` | `buildSceneSvg` | Props a `scene` room can use (see [maps.md](maps.md)) |
-| `onGameEvent(name, fn)` | `emitGameEvent` | `camperChosen`, `playStart`, `mapLeave`, `mapArrive`, `fightOver` |
+| `onGameEvent(name, fn)` | `emitGameEvent` | `camperChosen`, `playStart`, `mapLeave`, `mapArrive`, `fightStart`, `fightOver`, `adventureDone` |
 
 Layers and updates with a lower `z` go first. The current numbers are spaced
 out (10, 20, 30...), so a new one can fit between two others. Everything else

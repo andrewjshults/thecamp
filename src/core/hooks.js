@@ -173,8 +173,11 @@ function registerSceneProps(props) {
 //   'playStart'     their save is loaded and they're in the game
 //   'mapLeave'      about to walk out of the current map (switchMap)
 //   'mapArrive'     arrived on a new map and placed on it (switchMap)
+//   'fightStart'    a boss fight just started (startFight), in its intro: (fight)
 //   'fightOver'     a boss fight just ended, before the result shows:
 //                   ({ foe, won, fled, level, res }); res.lines can be added to
+//   'adventureDone' an item was just used at a hotspot for the first time (a
+//                   new journal entry, useItem): (entry), in completedUses
 const GAME_EVENT_LISTENERS = Object.create(null);
 function onGameEvent(name, fn) {
   (GAME_EVENT_LISTENERS[name] = GAME_EVENT_LISTENERS[name] || []).push(fn);
