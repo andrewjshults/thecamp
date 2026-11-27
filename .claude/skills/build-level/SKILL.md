@@ -6,11 +6,11 @@ description: Build a new level (a new "camp") for Louisa's game from a drawing o
 # Building a new level
 
 Each level is a camp you reach through a secret passage that opens when you
-beat the level below's boss at its top level. Levels 2 and 3 are the
-references on `main` (`docs/level-two.md`, `docs/level-three.md`,
-`src/features/level2/`, `src/features/level3/`). Level 4, where it's merged,
-is the most complete example (`docs/level-four.md`, `src/features/level4/`):
-door codes, a key lock, a roaming boss, a shop with exclusive gear.
+beat the level below's boss at its top level. Levels 2 and 3 are simpler
+references (`docs/level-two.md`, `docs/level-three.md`, `src/features/level2/`,
+`src/features/level3/`). Level 4 is the most complete example
+(`docs/level-four.md`, `src/features/level4/`): door codes, a key lock, a
+roaming boss, a shop with exclusive gear.
 
 Read `CLAUDE.md` and `docs/architecture.md` first. The rules there (new
 feature → new files, hook in with `register...`, never add feature branches to
@@ -166,7 +166,7 @@ Put the table of results in `docs/level-N.md`.
 
 - Counters are hotspots with `swordShop` / `armorShop`. A counter can say what
   it sells (`"sells": "all"` or a list of ids) and what its keeper says
-  (`greeting` with `{name}`, `cheer`), where Level 4's shop changes are merged.
+  (`greeting` with `{name}`, `cheer`).
 - New swords and armor go in a new file (like `charlie-gear.js`), added to
   `SHOP_SWORDS` + `SWORD_KINDS` / `ARMOR_KINDS`, with `exclusive: true` if
   only this level's shop sells them. Prices in tens (change is given in $10

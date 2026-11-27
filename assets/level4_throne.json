@@ -1,0 +1,223 @@
+{
+  "name": "Slime Brick Throne",
+  "where": "in the Slime Brick's throne room",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.1,
+    "py": 0.65
+  },
+  "spriteScale": 1.6,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#33691e",
+      "stripe": "#1b5e20"
+    },
+    "wall": {
+      "pattern": "blocks",
+      "color": "#9ccc65"
+    },
+    "floor": {
+      "from": 0.5,
+      "pattern": "tiles",
+      "color": "#7cb342",
+      "skirting": "#1b5e20"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#c6ff00",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#33691e"
+      },
+      {
+        "kind": "banner",
+        "px": 0.2,
+        "py": 0.08,
+        "pw": 0.07,
+        "ph": 0.26,
+        "color": "#c6ff00",
+        "emoji": "🫧"
+      },
+      {
+        "kind": "banner",
+        "px": 0.66,
+        "py": 0.08,
+        "pw": 0.07,
+        "ph": 0.26,
+        "color": "#c6ff00",
+        "emoji": "👑"
+      },
+      {
+        "kind": "torch",
+        "px": 0.31,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "torch",
+        "px": 0.6,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "rug",
+        "px": 0.34,
+        "py": 0.52,
+        "pw": 0.24,
+        "ph": 0.44,
+        "colors": [
+          "#558b2f",
+          "#c6ff00",
+          "#558b2f"
+        ]
+      },
+      {
+        "kind": "slimeThrone",
+        "px": 0.38,
+        "py": 0.12,
+        "pw": 0.16,
+        "ph": 0.42
+      },
+      {
+        "kind": "puddle",
+        "px": 0.2,
+        "py": 0.8,
+        "pw": 0.1,
+        "ph": 0.06
+      },
+      {
+        "kind": "box",
+        "px": 0.12,
+        "py": 0.6,
+        "pw": 0.1,
+        "ph": 0.14,
+        "label": "GOO GOLD",
+        "peek": [
+          "💰",
+          "🫧"
+        ]
+      },
+      {
+        "kind": "sign",
+        "text": "LEVEL 5",
+        "px": 0.79,
+        "py": 0.07,
+        "pw": 0.14,
+        "ph": 0.07,
+        "color": "#e1bee7",
+        "rotate": -3
+      },
+      {
+        "kind": "sign",
+        "text": "COMING SOON!",
+        "px": 0.77,
+        "py": 0.15,
+        "pw": 0.18,
+        "ph": 0.06,
+        "color": "#fff176",
+        "rotate": 2
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🌀",
+        "px": 0.79,
+        "py": 0.24,
+        "pw": 0.14,
+        "ph": 0.24
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Fourth Camp",
+      "interactionText": {
+        "px": 0.857,
+        "py": 0.75
+      },
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level4.json",
+      "targetHotspot": "You slip back out of the throne room."
+    },
+    {
+      "id": "slime_throne",
+      "name": "Slime Brick's Throne",
+      "px": 0.38,
+      "py": 0.1,
+      "pw": 0.16,
+      "ph": 0.44,
+      "action": "explore",
+      "description": "The King of Goo sits here",
+      "interactionText": "A gooey green throne. Everything is STICKY. The Slime Brick must be out chasing campers! 👑🫧",
+      "items": [
+        {
+          "id": "goo_crown",
+          "name": "Goo Crown",
+          "emoji": "👑"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "treasure",
+      "name": "Goo Gold Box",
+      "px": 0.11,
+      "py": 0.58,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "The Slime Brick's treasure",
+      "interactionText": "A box of treasure, all covered in goo. Eww... but shiny!",
+      "items": [
+        {
+          "id": "gold_sack",
+          "name": "Sack of Goo Gold",
+          "emoji": "💰"
+        }
+      ],
+      "uses": []
+    },
+    {
+      "id": "level5_portal",
+      "name": "The Way to Level 5",
+      "px": 0.77,
+      "py": 0.22,
+      "pw": 0.18,
+      "ph": 0.3,
+      "action": "explore",
+      "comingSoon": true,
+      "glow": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "description": "Level 5... coming soon!",
+      "interactionText": "🌀 A swirly, glowy portal! This is the way to LEVEL 5... but it isn't finished yet. Coming soon! ✨",
+      "items": [],
+      "uses": []
+    }
+  ]
+}

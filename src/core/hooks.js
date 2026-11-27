@@ -189,3 +189,25 @@ function onGameEvent(name, fn) {
 function emitGameEvent(name, ...args) {
   for (const fn of GAME_EVENT_LISTENERS[name] || []) fn(...args);
 }
+
+// --- Walking speed ---
+// registerPlayerSpeed(factor): factor() returns how fast you walk right now
+// (1 = normal, 0.5 = half speed: the Fourth Camp's slime pit). update()
+// multiplies them all into your speed.
+const PLAYER_SPEEDS = [];
+function registerPlayerSpeed(factor) { PLAYER_SPEEDS.push(factor); }
+function playerSpeedFactor() { return PLAYER_SPEEDS.reduce((k, f) => k * f(), 1); }
+
+// --- NPC answers from the game itself ---
+// registerNpcAnswer(fn): fn(npc, line) returns a reply (string) when the game
+// knows the answer itself (the code keeper's door codes), or null. Checked
+// first in fetchNpcReply, before item questions and Claude.
+const NPC_ANSWERS = [];
+function registerNpcAnswer(fn) { NPC_ANSWERS.push(fn); }
+function npcGameAnswer(npc, line) {
+  for (const fn of NPC_ANSWERS) {
+    const r = fn(npc, line);
+    if (r) return r;
+  }
+  return null;
+}

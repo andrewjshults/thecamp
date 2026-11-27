@@ -17,6 +17,8 @@ it pops out of their mouth as a speech bubble, then the NPC replies.
 Replies come from Claude Haiku (`claude-haiku-5-5`, thinking off, effort low,
 `max_tokens` 100). Only the player's latest line is sent, never the history.
 `fetchNpcReply` (`src/people/talk.js`) tries, in order:
+0. answers the game knows itself (`registerNpcAnswer`: the Fourth Camp's code
+   finder tells you door codes, see [level-four.md](level-four.md)), which never reach Claude;
 1. item questions (keyword matching, below), which never reach Claude;
 2. the **PubNub Function** `pubnub/npc-function.js` when `NPC_FUNCTION_URL` in
    `src/people/talk.js` is set (it is), except on localhost
