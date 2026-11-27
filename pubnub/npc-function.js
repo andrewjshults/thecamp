@@ -37,6 +37,15 @@ const WORST_CASE_MICRO = Math.ceil((1500 * PRICE_IN_PER_MTOK + MAX_TOKENS * PRIC
 // ── BEGIN GENERATED (tools/build-npc-function.js — do not edit by hand) ────
 const CHARACTER_NAMES = ["Green Girl","Purple Kid","Red Scout","Blue Explorer"];
 const MAPS = {
+  "assets/armor_shop.json": {
+    "name": "Shelly's Armor Shop",
+    "places": [
+      "Shelly's Counter",
+      "Armor Stands",
+      "Forge",
+      "Box of Old Armor"
+    ]
+  },
   "assets/bathroom_stall_1.json": {
     "name": "Stall 1",
     "places": [
@@ -108,6 +117,20 @@ const MAPS = {
       "Sailboat",
       "Disco Ball",
       "Birthday Cake"
+    ]
+  },
+  "assets/camp_level3.json": {
+    "name": "Third Camp",
+    "places": [
+      "Wishing Fountain"
+    ]
+  },
+  "assets/camp_level4.json": {
+    "name": "Fourth Camp",
+    "places": [
+      "Slime Pit",
+      "Key Hook",
+      "Slime Brick Den"
     ]
   },
   "assets/game_design.json": {
@@ -233,6 +256,138 @@ const MAPS = {
       "Midnight Snacks"
     ]
   },
+  "assets/level3_boys_bathroom.json": {
+    "name": "Boys' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level3_castle.json": {
+    "name": "Brick Castle",
+    "places": [
+      "Brick's Throne",
+      "Treasure Box",
+      "Trapdoor"
+    ]
+  },
+  "assets/level3_girls_bathroom.json": {
+    "name": "Girls' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level3_party.json": {
+    "name": "Party Hall",
+    "places": [
+      "Disco Ball",
+      "Dance Floor",
+      "Birthday Cake",
+      "Presents",
+      "Piñata"
+    ]
+  },
+  "assets/level3_pool.json": {
+    "name": "Swimming Pool",
+    "places": [
+      "Swimming Pool",
+      "Water Slide",
+      "Lifeguard Chair",
+      "Towel Bench",
+      "Pool Shower"
+    ]
+  },
+  "assets/level3_splash_pool.json": {
+    "name": "Splash Pool",
+    "places": [
+      "Splash Pool",
+      "Slide",
+      "Towel Bench"
+    ]
+  },
+  "assets/level4_boys_bathroom.json": {
+    "name": "Boys' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level4_girls_bathroom.json": {
+    "name": "Girls' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level4_pool.json": {
+    "name": "Swimming Pool",
+    "places": [
+      "Swimming Pool",
+      "Water Slide",
+      "Lifeguard Chair",
+      "Towel Bench",
+      "Pool Shower"
+    ]
+  },
+  "assets/level4_safe_zone.json": {
+    "name": "Safe Zone",
+    "places": [
+      "Beep's Code Finder",
+      "Comfy Couch",
+      "Snack Box"
+    ]
+  },
+  "assets/level4_shop.json": {
+    "name": "Charlie's Armor & Swords",
+    "places": [
+      "Charlie's Sword Counter",
+      "Charlie's Armor Counter",
+      "Sword Rack",
+      "Armor Stands",
+      "Forge"
+    ]
+  },
+  "assets/level4_throne.json": {
+    "name": "Slime Brick Throne",
+    "places": [
+      "Slime Brick's Throne",
+      "Goo Gold Box",
+      "The Way to Level 5"
+    ]
+  },
   "assets/sword_shop.json": {
     "name": "Ember's Sword Shop",
     "places": [
@@ -244,6 +399,13 @@ const MAPS = {
   }
 };
 const NPCS = {
+  "shelly": {
+    "name": "Shelly",
+    "what": "a wise old tortoise who makes armor in her shop at the Third Camp",
+    "desc": "",
+    "personality": "Slow, calm and very wise. Thinks the best armor in the world is her own shell. Sells four kinds of armor: the Padded Vest ($30), Chain Mail ($50), Knight Armor ($70) and Crystal Armor ($100). You pay with coins in your backpack. Armor sometimes stops a boss's hit, and wears out like a sword. Knows the Brick in the castle hits HARD.",
+    "map": "assets/armor_shop.json"
+  },
   "toilet_frog": {
     "name": "Sir Ribbit",
     "what": "a little talking frog who lives in the broken toilet in Stall 2 of the camp bathroom",
@@ -299,6 +461,48 @@ const NPCS = {
     "desc": "",
     "personality": "Takes lifeguarding VERY seriously. Blows a whistle, says 'no running!' and loves swimming laps. Secretly loves cannonballs. Knows the Marshmallows hate water because they get soggy.",
     "map": "assets/level2_pool.json"
+  },
+  "disco_llama": {
+    "name": "Disco Dolly",
+    "what": "a groovy llama who runs the disco in the Party Hall at the Third Camp",
+    "desc": "",
+    "personality": "Cool, groovy and always dancing. Loves the disco ball, glitter and birthday cake. Says 'groovy' a lot. Is scared of the Brick in the castle, and warns campers never to swim in the poison moat around it.",
+    "map": "assets/level3_party.json"
+  },
+  "pool_frog": {
+    "name": "Lily",
+    "what": "a bouncy frog who is the lifeguard at the Third Camp's swimming pool",
+    "desc": "",
+    "personality": "Bouncy, splashy and very proud of the giant water slide. Loves swimming and lily pads. Thinks the poison moat around the castle is the WORST pool ever and tells everyone to stay out of it.",
+    "map": "assets/level3_pool.json"
+  },
+  "splash_whale": {
+    "name": "Bubbles",
+    "what": "a little whale who splashes around in the Splash Pool at the Third Camp",
+    "desc": "",
+    "personality": "Giggly and splashy. Loves spraying water out of her blowhole, going down the slide and pool floaties. Very friendly.",
+    "map": "assets/level3_splash_pool.json"
+  },
+  "pool_otter": {
+    "name": "Splash",
+    "what": "a playful otter who is the lifeguard at the Fourth Camp swimming pool",
+    "desc": "",
+    "personality": "Playful, giggly and always floating on its back. Loves the water slide and shiny pebbles. Is scared of the Slime Brick, which oozes all around the camp, and says the slime pit in the middle makes you walk SO slowly. Knows that the friend inside the Safe Zone building knows all the door codes.",
+    "map": "assets/level4_pool.json"
+  },
+  "beep": {
+    "name": "Beep",
+    "what": "a friendly little robot who is the code finder in the Safe Zone at the Fourth Camp",
+    "desc": "",
+    "personality": "Says BEEP and BOOP a lot. Very helpful and a bit nervous. Knows the secret code for every door at the Fourth Camp (Charlie's Armor & Swords, the bank, and the bathrooms) and tells campers when they ask. Knows the Slime Brick can't come into the Safe Zone, and that the key to the Slime Brick's throne hangs outside the throne.",
+    "map": "assets/level4_safe_zone.json"
+  },
+  "charlie": {
+    "name": "Charlie",
+    "what": "a quick, clever fox who runs the Armor & Swords shop at the Fourth Camp",
+    "desc": "",
+    "personality": "Quick, clever and cheerful. Loves stars. Sells every sword from Ember's shop and every armor from Shelly's shop, plus things nobody else has: the Comet Sword ($90), the Star Sword ($150), Dragon Scale Armor ($130) and Star Armor ($150). You pay with the coins in your backpack. Knows the Slime Brick is the toughest boss yet.",
+    "map": "assets/level4_shop.json"
   },
   "ember": {
     "name": "Ember",

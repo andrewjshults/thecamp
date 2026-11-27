@@ -151,3 +151,8 @@ below it is unlocked too. Exploration mode counts every level as unlocked
 (`registerLevelsOpen`). The sword drops use the levels, and so do the NPCs'
 item answers (see [npcs.md](npcs.md)).
 
+**Rewards go up with the level:** beating a level's boss gives a coin worth
+the level × $10 (its `reward` in the map JSON): the Blob (Level 1) $10, Mega
+Mallow (Level 2) $20, the Brick (Level 3) $30, the Slime Brick (Level 4) $40.
+(Mini Mallow, Mega Mallow's kid, gives $10.)
+

@@ -28,6 +28,9 @@ every open passage. On the other side, `hole_back` (at the bottom of the
 road) is a normal portal back to `blob_zone`, which has an `arrive` point
 just below the hole.
 
+Beat the Brick at its top level (15) and a trapdoor in the castle floor opens
+the way down to the Fourth Camp (see [level-four.md](level-four.md)).
+
 Lose a fight to the Brick (or run away) and you're sent back to the Second
 Camp's lair, and the passage shuts (`lockLevel3`) until you beat Mega Mallow
 at level 10 again.
