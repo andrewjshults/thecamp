@@ -2,8 +2,18 @@
 
 The player-facing guide: `guide/index.html` (a three-page booklet that also
 prints as three Letter pages) and `guide/how-to-play.mp4` (a ~2½ minute
-captioned overview, embedded at the top of the booklet). The start menu links
-to it (`.guideLink` in `index.html` / `styles.css`), opening in a new tab.
+captioned overview, embedded at the top of the booklet).
+
+**On the start menu** (`#menuMode`), two buttons under Single / Multi Player:
+- **▶️ Watch how to play** (`data-guide="video"`) opens `#guideVideoModal`, a
+  pop-up over the menu that plays the video (`src/features/guide/guide-video.js`:
+  `openGuideVideo` / `closeGuideVideo`). It's plain HTML with no game state: ✕,
+  "Let's play!", the dark backdrop or Esc close it and pause the video. Its
+  keys don't reach the game's keydown handler, so Space pauses the video.
+- **📖 Read the booklet** is a link to `guide/` in a new tab.
+
+Styles are in their own block at the end of `styles.css`. The smoke test
+opens and closes the pop-up (`01-guide-video`).
 
 The pictures and the video are made from the real game by
 `tools/make-guide-media.js`:
