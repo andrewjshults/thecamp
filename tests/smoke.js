@@ -790,10 +790,22 @@ async function playtime(tab) {
     await tab.page.press('#ptCodeInput', 'Enter');
     await tab.run(300);
   };
-  // Standing still doesn't count; walking does
+  // Just after you stop walking it keeps counting for PLAYTIME_IDLE_MS, then
+  // standing still doesn't count; walking does
+  // (you stopped 8 seconds ago, so 2 more count, then 2 don't)
+  await tab.ev('playtimeSet(60000); ptMovedAt = performance.now() - 8000');
+  await tab.run(1000);
+  const grace = await info();
+  tab.note({ step: 'playtime-grace', ...grace });
+  await tab.run(1500);
+  const idle = await info();
+  await tab.run(2000);
+  const still = await info();
+  tab.note({ step: 'playtime-still', ...still });
+  if (grace.left > 59500 || idle.left > 58200 || still.left !== idle.left) {
+    throw new Error(`play time idle pause went wrong: ${JSON.stringify({ grace, idle, still })}`);
+  }
   await tab.ev('playtimeSet(1500)');
-  await tab.run(3000);
-  tab.note({ step: 'playtime-still', ...await info() });
   await tab.page.keyboard.down('ArrowLeft');
   await tab.until('state === GameState.PLAYTIME_BLOCKED', 'the break screen');
   await tab.page.keyboard.up('ArrowLeft');

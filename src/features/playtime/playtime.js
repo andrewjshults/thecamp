@@ -3,8 +3,9 @@
 // ============================================================
 // Every camper on this browser shares one timer (it isn't part of a save):
 //   - it starts at PLAYTIME_LIMIT_MS and only counts down while you're
-//     walking around a map or in a fight (standing still, talking, pop-ups and
-//     menus don't count)
+//     walking around a map or in a fight. After you stop walking it keeps
+//     counting for PLAYTIME_IDLE_MS, then standing still, talking, pop-ups
+//     and menus don't count
 //   - when it runs out you get the break screen (#playtimeModal). Mid-fight,
 //     you finish the fight first and the break screen comes up after it
 //   - the break lasts PLAYTIME_BLOCK_MS, then the timer is full again. The
@@ -17,11 +18,12 @@
 //   ?playtime=off  no limit at all     ?playtime=0.5  start with 30 seconds
 //   the break screen has a "skip" button, and playtimeSet(ms) works in the console
 const PLAYTIME_KEY = 'louisas-game:playtime';
-const PLAYTIME_LIMIT_MS = 20 * 60 * 1000;
+const PLAYTIME_LIMIT_MS = 15 * 60 * 1000;
 const PLAYTIME_BLOCK_MS = 60 * 60 * 1000;
 const PLAYTIME_BREAK_MS = 60 * 60 * 1000;
 const PLAYTIME_GRANT_MIN = 5, PLAYTIME_GRANT_MAX = 60;   // the slider, in minutes
 const PLAYTIME_FLUSH_MS = 2000;       // how often the count is written down
+const PLAYTIME_IDLE_MS = 10 * 1000;   // standing still keeps counting this long after you stop
 const PLAYTIME_MAX_FRAME_MS = 250;    // a frame can't count more than this (tab was asleep)
 const PLAYTIME_TRIES = 5, PLAYTIME_LOCK_MS = 60 * 1000;   // wrong codes before a 1-minute wait
 const PLAYTIME_ON_LOCALHOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
@@ -72,6 +74,7 @@ function ptWrite(d) {
 let ptData = ptRead();
 let ptPending = 0;          // counted ms not written down yet
 let ptLastFrame = null;
+let ptMovedAt = null;       // performance.now() of the last frame you were walking
 let ptFlushedAt = 0;
 let playtimeOff = false;    // localhost only: ?playtime=off
 
@@ -91,10 +94,15 @@ function ptFlush() {
 function playtimeLeft() { return Math.max(0, ptData.left - ptPending); }
 function playtimeBlocked() { return ptData.blockedAt !== null; }
 
-// Does this frame count? Walking on a map, or fighting
+// Does this frame count? Walking on a map (or standing still on it for up to
+// PLAYTIME_IDLE_MS after you stop), or fighting
 function playtimeCounting() {
   if (playtimeOff || devMode || !player.character) return false;
-  if (state === GameState.PLAYING) return !!player.walking && !doorOpening && !bossEngage;
+  if (state === GameState.PLAYING) {
+    if (doorOpening || bossEngage) return false;
+    if (player.walking) { ptMovedAt = performance.now(); return true; }
+    return ptMovedAt !== null && performance.now() - ptMovedAt < PLAYTIME_IDLE_MS;
+  }
   if (state === GameState.FIGHTING) return !!fight && fight.phase !== 'result';
   return false;
 }
