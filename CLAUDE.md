@@ -94,6 +94,7 @@ script, the boss and its tuning, the adventures, the smoke test and the docs.
 - [The prize wheel after each adventure, and the fight charms you can win](docs/prize-wheel.md)
 - [Play time: the 15-minute limit, the break, the grown-up TOTP code, dev overrides](docs/playtime.md)
 - [The Fourth Camp: door codes, the Safe Zone, the Slime Brick, the throne key, Charlie's shop](docs/level-four.md)
+- [The Fifth Camp: the lava river and hopping (J), the Moon and its freeze, shields, Bolt's codes](docs/level-five.md)
 - [The How to Play booklet and video (`guide/`), the start menu's video pop-up, remaking their pictures](docs/guide.md)
 
 Keep a feature's doc up to date when you change it: names of functions and

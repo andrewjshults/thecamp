@@ -99,7 +99,9 @@ function newFighter(x, facing) {
 // the fight), arena(v, now) (the background), finish(f, res, won, fled) (adds
 // the result lines: rewards, what it takes when you lose; may set gloat),
 // end(won) (as the result screen closes) and after(won) (once you're back on
-// the map), and optionally begin(f) (right as the fight starts) }. With no
+// the map), and optionally begin(f) (right as the fight starts), update(f, now, dt)
+// (every frame of the fight: its own tricks, like the Moon's freeze) and
+// onKey(f, e) (its own keys; return true if it was one) }. With no
 // foe it's the Blob on this map.
 function blobFoe() {
   const level = bossLevel();

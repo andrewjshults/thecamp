@@ -198,6 +198,11 @@
           "itemId": "shield_sponge",
           "text": "You scrub the throne with the sponge until it shines like a full moon. ✨🧽",
           "animation": "explore"
+        },
+        {
+          "itemId": "juice_box_l5",
+          "text": "You leave a juice box on the throne for the Moon. Even moons get thirsty after a fight! 🧃",
+          "animation": "drink"
         }
       ]
     },
@@ -258,6 +263,11 @@
           "itemId": "telescope",
           "text": "You look at the tiny stars through the telescope. They're HUGE now! 🔭",
           "animation": "explore"
+        },
+        {
+          "itemId": "rubber_duck_l5",
+          "text": "You sit the rubber duck under the Star Lantern. It's a DISCO DUCK! Quack quack! 🦆",
+          "animation": "play"
         }
       ]
     },

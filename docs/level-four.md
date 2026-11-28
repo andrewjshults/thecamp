@@ -1,7 +1,7 @@
 # The Fourth Camp: door codes, the Slime Brick, the throne key
 
 Code: `src/features/level4/` (`level4.js` opening the trapdoor, the slime
-pit, the throne key and the Level 5 sign; `codes.js` the door codes, the
+pit, the throne key; `codes.js` the door codes, the
 keypad and the code finder; `slime-brick.js` the boss on the map and in a
 fight; `draw-slime-brick.js` drawing it, its den and the slime swamp arena;
 `charlie-gear.js` the swords and armor only Charlie sells),
@@ -116,13 +116,13 @@ Space: it unlocks **for good** (`throneUnlocked`, saved per camper), and you
 hang the key back on its hook for the next camper. After that the gate just
 opens. Without the key it says it's locked.
 
-## The throne room, and Level 5 (coming soon)
+## The throne room, and the way to Level 5
 
 `level4_throne.json`: the Slime Brick's gooey throne (the `slimeThrone`
-prop), a treasure box, and a swirly portal with a "LEVEL 5 · COMING SOON!"
-sign. Its hotspot has `"comingSoon": true`: the game draws a passage glow on
-it, and Space says Level 5 isn't finished yet. When Level 5 is built, give it
-a `passage` (with a new `lock`) instead.
+prop), a treasure box, and a swirly portal under a "LEVEL 5" sign
+(`level5_portal`). Beat the Slime Brick at Level 20 and the portal opens to
+the Fifth Camp: see [level-five.md](level-five.md). Until then Space there
+says it's shut.
 
 ## The Slime Brick
 

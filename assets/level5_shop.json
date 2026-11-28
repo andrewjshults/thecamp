@@ -402,6 +402,11 @@
           "itemId": "moonflower",
           "text": "You tuck the Moonflower behind the Wooden Shield. Pretty! 🌸",
           "animation": "explore"
+        },
+        {
+          "itemId": "sun_hat_l5",
+          "text": "You hang the sun hat on the shield wall. Charlie says it matches the Sun Sword! ☀️👒",
+          "animation": "explore"
         }
       ]
     },

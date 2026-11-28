@@ -740,6 +740,11 @@
           "itemId": "star_lantern",
           "text": "You hang the Star Lantern over the garden. The flowers all turn to look at it! 🏮",
           "animation": "explore"
+        },
+        {
+          "itemId": "magnifying_glass_l5",
+          "text": "You look at a Moonflower through the magnifying glass. There are tiny silver sparkles inside! 🔍🌸",
+          "animation": "explore"
         }
       ]
     },

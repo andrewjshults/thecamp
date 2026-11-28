@@ -1,6 +1,6 @@
 // ============================================================
 // THE FOURTH CAMP — the trapdoor in the Brick's castle, the slime pit,
-// the throne key, and the way to Level 5 (coming soon)
+// and the throne key
 // ============================================================
 // Beat the Brick at its top level (BRICK_LEVEL_MAX) and the trapdoor in its
 // castle opens a secret passage down to the fourth camp
@@ -141,9 +141,9 @@ function drawHangingKeys() {
 }
 registerMapLayer(51, () => drawHangingKeys());
 
-// ---------- Level 5: coming soon ----------
-// A hotspot with `"comingSoon": true` (in the Slime Brick's throne room) is
-// where the way to Level 5 will be: a swirly glow, and its pop-up says so.
+// ---------- Coming soon ----------
+// A hotspot with `"comingSoon": true` (the way to Level 6, in the Moon's
+// Palace) is where the next level will be: a swirly glow, and its pop-up says so.
 registerMapLayer(21, () => {
   for (const o of interactiveObjects) if (o.comingSoon) drawPassageGlow({ ...o, passage: { glow: o.glow || { x: 0.5, y: 0.55 } } });
 });
