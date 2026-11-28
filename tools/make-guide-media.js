@@ -33,7 +33,7 @@ const DO_STILLS = !args.includes('--video');
 const DO_VIDEO = !args.includes('--stills');
 
 const L1 = 'assets/game_design.json', L2 = 'assets/camp_level2.json', L3 = 'assets/camp_level3.json',
-  L4 = 'assets/camp_level4.json', CASTLE = 'assets/level3_castle.json';
+  L4 = 'assets/camp_level4.json', L5 = 'assets/camp_level5.json', CASTLE = 'assets/level3_castle.json';
 
 function startServer() {
   const proc = spawn(process.execPath, [path.join(ROOT, 'server.js'), String(PORT)], { cwd: ROOT, stdio: 'pipe' });
@@ -195,6 +195,7 @@ async function startPlaying(g, { showSelect = false } = {}) {
 // Keep the bosses home unless a scene wants them
 const BOSSES_HOME = `(() => { try { mapBoss.where = 'home'; mapBoss.homeUntil = Infinity; } catch (_) {}
   try { brick.restUntil = Infinity; } catch (_) {} try { slime.restUntil = Infinity; } catch (_) {}
+  try { moon.restUntil = Infinity; } catch (_) {}
   try { mallows.foes.forEach(m => { m.where = 'home'; m.homeUntil = Infinity; }); } catch (_) {} })()`;
 
 // ------------------------------------------------------------------ stills
@@ -348,7 +349,7 @@ async function video(browser) {
   g.frames = frames;
   const T = s => s * 1000;
 
-  await g.card('🏕️ The Camp', ['How to play', 'Louisa\'s game, in about 2 minutes'], T(3.5));
+  await g.card('🏕️ The Camp', ['How to play', 'Louisa\'s game, in about 3 minutes'], T(3.5));
 
   // Start
   await g.caption('Pick how to play', 'On your own, or with friends on other computers');
@@ -494,6 +495,27 @@ async function video(browser) {
   await g.page.press('#codePadInput', 'Enter');
   await g.run(T(2));
 
+  // The Fifth Camp: hop across the lava, then the Moon
+  await g.ev(`level5Open = true; lavaHopHinted = true`);
+  await g.map(L5, 'passage_back');
+  await g.ev(BOSSES_HOME);
+  await g.caption('Level 5: the lava river', 'Press J to hop from rock to rock. 3 seconds in the lava sends you back!');
+  await g.run(T(1));
+  const rock = await g.ev(`lavaCfg().rocks.find(r => Math.abs(r.cx - 0.31) < 0.01)`);
+  await g.walkToXY(rock.cx, rock.cy, 6000); await g.run(T(0.6));
+  for (let i = 0; i < 2 && await g.ev('!!rockAt(player.x, player.y)'); i++) {
+    await g.ev('hop.dirX = 0; hop.dirY = -1');
+    await g.key('j'); await g.run(T(1));
+  }
+  await g.run(T(1));
+  await g.ev(`startFight(moonFoe(false))`);
+  await g.run(T(1.5));
+  await g.caption('The Moon', 'Miss 3 swings in a row and it freezes you! Charlie\'s shields here help your blocks hold.', { top: true });
+  await g.botFight(T(7));
+  await g.winFight(); await g.run(T(2));
+  await g.key(' ');
+  await g.until('state === GameState.PLAYING');
+
   // Exploration mode
   await g.map(L2, 'cave_exit');
   await g.key('e');
@@ -503,7 +525,8 @@ async function video(browser) {
   await g.caption(null);
 
   await g.card('Top tips', ['🏦 Bank your coins before a boss fight', '🛡️ When a boss shouts, hold B to block',
-    '🧁 Desserts make you stronger forever', '🤝 Bring a sidekick to every fight'], T(6));
+    '🧁 Desserts make you stronger forever', '🤝 Bring a sidekick to every fight',
+    '⏳ 15 minutes of play, then a 1-hour break'], T(6.5));
   await g.card('📖 Read the booklet', ['for every tip, shop and boss', 'Have fun at camp! 🏕️'], T(3));
   g.frames = null;
   await context.close();
