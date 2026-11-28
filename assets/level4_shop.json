@@ -264,14 +264,15 @@
       "ph": 0.36,
       "action": "enter",
       "description": "Back out to the Fourth Camp",
-      "interactionText": {
-        "px": 0.07,
-        "py": 0.63
-      },
+      "interactionText": "You head back out to the Fourth Camp. Watch out for slime!",
       "items": [],
       "uses": [],
       "targetMap": "assets/camp_level4.json",
-      "targetHotspot": "You head back out to the Fourth Camp. Watch out for slime!"
+      "targetHotspot": "charlie_shop",
+      "arrive": {
+        "px": 0.07,
+        "py": 0.63
+      }
     },
     {
       "id": "sword_counter",
@@ -288,7 +289,15 @@
       "swordShop": {
         "keeper": "Charlie",
         "emoji": "🦊",
-        "sells": "all",
+        "sells": [
+          "sparkle",
+          "ice",
+          "flame",
+          "rainbow",
+          "lava",
+          "comet",
+          "star"
+        ],
         "cheer": "Go show that Slime Brick who's boss! ⭐",
         "greeting": "Hey hey, {name}! I'm Charlie! I've got every sword in camp, and two you can only get here: ☄️ and ⭐! Pay with the coins in your backpack."
       }
@@ -308,7 +317,14 @@
       "armorShop": {
         "keeper": "Charlie",
         "emoji": "🦊",
-        "sells": "all",
+        "sells": [
+          "vest",
+          "chain",
+          "knight",
+          "crystal",
+          "dragon",
+          "star"
+        ],
         "cheer": "Go show that Slime Brick who's boss! ⭐",
         "greeting": "Armor time, {name}! I've got all of Shelly's armor, plus 🐉 Dragon Scale and 🌟 Star Armor, only here! Pay with the coins in your backpack."
       }

@@ -1,0 +1,821 @@
+{
+  "name": "Fifth Camp",
+  "where": "at the Fifth Camp",
+  "image": "assets/camp_level5.svg",
+  "playerStart": {
+    "px": 0.295,
+    "py": 0.83
+  },
+  "lavaRiver": {
+    "pools": [
+      {
+        "name": "river",
+        "points": [
+          [
+            -0.02,
+            0.2
+          ],
+          [
+            0,
+            0.2
+          ],
+          [
+            0.12,
+            0.24
+          ],
+          [
+            0.25,
+            0.27
+          ],
+          [
+            0.38,
+            0.33
+          ],
+          [
+            0.5,
+            0.42
+          ],
+          [
+            0.62,
+            0.5
+          ],
+          [
+            0.75,
+            0.55
+          ],
+          [
+            0.88,
+            0.58
+          ],
+          [
+            1.0,
+            0.6
+          ],
+          [
+            1.02,
+            0.6
+          ],
+          [
+            1.02,
+            0.8
+          ],
+          [
+            1.0,
+            0.8
+          ],
+          [
+            0.88,
+            0.79
+          ],
+          [
+            0.76,
+            0.76
+          ],
+          [
+            0.64,
+            0.72
+          ],
+          [
+            0.52,
+            0.66
+          ],
+          [
+            0.42,
+            0.6
+          ],
+          [
+            0.34,
+            0.55
+          ],
+          [
+            0.27,
+            0.48
+          ],
+          [
+            0.18,
+            0.44
+          ],
+          [
+            0.08,
+            0.42
+          ],
+          [
+            0,
+            0.42
+          ],
+          [
+            -0.02,
+            0.42
+          ]
+        ]
+      },
+      {
+        "name": "pool",
+        "points": [
+          [
+            0.77,
+            0.9
+          ],
+          [
+            0.77,
+            0.924
+          ],
+          [
+            0.728,
+            0.941
+          ],
+          [
+            0.704,
+            0.963
+          ],
+          [
+            0.653,
+            0.972
+          ],
+          [
+            0.6,
+            0.97
+          ],
+          [
+            0.544,
+            0.976
+          ],
+          [
+            0.503,
+            0.959
+          ],
+          [
+            0.467,
+            0.943
+          ],
+          [
+            0.427,
+            0.925
+          ],
+          [
+            0.44,
+            0.9
+          ],
+          [
+            0.436,
+            0.877
+          ],
+          [
+            0.456,
+            0.854
+          ],
+          [
+            0.507,
+            0.844
+          ],
+          [
+            0.545,
+            0.825
+          ],
+          [
+            0.6,
+            0.825
+          ],
+          [
+            0.65,
+            0.833
+          ],
+          [
+            0.707,
+            0.835
+          ],
+          [
+            0.732,
+            0.858
+          ],
+          [
+            0.759,
+            0.877
+          ]
+        ]
+      }
+    ],
+    "rocks": [
+      {
+        "cx": 0.04,
+        "cy": 0.24,
+        "r": 0.025
+      },
+      {
+        "cx": 0.13,
+        "cy": 0.406,
+        "r": 0.025
+      },
+      {
+        "cx": 0.22,
+        "cy": 0.288,
+        "r": 0.025
+      },
+      {
+        "cx": 0.31,
+        "cy": 0.491,
+        "r": 0.025
+      },
+      {
+        "cx": 0.4,
+        "cy": 0.377,
+        "r": 0.025
+      },
+      {
+        "cx": 0.49,
+        "cy": 0.612,
+        "r": 0.025
+      },
+      {
+        "cx": 0.58,
+        "cy": 0.501,
+        "r": 0.025
+      },
+      {
+        "cx": 0.67,
+        "cy": 0.703,
+        "r": 0.025
+      },
+      {
+        "cx": 0.76,
+        "cy": 0.579,
+        "r": 0.025
+      },
+      {
+        "cx": 0.85,
+        "cy": 0.755,
+        "r": 0.025
+      },
+      {
+        "cx": 0.94,
+        "cy": 0.617,
+        "r": 0.025
+      },
+      {
+        "cx": 0.085,
+        "cy": 0.325,
+        "r": 0.025
+      },
+      {
+        "cx": 0.175,
+        "cy": 0.346,
+        "r": 0.025
+      },
+      {
+        "cx": 0.265,
+        "cy": 0.377,
+        "r": 0.025
+      },
+      {
+        "cx": 0.355,
+        "cy": 0.439,
+        "r": 0.025
+      },
+      {
+        "cx": 0.445,
+        "cy": 0.497,
+        "r": 0.025
+      },
+      {
+        "cx": 0.535,
+        "cy": 0.555,
+        "r": 0.025
+      },
+      {
+        "cx": 0.625,
+        "cy": 0.607,
+        "r": 0.025
+      },
+      {
+        "cx": 0.715,
+        "cy": 0.641,
+        "r": 0.025
+      },
+      {
+        "cx": 0.805,
+        "cy": 0.667,
+        "r": 0.025
+      },
+      {
+        "cx": 0.895,
+        "cy": 0.687,
+        "r": 0.025
+      },
+      {
+        "cx": 0.06,
+        "cy": 0.393,
+        "r": 0.025
+      },
+      {
+        "cx": 0.24,
+        "cy": 0.432,
+        "r": 0.025
+      },
+      {
+        "cx": 0.42,
+        "cy": 0.556,
+        "r": 0.025
+      },
+      {
+        "cx": 0.6,
+        "cy": 0.662,
+        "r": 0.025
+      },
+      {
+        "cx": 0.78,
+        "cy": 0.733,
+        "r": 0.025
+      },
+      {
+        "cx": 0.96,
+        "cy": 0.768,
+        "r": 0.025
+      },
+      {
+        "cx": 0.45,
+        "cy": 0.87,
+        "r": 0.025
+      },
+      {
+        "cx": 0.52,
+        "cy": 0.94,
+        "r": 0.025
+      },
+      {
+        "cx": 0.6,
+        "cy": 0.875,
+        "r": 0.025
+      },
+      {
+        "cx": 0.67,
+        "cy": 0.93,
+        "r": 0.025
+      },
+      {
+        "cx": 0.74,
+        "cy": 0.88,
+        "r": 0.025
+      },
+      {
+        "cx": 0.55,
+        "cy": 0.83,
+        "r": 0.025
+      },
+      {
+        "cx": 0.66,
+        "cy": 0.85,
+        "r": 0.025
+      }
+    ],
+    "hop": 0.1,
+    "seconds": 3,
+    "sendTo": {
+      "map": "assets/level4_throne.json",
+      "hotspot": "level5_portal"
+    }
+  },
+  "moon": {
+    "lair": "moon_crater",
+    "safeZones": [
+      {
+        "px": 0.012,
+        "py": 0.7,
+        "pw": 0.215,
+        "ph": 0.29,
+        "grumblePhrases": [
+          "no fair! safe zone!",
+          "me wait up here...",
+          "come out, little star!",
+          "hmmph. me glow angry."
+        ]
+      }
+    ],
+    "sendTo": {
+      "map": "assets/camp_level4.json",
+      "hotspot": "throne"
+    },
+    "id": "moon",
+    "name": "Moon",
+    "aka": "Frosty Night Moon",
+    "label": "MOON",
+    "size": 1.25,
+    "chase": 3.1,
+    "wander": 1.9,
+    "sniff": 640,
+    "firstOut": [
+      6000,
+      11000
+    ],
+    "outFor": [
+      40000,
+      60000
+    ],
+    "restFor": [
+      9000,
+      18000
+    ],
+    "freeze": {
+      "misses": 3,
+      "ms": 3000,
+      "cheatKey": "u",
+      "cheatMs": 5000
+    },
+    "pointsToWin": 10,
+    "reward": {
+      "id": "fifty_dollar_coin",
+      "name": "$50 Coin",
+      "emoji": "🪙",
+      "coin": true,
+      "value": 50
+    },
+    "phrases": [
+      "RARR!",
+      "MOON BEAM!",
+      "me shine on yous!",
+      "night night!",
+      "me the BIGGEST light!",
+      "so chilly up here!",
+      "rarr rarr RARR!",
+      "crater time!",
+      "twinkle twinkle... GOTCHA!",
+      "full moon power!"
+    ],
+    "hitPhrases": [
+      "MOON BONK!",
+      "chilly, huh?",
+      "rarr! got yous!",
+      "moonbeamed!"
+    ],
+    "hurtPhrases": [
+      "OW me craters!",
+      "me wane... ow",
+      "no dim me!",
+      "eclipse! ow!",
+      "me cheese! ow!"
+    ],
+    "missPhrases": [
+      "too dark to see!",
+      "hold still, little star!",
+      "come back here!"
+    ],
+    "dodgePhrases": [
+      "whoosh! floaty!",
+      "me float away!",
+      "hehe! too high!",
+      "moon too round!"
+    ],
+    "freezePhrases": [
+      "FREEZE!",
+      "brrr! ICE BEAM!",
+      "stay frozen, little star!",
+      "chilly chilly CHILL!"
+    ],
+    "cheatPhrases": [
+      "no fair! no freezies?!",
+      "huh? me ice beam broke!",
+      "grrr... sneaky camper!"
+    ],
+    "winPhrases": [
+      "MOON WINS! RARR!",
+      "night night, camper!",
+      "me brightest of all!"
+    ],
+    "fledPhrases": [
+      "run run, little star!",
+      "me keep shinies! rarr!"
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "passage_back",
+      "name": "Portal Back",
+      "px": 0.26,
+      "py": 0.68,
+      "pw": 0.07,
+      "ph": 0.09,
+      "action": "enter",
+      "description": "The swirly portal back to the Slime Brick's throne room",
+      "interactionText": "You step into the swirly portal back to the Fourth Camp.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/level4_throne.json",
+      "targetHotspot": "level5_portal",
+      "arrive": {
+        "px": 0.295,
+        "py": 0.83
+      }
+    },
+    {
+      "id": "boys_bathroom",
+      "name": "Boys' Bathroom",
+      "px": 0.02,
+      "py": 0.49,
+      "pw": 0.1,
+      "ph": 0.17,
+      "action": "bathroom",
+      "description": "The boys' bathroom. It needs a code.",
+      "interactionText": "You go into the boys' bathroom.",
+      "items": [],
+      "uses": [],
+      "codeLock": "l5_boys",
+      "door": {
+        "px": 0.05,
+        "py": 0.585,
+        "pw": 0.03,
+        "ph": 0.075,
+        "color": "#ffffff",
+        "inside": "🚽"
+      },
+      "targetMap": "assets/level5_boys_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": {
+        "px": 0.065,
+        "py": 0.685
+      }
+    },
+    {
+      "id": "girls_bathroom",
+      "name": "Girls' Bathroom",
+      "px": 0.125,
+      "py": 0.49,
+      "pw": 0.1,
+      "ph": 0.17,
+      "action": "bathroom",
+      "description": "The girls' bathroom. It needs a code.",
+      "interactionText": "You go into the girls' bathroom.",
+      "items": [],
+      "uses": [],
+      "codeLock": "l5_girls",
+      "door": {
+        "px": 0.16,
+        "py": 0.585,
+        "pw": 0.03,
+        "ph": 0.075,
+        "color": "#ffffff",
+        "inside": "🚽"
+      },
+      "targetMap": "assets/level5_girls_bathroom.json",
+      "targetHotspot": "exit_door",
+      "arrive": {
+        "px": 0.175,
+        "py": 0.685
+      }
+    },
+    {
+      "id": "safe_zone",
+      "name": "Safe Zone",
+      "px": 0.04,
+      "py": 0.74,
+      "pw": 0.16,
+      "ph": 0.17,
+      "action": "enter",
+      "description": "The Moon can't come in here! The robot with the codes is inside.",
+      "interactionText": "You run into the Safe Zone. Phew!",
+      "items": [],
+      "uses": [],
+      "door": {
+        "px": 0.145,
+        "py": 0.83,
+        "pw": 0.03,
+        "ph": 0.075,
+        "color": "#43a047",
+        "inside": "🛡️"
+      },
+      "targetMap": "assets/level5_safe_zone.json",
+      "targetHotspot": "exit_door",
+      "arrive": {
+        "px": 0.16,
+        "py": 0.935
+      }
+    },
+    {
+      "id": "roast_spot",
+      "name": "Marshmallow Roasting Rock",
+      "px": 0.3,
+      "py": 0.57,
+      "pw": 0.07,
+      "ph": 0.08,
+      "action": "explore",
+      "description": "The lava is SO hot you can roast marshmallows on it!",
+      "interactionText": "You hold your hands out to the lava. It's toasty warm! Somebody left a roasting stick here. 🔥",
+      "items": [
+        {
+          "id": "roasting_stick",
+          "name": "Roasting Stick",
+          "emoji": "🍡"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "moon_cheese",
+          "text": "You toast the Moon Cheese over the lava. It goes all melty and stretchy! 🧀🔥",
+          "animation": "eat"
+        },
+        {
+          "itemId": "fire_orb",
+          "text": "You hold the Fire Orb up to the lava. It glows brighter and brighter! 🔮",
+          "animation": "explore"
+        },
+        {
+          "itemId": "moonflower",
+          "text": "You hold the Moonflower near the lava... it closes up tight! Too hot for a night flower. 🌸",
+          "animation": "explore"
+        },
+        {
+          "itemId": "star_blanket",
+          "text": "You spread the Star Blanket by the lava and have a cozy picnic. 🌠",
+          "animation": "sit"
+        }
+      ]
+    },
+    {
+      "id": "hot_rock",
+      "name": "Treasure Rock",
+      "px": 0.57,
+      "py": 0.84,
+      "pw": 0.06,
+      "ph": 0.08,
+      "action": "explore",
+      "description": "A big rock in the middle of the lava pool. Something glows on it!",
+      "interactionText": "You made it to the treasure rock! Something round and glowing sits on top. 🔮",
+      "items": [
+        {
+          "id": "fire_orb",
+          "name": "Fire Orb",
+          "emoji": "🔮"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "roasting_stick",
+          "text": "You roast a marshmallow on the treasure rock. Golden brown and gooey! 🍡",
+          "animation": "eat"
+        },
+        {
+          "itemId": "telescope",
+          "text": "You look across the lava with the telescope. You can see the Moon's Palace from here! 🔭",
+          "animation": "explore"
+        },
+        {
+          "itemId": "oil_can",
+          "text": "You oil the treasure rock. Now it's a SHINY treasure rock! 🛢️✨",
+          "animation": "explore"
+        },
+        {
+          "itemId": "star_lantern",
+          "text": "You leave the Star Lantern on the rock, so other campers can find it in the dark. 🏮",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "star_lookout",
+      "name": "Star Lookout",
+      "px": 0.04,
+      "py": 0.03,
+      "pw": 0.09,
+      "ph": 0.13,
+      "action": "explore",
+      "description": "A lookout for watching the stars (and the Moon)",
+      "interactionText": "A little lookout on the hill. You can see the whole river of lava from up here! Somebody left a telescope. 🔭",
+      "items": [
+        {
+          "id": "telescope",
+          "name": "Telescope",
+          "emoji": "🔭"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "moonflower",
+          "text": "You plant the Moonflower by the lookout. It opens up and glows! 🌸",
+          "animation": "explore"
+        },
+        {
+          "itemId": "star_blanket",
+          "text": "You lie on the Star Blanket and count the stars. 1, 2, 3... 500! 🌠",
+          "animation": "sleep"
+        },
+        {
+          "itemId": "fire_orb",
+          "text": "You hold up the Fire Orb like a lighthouse. The whole lookout glows orange! 🔮",
+          "animation": "explore"
+        },
+        {
+          "itemId": "moon_cheese",
+          "text": "You hold the Moon Cheese up next to the real Moon. Which one is cheesier? 🧀🌕",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "glow_garden",
+      "name": "Moon Garden",
+      "px": 0.135,
+      "py": 0.1,
+      "pw": 0.075,
+      "ph": 0.1,
+      "action": "explore",
+      "description": "Flowers that only open at night",
+      "interactionText": "Silver flowers glowing in the dark. One of them has fallen off! 🌸",
+      "items": [
+        {
+          "id": "moonflower",
+          "name": "Moonflower",
+          "emoji": "🌸"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "oil_can",
+          "text": "You water the flowers with the oil can... oops, that's OIL! The flowers look extra shiny now. 🛢️",
+          "animation": "explore"
+        },
+        {
+          "itemId": "telescope",
+          "text": "You look at the flowers through the wrong end of the telescope. They look TINY! 🔭",
+          "animation": "explore"
+        },
+        {
+          "itemId": "star_lantern",
+          "text": "You hang the Star Lantern over the garden. The flowers all turn to look at it! 🏮",
+          "animation": "explore"
+        },
+        {
+          "itemId": "magnifying_glass_l5",
+          "text": "You look at a Moonflower through the magnifying glass. There are tiny silver sparkles inside! 🔍🌸",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "charlie_shop",
+      "name": "Charlie's Swords, Armor & Shields",
+      "px": 0.22,
+      "py": 0.02,
+      "pw": 0.2,
+      "ph": 0.2,
+      "action": "enter",
+      "description": "Swords, armor AND shields! It needs a code.",
+      "interactionText": "You step into Charlie's shop. Clank! Shing! Bonk!",
+      "items": [],
+      "uses": [],
+      "codeLock": "l5_shop",
+      "door": {
+        "px": 0.3,
+        "py": 0.15,
+        "pw": 0.04,
+        "ph": 0.07,
+        "color": "#6d4c41",
+        "inside": "⚔️"
+      },
+      "targetMap": "assets/level5_shop.json",
+      "targetHotspot": "exit_door",
+      "arrive": {
+        "px": 0.32,
+        "py": 0.245
+      }
+    },
+    {
+      "id": "moon_palace",
+      "name": "Moon's Palace",
+      "px": 0.68,
+      "py": 0.04,
+      "pw": 0.27,
+      "ph": 0.28,
+      "action": "enter",
+      "description": "The Moon's Palace. It needs a code.",
+      "interactionText": "You tiptoe into the Moon's Palace...",
+      "items": [],
+      "uses": [],
+      "codeLock": "moon_palace",
+      "door": {
+        "px": 0.8,
+        "py": 0.235,
+        "pw": 0.035,
+        "ph": 0.085,
+        "color": "#5c6bc0",
+        "inside": "🌙"
+      },
+      "targetMap": "assets/level5_palace.json",
+      "targetHotspot": "exit_door",
+      "arrive": {
+        "px": 0.817,
+        "py": 0.345
+      }
+    },
+    {
+      "id": "moon_crater",
+      "name": "Fighting Place",
+      "px": 0.5,
+      "py": 0.2,
+      "pw": 0.14,
+      "ph": 0.15,
+      "action": "fight",
+      "description": "Where the Moon comes down to fight. RARR!",
+      "interactionText": "A big round crater, all silvery. It's the Moon's fighting place! Something glows down in the middle... 🌕",
+      "items": [],
+      "uses": []
+    }
+  ]
+}

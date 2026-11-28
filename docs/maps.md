@@ -55,7 +55,8 @@ boxes and emoji strings), `toyChest` (`peek` toys, `label`, `color`, `lid`) and
 `shopCounter` (`board` lines, `items`) and `forge`. For the Third Camp's rooms
 (`src/world/props/level3.js`): `waterSlide` (`flip`, `color`), `throne`, `torch`, `banner`
 (`color`, `emoji`) and `armorStand` (`color`, `emoji`). For the Fourth Camp's rooms
-(`src/world/props/level4.js`): `trapdoor` (in the Brick's castle), `codeScreen` and `slimeThrone`. Hotspots are separate: they're placed over
+(`src/world/props/level4.js`): `trapdoor` (in the Brick's castle), `codeScreen` and `slimeThrone`. For the Fifth Camp's rooms
+(`src/world/props/level5.js`): `shieldWall` (`shields`: emoji), `starrySky` and `moonThrone`. Hotspots are separate: they're placed over
 the props by hand.
 
 The red house in the top-left of the main map (hotspot `red_house`, with a

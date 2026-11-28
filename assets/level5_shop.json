@@ -1,0 +1,473 @@
+{
+  "name": "Charlie's Swords, Armor & Shields",
+  "where": "in Charlie's shop at the Fifth Camp",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.3,
+    "py": 0.65
+  },
+  "spriteScale": 1.8,
+  "npcs": [
+    {
+      "id": "charlie_l5",
+      "name": "Charlie",
+      "emoji": "🦊",
+      "color": "#ef6c00",
+      "size": 0.11,
+      "px": 0.5,
+      "py": 0.44,
+      "wander": false,
+      "what": "a quick, clever fox who runs the Swords, Armor & Shields shop at the Fifth Camp (and the Armor & Swords shop at the Fourth Camp too)",
+      "personality": "Quick, clever and cheerful. Loves stars and the sun. Hopped all the way across the lava river to open a second shop. Sells every sword and armor from the other shops, plus things only sold here: the Sun Sword ($180), Obsidian Armor ($180), and shields: the Wooden Shield ($40), the Lava Rock Shield ($80) and the Star Shield ($120). A shield makes your blocks hold better. You pay with the coins in your backpack. Knows the Moon can freeze campers who keep missing.",
+      "localReplies": {
+        "hello": [
+          "Hey hey, {name}! You made it across the lava! 🦊",
+          "Swords, armor AND shields, {name}! What do you need?",
+          "Ooh, a customer! Hi again, {name}!"
+        ],
+        "bye": [
+          "Bye, {name}! Go beat that Moon! ☀️",
+          "Hop carefully! 🔥",
+          "Stay sharp, {name}! 🦊"
+        ],
+        "question": [
+          "Hmm! Good question! Want a shield while you think? 🛡️",
+          "I only know about swords, armor and shields!",
+          "Clever question, {name}! I have no idea!"
+        ],
+        "any": [
+          "The Sun Sword beats the Moon! ☀️",
+          "A shield makes your blocks hold better! 🛡️",
+          "Don't swing and miss too much. The Moon FREEZES you! 🥶",
+          "Pay with the coins in your backpack."
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#6d4c41",
+      "stripe": "#4e342e"
+    },
+    "wall": {
+      "pattern": "planks",
+      "color": "#ffcc80"
+    },
+    "floor": {
+      "from": 0.52,
+      "pattern": "planks",
+      "color": "#8d6e63",
+      "skirting": "#3e2723"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff176",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#6d4c41"
+      },
+      {
+        "kind": "mat",
+        "px": 0.01,
+        "py": 0.525,
+        "pw": 0.115,
+        "ph": 0.04,
+        "color": "#ef6c00",
+        "text": "HOP IN!"
+      },
+      {
+        "kind": "swordRack",
+        "px": 0.12,
+        "py": 0.1,
+        "pw": 0.22,
+        "ph": 0.3,
+        "swords": [
+          {
+            "emoji": "✨",
+            "blade": "#fff9c4"
+          },
+          {
+            "emoji": "🧊",
+            "blade": "#b3e5fc"
+          },
+          {
+            "emoji": "🔥",
+            "blade": "#ffcc80"
+          },
+          {
+            "emoji": "🌈",
+            "blade": "#e1bee7"
+          },
+          {
+            "emoji": "🌋",
+            "blade": "#ff8a65"
+          },
+          {
+            "emoji": "☄️",
+            "blade": "#ffe0b2"
+          },
+          {
+            "emoji": "⭐",
+            "blade": "#fff59d"
+          },
+          {
+            "emoji": "☀️",
+            "blade": "#ffe082"
+          }
+        ]
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.68,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#b2ebf2",
+        "emoji": "💎"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.75,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#81c784",
+        "emoji": "🐉"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.82,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#fff59d",
+        "emoji": "🌟"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.89,
+        "py": 0.12,
+        "pw": 0.06,
+        "ph": 0.36,
+        "color": "#eceff1",
+        "emoji": "🛡️"
+      },
+      {
+        "kind": "armorStand",
+        "px": 0.93,
+        "py": 0.12,
+        "pw": 0.05,
+        "ph": 0.36,
+        "color": "#37474f",
+        "emoji": "🖤"
+      },
+      {
+        "kind": "sign",
+        "text": "SWORDS",
+        "px": 0.15,
+        "py": 0.42,
+        "pw": 0.15,
+        "ph": 0.06,
+        "color": "#ffab91",
+        "rotate": -2
+      },
+      {
+        "kind": "shieldWall",
+        "px": 0.38,
+        "py": 0.1,
+        "pw": 0.24,
+        "ph": 0.3,
+        "shields": [
+          "🪵",
+          "🔥",
+          "⭐"
+        ]
+      },
+      {
+        "kind": "sign",
+        "text": "SHIELDS",
+        "px": 0.42,
+        "py": 0.42,
+        "pw": 0.16,
+        "ph": 0.06,
+        "color": "#fff176",
+        "rotate": 1
+      },
+      {
+        "kind": "sign",
+        "text": "ARMOR",
+        "px": 0.74,
+        "py": 0.42,
+        "pw": 0.15,
+        "ph": 0.06,
+        "color": "#90caf9",
+        "rotate": 2
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.1,
+        "py": 0.56,
+        "pw": 0.24,
+        "ph": 0.2,
+        "color": "#8d6e63",
+        "items": [
+          "🗡️",
+          "🪙"
+        ],
+        "board": [
+          "✨20 🧊40 🔥60 ☄️90",
+          "🌈100 ⭐150",
+          "🌋200 ☀️180"
+        ]
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.39,
+        "py": 0.56,
+        "pw": 0.22,
+        "ph": 0.2,
+        "color": "#a1887f",
+        "items": [
+          "🛡️",
+          "🛎️"
+        ],
+        "board": [
+          "🪵 40",
+          "🔥 80",
+          "⭐ 120"
+        ]
+      },
+      {
+        "kind": "shopCounter",
+        "px": 0.66,
+        "py": 0.56,
+        "pw": 0.24,
+        "ph": 0.2,
+        "color": "#607d8b",
+        "items": [
+          "🛡️",
+          "🪙"
+        ],
+        "board": [
+          "🥋30 ⛓️50 🛡️70",
+          "💎100 🐉130",
+          "🌟150 🖤180"
+        ]
+      },
+      {
+        "kind": "forge",
+        "px": 0.84,
+        "py": 0.74,
+        "pw": 0.12,
+        "ph": 0.24
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Fifth Camp",
+      "interactionText": "You head back out to the Fifth Camp. Watch out for the Moon!",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level5.json",
+      "targetHotspot": "charlie_shop",
+      "arrive": {
+        "px": 0.32,
+        "py": 0.245
+      }
+    },
+    {
+      "id": "sword_counter",
+      "name": "Charlie's Sword Counter",
+      "px": 0.1,
+      "py": 0.54,
+      "pw": 0.24,
+      "ph": 0.24,
+      "action": "explore",
+      "description": "Buy a sword!",
+      "interactionText": "Charlie spins a sword around. Shing!",
+      "items": [],
+      "uses": [],
+      "swordShop": {
+        "keeper": "Charlie",
+        "emoji": "🦊",
+        "sells": "all",
+        "cheer": "Go show that Moon who's boss! ☀️",
+        "greeting": "Hey hey, {name}! You hopped all the way across the lava! Every sword in camp, and one you can only get here: the ☀️ Sun Sword! Pay with the coins in your backpack."
+      }
+    },
+    {
+      "id": "shield_counter",
+      "name": "Charlie's Shield Counter",
+      "px": 0.39,
+      "py": 0.54,
+      "pw": 0.22,
+      "ph": 0.24,
+      "action": "explore",
+      "description": "Buy a shield!",
+      "interactionText": "Charlie bonks a shield. BONK!",
+      "items": [],
+      "uses": [],
+      "shieldShop": {
+        "keeper": "Charlie",
+        "emoji": "🦊",
+        "cheer": "Go show that Moon who's boss! ☀️",
+        "greeting": "Hey hey, {name}! You hopped all the way across the lava! Shields! Hold B to block, and a shield makes your blocks hold better. Pay with the coins in your backpack."
+      }
+    },
+    {
+      "id": "armor_counter",
+      "name": "Charlie's Armor Counter",
+      "px": 0.66,
+      "py": 0.54,
+      "pw": 0.24,
+      "ph": 0.24,
+      "action": "explore",
+      "description": "Buy armor!",
+      "interactionText": "Charlie knocks on a breastplate. Clang!",
+      "items": [],
+      "uses": [],
+      "armorShop": {
+        "keeper": "Charlie",
+        "emoji": "🦊",
+        "sells": "all",
+        "cheer": "Go show that Moon who's boss! ☀️",
+        "greeting": "Hey hey, {name}! You hopped all the way across the lava! All the armor in camp, plus 🖤 Obsidian Armor, only here! Pay with the coins in your backpack."
+      }
+    },
+    {
+      "id": "sword_rack",
+      "name": "Sword Rack",
+      "px": 0.11,
+      "py": 0.08,
+      "pw": 0.24,
+      "ph": 0.34,
+      "action": "explore",
+      "description": "Every sword for sale",
+      "interactionText": "Every sword in camp, and only here: the ☀️ Sun Sword, $180! Buy them at the sword counter.",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "fire_orb",
+          "text": "You hold the Fire Orb next to the Sun Sword. They both glow like the sun! ☀️🔮",
+          "animation": "explore"
+        },
+        {
+          "itemId": "oil_can",
+          "text": "You oil the sword rack. Now the swords slide out with a SHIIING! 🛢️",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "shield_wall",
+      "name": "Shield Wall",
+      "px": 0.38,
+      "py": 0.08,
+      "pw": 0.24,
+      "ph": 0.34,
+      "action": "explore",
+      "description": "The shields for sale",
+      "interactionText": "🪵 Wooden Shield $40, 🔥 Lava Rock Shield $80, ⭐ Star Shield $120! Buy them at the shield counter.",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "star_lantern",
+          "text": "You hold the Star Lantern up to the Star Shield. It sparkles SO much! 🏮⭐",
+          "animation": "explore"
+        },
+        {
+          "itemId": "moonflower",
+          "text": "You tuck the Moonflower behind the Wooden Shield. Pretty! 🌸",
+          "animation": "explore"
+        },
+        {
+          "itemId": "sun_hat_l5",
+          "text": "You hang the sun hat on the shield wall. Charlie says it matches the Sun Sword! ☀️👒",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "armor_stands",
+      "name": "Armor Stands",
+      "px": 0.67,
+      "py": 0.1,
+      "pw": 0.31,
+      "ph": 0.4,
+      "action": "explore",
+      "description": "The armor for sale",
+      "interactionText": "All the armor in camp, and only here: 🖤 Obsidian Armor, $180! Buy them at the armor counter.",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "star_blanket",
+          "text": "You wrap the Star Blanket round the Obsidian Armor like a cape. Super-hero armor! 🌠",
+          "animation": "explore"
+        },
+        {
+          "itemId": "telescope",
+          "text": "You look at the armor through the telescope. You can see your face in it! 🔭",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "px": 0.83,
+      "py": 0.72,
+      "pw": 0.14,
+      "ph": 0.27,
+      "action": "explore",
+      "description": "Where the shields are made",
+      "interactionText": "The forge glows orange, hot as lava. Charlie is hammering a star onto a shield! ⭐🔨",
+      "items": [
+        {
+          "id": "shield_sponge",
+          "name": "Shield Sponge",
+          "emoji": "🧽"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "fire_orb",
+          "text": "You drop the Fire Orb in the forge. WHOOSH! The fire burns bright gold! 🔮🔥",
+          "animation": "craft"
+        },
+        {
+          "itemId": "moon_cheese",
+          "text": "Charlie melts the Moon Cheese in the forge... and makes a cheesy medal, just for you! 🧀🏅",
+          "animation": "craft"
+        },
+        {
+          "itemId": "roasting_stick",
+          "text": "You roast a marshmallow in the forge. It's PERFECT! 🍡",
+          "animation": "eat"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,10 @@
 //   simMany(brickTuning(13), 'good', 300, 10, { sword: 'rainbow', armor: 'knight' })
 // The Fourth Camp's Slime Brick (src/features/level4/slime-brick.js) and Charlie's gear:
 //   simMany(slimeTuning(16), 'good', 300, 10, { sword: 'star', armor: 'dragon' })
+// The Fifth Camp's Moon (src/features/level5/moon.js), which freezes you after
+// a few missed swings in a row ({ moon: true }; { moon: 'proof' } for the U
+// cheat), and the shields (src/features/level5/shields.js), { shield }:
+//   simMany(moonTuning(21), 'good', 300, 10, { moon: true, sword: 'sun', armor: 'obsidian', shield: 'star' })
 //
 // → { win: % the player won, dur: average seconds, wear: sword wear per fight,
 //     loserPts: points the loser got, timeouts }
@@ -69,16 +73,19 @@ window.botStep = function (f, now, bot, st) {
   }
 };
 // A stand-in foe: fights like any boss with this tuning (nothing drawn or won)
-window.simFoe = function (toWin) {
+window.simFoe = function (toWin, moonFreeze) {
   const none = () => null;
-  return { id: 'sim', def: { pointsToWin: toWin || 10 }, level: 0, tune: BOSS_TUNE_BASE, label: 'SIM',
+  const foe = { id: 'sim', def: { pointsToWin: toWin || 10 }, level: 0, tune: BOSS_TUNE_BASE, label: 'SIM',
     intro: none, draw: none, arena: none, finish: none, end: none, after: none };
+  if (moonFreeze) foe.update = (f, now) => moonFreezeUpdate(f, now);
+  return foe;
 };
 window.simFight = function (tune, botName, pStrength, opts = {}) {
   const bot = BOTS[botName];
   let clock = 1e8;
   performance.now = () => clock;
-  const saved = { sword: swordRating, kind: swordKind, boost: strengthBoost, state, armor: armorKind, armorR: armorRating };
+  const saved = { sword: swordRating, kind: swordKind, boost: strengthBoost, state, armor: armorKind, armorR: armorRating,
+    shield: shieldKind, shieldR: shieldRating };
   try {
     strengthBoost = (pStrength || STRENGTH_BASE) - STRENGTH_BASE;
     for (const k of Object.keys(keys)) keys[k] = false;
@@ -86,9 +93,12 @@ window.simFight = function (tune, botName, pStrength, opts = {}) {
     swordRating = 1e6;
     armorKind = opts.armor || null;          // armor that never wears out (see src/features/armor-shop/armor.js)
     armorRating = opts.armor ? 1e6 : 0;
+    shieldKind = opts.shield || null;        // a shield that never wears out (src/features/level5/shields.js)
+    shieldRating = opts.shield ? 1e6 : 0;
     bossTuneOverride = tune || null;
-    startFight(simFoe(opts.toWin));
+    startFight(simFoe(opts.toWin, !!opts.moon));
     const f = fight;
+    if (opts.moon === 'proof') moonFreezeState(f).proof = true;
     f.phase = 'fight'; f.phaseStart = clock; f.bossThinkAt = clock + 500; f.lastT = clock;
     const st = { threatStart: null, plan: null, nextSwing: 0 };
     const start = clock, limit = clock + 300000;
@@ -96,7 +106,7 @@ window.simFight = function (tune, botName, pStrength, opts = {}) {
     return { won: f.winner === 'player', timeout: !f.winner, dur: (clock - start) / 1000, p: f.p.score, b: f.b.score, wear: 1e6 - swordRating };
   } finally {
     fight = null; state = saved.state; bossTuneOverride = null; swordRating = saved.sword; swordKind = saved.kind; strengthBoost = saved.boost;
-    armorKind = saved.armor; armorRating = saved.armorR;
+    armorKind = saved.armor; armorRating = saved.armorR; shieldKind = saved.shield; shieldRating = saved.shieldR;
     fightTouch = { left: false, right: false, block: false };
     delete performance.now;
   }

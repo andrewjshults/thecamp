@@ -133,6 +133,16 @@ const MAPS = {
       "Slime Brick Den"
     ]
   },
+  "assets/camp_level5.json": {
+    "name": "Fifth Camp",
+    "places": [
+      "Marshmallow Roasting Rock",
+      "Treasure Rock",
+      "Star Lookout",
+      "Moon Garden",
+      "Fighting Place"
+    ]
+  },
   "assets/game_design.json": {
     "name": "The Camp",
     "places": [
@@ -388,6 +398,66 @@ const MAPS = {
       "The Way to Level 5"
     ]
   },
+  "assets/level5_boys_bathroom.json": {
+    "name": "Boys' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level5_girls_bathroom.json": {
+    "name": "Girls' Bathroom",
+    "places": [
+      "Spider Corner",
+      "Sinks & Mirror",
+      "Hand Dryer",
+      "Stall 1",
+      "Stall 2",
+      "Stall 3",
+      "Shower",
+      "Lost & Found",
+      "Changing Bench",
+      "Trash Can"
+    ]
+  },
+  "assets/level5_palace.json": {
+    "name": "Moon's Palace",
+    "places": [
+      "The Moon's Throne",
+      "Moon Cheese Box",
+      "Star Lantern",
+      "The Way to Level 6"
+    ]
+  },
+  "assets/level5_safe_zone.json": {
+    "name": "Safe Zone",
+    "places": [
+      "Bolt's Code Finder",
+      "Comfy Couch",
+      "Snack Box",
+      "Bolt's Toolbox"
+    ]
+  },
+  "assets/level5_shop.json": {
+    "name": "Charlie's Swords, Armor & Shields",
+    "places": [
+      "Charlie's Sword Counter",
+      "Charlie's Shield Counter",
+      "Charlie's Armor Counter",
+      "Sword Rack",
+      "Shield Wall",
+      "Armor Stands",
+      "Forge"
+    ]
+  },
   "assets/sword_shop.json": {
     "name": "Ember's Sword Shop",
     "places": [
@@ -503,6 +573,20 @@ const NPCS = {
     "desc": "",
     "personality": "Quick, clever and cheerful. Loves stars. Sells every sword from Ember's shop and every armor from Shelly's shop, plus things nobody else has: the Comet Sword ($90), the Star Sword ($150), Dragon Scale Armor ($130) and Star Armor ($150). You pay with the coins in your backpack. Knows the Slime Brick is the toughest boss yet.",
     "map": "assets/level4_shop.json"
+  },
+  "bolt": {
+    "name": "Bolt",
+    "what": "a shiny robot who gives out the door codes in the Safe Zone at the Fifth Camp, across the lava river from the Moon's Palace",
+    "desc": "",
+    "personality": "Says BZZT and WHIRR a lot. Brave, chatty and proud of its shiny paint. Knows the secret code for every door at the Fifth Camp (Charlie's shop, the Moon's Palace and the two bathrooms) and tells campers when they ask. Knows the Moon can't come into the Safe Zone, that you press J to hop from rock to rock across the lava, and that you only have 3 seconds if you fall in.",
+    "map": "assets/level5_safe_zone.json"
+  },
+  "charlie_l5": {
+    "name": "Charlie",
+    "what": "a quick, clever fox who runs the Swords, Armor & Shields shop at the Fifth Camp (and the Armor & Swords shop at the Fourth Camp too)",
+    "desc": "",
+    "personality": "Quick, clever and cheerful. Loves stars and the sun. Hopped all the way across the lava river to open a second shop. Sells every sword and armor from the other shops, plus things only sold here: the Sun Sword ($180), Obsidian Armor ($180), and shields: the Wooden Shield ($40), the Lava Rock Shield ($80) and the Star Shield ($120). A shield makes your blocks hold better. You pay with the coins in your backpack. Knows the Moon can freeze campers who keep missing.",
+    "map": "assets/level5_shop.json"
   },
   "ember": {
     "name": "Ember",

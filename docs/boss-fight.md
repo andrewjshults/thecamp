@@ -13,7 +13,10 @@ The Second Camp's bosses, the Marshmallows, use the same fight: see
 **Who you fight is a foe** (`blobFoe()` for the Blob; `mallowFoe` in
 `src/features/level2/mallows.js`): `{ id, def, level, tune, label, intro,
 draw, arena, finish, end, after, begin }`, explained above `blobFoe` in
-`fight.js`. `startFight(foe)` (no foe: the Blob), `finishFight` calls
+`fight.js`. A foe can also have `update(f, now, dt)` (every frame of the
+fight) and `onKey(f, e)` (its own keys): the Fifth Camp's Moon uses them to
+freeze you (a fighter with act `'frozen'` is busy until `frozenUntil`) and for
+its U cheat (see [level-five.md](level-five.md)). `startFight(foe)` (no foe: the Blob), `finishFight` calls
 `foe.finish` for the prize or penalty (`giveFightReward`,
 `gobbleBackpackCoins`) and then emits the `fightOver` game event, and
 `endFight` calls `foe.end` / `foe.after`. `bossEngage` (`{ start, foe }`)

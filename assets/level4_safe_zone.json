@@ -198,14 +198,15 @@
       "ph": 0.36,
       "action": "enter",
       "description": "Back out to the Fourth Camp",
-      "interactionText": {
-        "px": 0.17,
-        "py": 0.505
-      },
+      "interactionText": "You peek outside... no slime? GO!",
       "items": [],
       "uses": [],
       "targetMap": "assets/camp_level4.json",
-      "targetHotspot": "You peek outside... no slime? GO!"
+      "targetHotspot": "safe_zone",
+      "arrive": {
+        "px": 0.17,
+        "py": 0.505
+      }
     },
     {
       "id": "code_finder",

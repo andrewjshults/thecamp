@@ -1,4 +1,6 @@
-function fightBusy(a) { return a.act === 'attack' || a.act === 'hit' || a.act === 'blockstun' || a.act === 'ko'; }
+// A fighter can be frozen solid for a while (a.frozenUntil; the Fifth
+// Camp's Moon): act 'frozen', and they can't move, swing or block.
+function fightBusy(a) { return a.act === 'attack' || a.act === 'hit' || a.act === 'blockstun' || a.act === 'ko' || a.act === 'frozen'; }
 
 function fightAttack() {
   const f = fight;
@@ -54,7 +56,7 @@ function swingOdds(att, who) {
   return Math.min(0.98, strengthOdds(att.strength) + (who === 'player' ? swordStats().land : 0));
 }
 function guardOdds(f, guard) {
-  return Math.min(0.98, strengthOdds(guard.strength) + (guard === f.p ? swordStats().guard : 0));
+  return Math.min(0.98, strengthOdds(guard.strength) + (guard === f.p ? swordStats().guard + playerGuardBonus(f) : 0));
 }
 
 // One swing lands (or doesn't) on `def`
@@ -90,6 +92,7 @@ function resolveHit(f, att, def, who) {
   }
   // A block only holds if the blocker is strong enough
   const broke = !!guard && Math.random() > guardOdds(f, guard);
+  if (guard) emitGameEvent('fightBlocked', { f, guard, att, who, held: !broke });
   if (broke) {
     f.sparks.push({ x: guard.x - away * 70, y: 140 + guardY, color: '#FF8A65', start: now });
     fightPop(f, 'BLOCK BROKEN!', guard.x - away * 40, 300 + guardY, '#FF8A65', 0.8);
@@ -281,7 +284,7 @@ function updateFight() {
     for (const a of f.s ? [f.p, f.b, f.s] : [f.p, f.b]) {
       if (a.act === 'block' && a === f.s) a.act = 'idle';
       if (a.act === 'attack' && now - a.actStart > 700) a.act = 'idle';
-      if ((a.act === 'hit' || a.act === 'blockstun' || a.act === 'windup') && now - a.actStart > HIT_STUN) a.act = 'idle';
+      if ((a.act === 'hit' || a.act === 'blockstun' || a.act === 'windup' || a.act === 'frozen') && now - a.actStart > HIT_STUN) a.act = 'idle';
     }
     if (now - f.phaseStart > 2000) finishFight(false);
     fightPhysics(f, dt * 0.35);                      // slow-mo K.O.
@@ -305,6 +308,7 @@ function updateFight() {
     if (p.act === 'attack' && pt >= P_STARTUP + P_ACTIVE + (p.recover || P_RECOVER)) p.act = 'idle';
   } else if (p.act === 'hit' && pt > HIT_STUN) p.act = 'idle';
   else if (p.act === 'blockstun' && pt > BLOCK_STUN) p.act = 'block';
+  else if (p.act === 'frozen' && !(now < p.frozenUntil)) p.act = 'idle';
 
   if (f.phase === 'fight' && !fightBusy(p)) {
     if (blockHeld && p.y === 0) {
@@ -322,6 +326,7 @@ function updateFight() {
   }
 
   if (f.s) sidekickAI(f, now, dt);
+  if (f.foe.update) f.foe.update(f, now, dt);     // a foe's own tricks (the Moon's freeze)
   if (f.phase === 'fight') bossAI(f, now, dt);
   fightPhysics(f, dt);
 }
@@ -433,6 +438,7 @@ function handleFightKey(e) {
   }
   if (e.key === 'Escape' && f.phase !== 'ko') { finishFight(true); return; }   // run away!
   if (e.repeat) return;
+  if (f.foe.onKey && f.foe.onKey(f, e)) return;    // a foe's own keys (the Moon's cheat code)
   if (e.key === ' ') fightAttack();
   else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') fightJump();
 }

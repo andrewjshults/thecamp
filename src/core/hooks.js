@@ -142,6 +142,11 @@ function levelsAllOpen() { return LEVELS_OPEN.some(isOpen => isOpen()); }
 const PLAYER_HIT_GUARDS = [];
 const FIGHT_LAYERS = [];
 function registerPlayerHitGuard(fn) { PLAYER_HIT_GUARDS.push(fn); }
+//   registerPlayerGuardBonus(fn): fn(fight) returns how much to add to the
+//     odds your block holds (a shield), 0 for nothing.
+const PLAYER_GUARD_BONUSES = [];
+function registerPlayerGuardBonus(fn) { PLAYER_GUARD_BONUSES.push(fn); }
+function playerGuardBonus(f) { return PLAYER_GUARD_BONUSES.reduce((sum, fn) => sum + (fn(f) || 0), 0); }
 function playerHitGuarded(f, now) { return PLAYER_HIT_GUARDS.some(fn => fn(f, now)); }
 function registerFightLayer(z, draw) { addByZ(FIGHT_LAYERS, z, draw); }
 function drawFightLayers(v, f, now, from, to) {
@@ -181,6 +186,8 @@ function registerSceneProps(props) {
 //   'mapLeave'      about to walk out of the current map (switchMap)
 //   'mapArrive'     arrived on a new map and placed on it (switchMap)
 //   'fightStart'    a boss fight just started (startFight), in its intro: (fight)
+//   'fightBlocked'  a swing just met a block (resolveHit): ({ f, guard, att,
+//                   who, held }); guard is who blocked, held false if it broke
 //   'fightOver'     a boss fight just ended, before the result shows:
 //                   ({ foe, won, fled, level, res }); res.lines can be added to
 //   'adventureDone' an item was just used at a hotspot for the first time (a
@@ -192,6 +199,18 @@ function onGameEvent(name, fn) {
 function emitGameEvent(name, ...args) {
   for (const fn of GAME_EVENT_LISTENERS[name] || []) fn(...args);
 }
+
+// --- Keys and taps on the map ---
+// registerPlayingKey(fn) / registerPlayingTap(fn): fn(e) / fn(screenX,
+// screenY) is asked first when you press a key or tap while walking around a
+// map (playingKey / playingTap). Return true if it was yours (the Fifth
+// Camp's J to hop across the lava), and nothing else happens.
+const PLAYING_KEYS = [];
+const PLAYING_TAPS = [];
+function registerPlayingKey(fn) { PLAYING_KEYS.push(fn); }
+function registerPlayingTap(fn) { PLAYING_TAPS.push(fn); }
+function playingKeyTaken(e) { return PLAYING_KEYS.some(fn => fn(e)); }
+function playingTapTaken(x, y) { return PLAYING_TAPS.some(fn => fn(x, y)); }
 
 // --- Walking speed ---
 // registerPlayerSpeed(factor): factor() returns how fast you walk right now
