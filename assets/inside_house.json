@@ -18,18 +18,6 @@
       "description": "A painting of the camp outside",
       "interactionText": "You peek at the painting. It shows the camp outside! You head out!",
       "items": [],
-      "uses": [
-        {
-          "itemId": "telescope",
-          "text": "You peer through the telescope at the camp painting. The flying car is RIGHT THERE! 🔭",
-          "animation": "explore"
-        },
-        {
-          "itemId": "binoculars",
-          "text": "You look through binoculars at the painting. You can see the campfire smoke rising! 🔭",
-          "animation": "explore"
-        }
-      ],
       "targetMap": "assets/game_design.json",
       "targetHotspot": "inside_house"
     },
@@ -80,6 +68,11 @@
           "itemId": "sleeping_bag",
           "text": "You stuff the sleeping bag into the armchair like a cozy nest. HIBERNATION MODE! 💤",
           "animation": "sleep"
+        },
+        {
+          "itemId": "binoculars",
+          "text": "You curl up in the armchair and look out the window with the binoculars. You can see the campfire smoke rising! 🔭",
+          "animation": "sit"
         }
       ]
     },
@@ -380,6 +373,11 @@
           "itemId": "book",
           "text": "You read your book next to the aquarium. The fish crowd at the glass to peek at the pictures! 📚",
           "animation": "sit"
+        },
+        {
+          "itemId": "telescope",
+          "text": "You look at the fish through the wrong end of the telescope. They're teeny-tiny! Then the right end... a GIANT fish eye stares back! 🔭🐠",
+          "animation": "explore"
         }
       ]
     }

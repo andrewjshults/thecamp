@@ -73,7 +73,7 @@ Several changes are often made at once on separate branches, so:
 
 Use the **`build-level`** skill (`.claude/skills/build-level/SKILL.md`): the
 questions to ask first, the files, the passage from the level below, the map
-script, the boss and its tuning, the smoke test and the docs.
+script, the boss and its tuning, the adventures, the smoke test and the docs.
 
 ## Docs
 

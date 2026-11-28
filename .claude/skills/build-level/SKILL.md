@@ -1,6 +1,6 @@
 ---
 name: build-level
-description: Build a new level (a new "camp") for Louisa's game from a drawing or a description. Covers the questions to ask first, the map drawing script, the passage from the level below, the level's boss, its rooms, shops and special mechanics, the smoke test and the docs. Use when asked to add, build or design a new level/camp, or to turn a drawing of a level into the game.
+description: Build a new level (a new "camp") for Louisa's game from a drawing or a description. Covers the questions to ask first, the map drawing script, the passage from the level below, the level's boss, its rooms, its adventures (item uses for the Adventure Journal), shops and special mechanics, the smoke test and the docs. Use when asked to add, build or design a new level/camp, or to turn a drawing of a level into the game.
 ---
 
 # Building a new level
@@ -32,9 +32,12 @@ recommended option first, about whatever is unclear. Usually:
   castle) or roams the map (like the Marshmallows), what's safe from it.
 - **Special mechanics** in the request (codes, keys, hazards): exact rules,
   e.g. typed every time or remembered, per camper or shared.
+- **Adventures**, only if the drawing or the request shows some (an item with
+  an arrow to a spot, "use the key on..."): what each one is. Otherwise write
+  them yourself (section 6).
 
 Decide small things yourself (names of new characters and items, colours,
-which drawn labels are only decoration) and list them in the final summary as
+which drawn labels are only decoration, the adventures' text) and list them in the final summary as
 "things I decided without asking".
 
 ## 2. Files for level N
@@ -122,13 +125,67 @@ layout. Rules:
 - Exit hotspots: `targetMap` back to `camp_levelN.json`, `targetHotspot` = the
   hotspot you came in through, plus an `arrive` point outside the door.
 - `"noSwordDrops": true` on shops and the boss's room.
-- **Adventures**: give the camp and its rooms `uses` (see `docs/items.md`)
-  that are done with **this level's own items**, 2–4 per spot that isn't a
-  door, a counter or a fight, and never at the spot the item starts at. A few
-  bonus ones for items carried up from lower levels are fine too. The smoke
-  test (`adventures`) fails a level with fewer than 15 of its own.
+- A copied room keeps its `uses`. `copy-room.js` renames their `_lP` item
+  ids too, but read their text for things from level P, and give the room
+  some of the new level's own (section 6).
 
-## 6. The boss
+## 6. Adventures
+
+Adventures are what fills the Adventure Journal: use an item from the
+backpack at a spot, get a little story and a prize wheel spin. Each one is an
+entry in a hotspot's `uses` in the map JSON (`docs/items.md` has the details):
+
+```json
+"uses": [
+  { "itemId": "slime_jar", "text": "Charlie heats the slime in the forge... and it turns into a super bouncy ball! BOING! 🫙", "animation": "craft" }
+]
+```
+
+Every level has its own, **done with items found on that level**. Write them
+once the rooms and their `items` are in place:
+
+1. **List the level's items** and where each one starts. Run
+   `node .claude/skills/build-level/scripts/check-adventures.js N`: it lists
+   the items that have no adventure yet.
+2. **Pick the spots.** Any hotspot that opens the normal pop-up: things to
+   look at, sit on, swim in, eat at. **Not** a door or portal (`targetMap`), a
+   shop counter, a code finder, a lock, a passage, a fight, or a "coming
+   soon" spot. Those do their own thing, and the item pop-up never shows, so
+   the adventure can't be done.
+3. **Match items to spots**, 2–4 per spot, so every item on the level has at
+   least one. A good match is funny or makes sense there: the oar on the sword
+   rack, sunscreen at the towel bench, a slime jar in the forge. An item can
+   go to spots on other maps of the same level (the pool towel in the camp's
+   tent).
+4. **Rules the game enforces:**
+   - **Never at a spot with the id the item starts at.** You can't use an item
+     where you picked it up, and that's checked by spot id only, so an item
+     from a `sinks` can't be used at any map's `sinks`.
+   - **One adventure per item per spot.**
+   - **`animation`** is one of `bathroom climb cook craft drink eat explore
+     fly play shelter sit sleep stargaze swim wash` (it picks the little
+     scene in the pop-up); match the spot's own `action` when it fits.
+   - Use the item's real id: on Levels 3 and up, copied rooms' items end in
+     `_lN` (`toothbrush_l4`), and an adventure for `toothbrush` won't take it.
+5. **Write the text** for Louisa: one or two short sentences, present tense,
+   "You...", lots of excitement, sound effects (SPLOOSH! BOING!) and one or
+   two emoji at the end. Tie it to the level's story when you can (the boss,
+   the camp's friends).
+6. **Bathrooms** are the same on both sides: give the boys' and girls'
+   bathrooms the same adventures, with that level's `_lN` items.
+7. **Bonus adventures** for items carried up from lower levels (the Level 1
+   flashlight, the teddy bear) are fine as extras, but don't count toward the
+   level's own.
+8. **Check them**: `check-adventures.js N` must end with "✓". It fails on
+   anything above, and on a level with fewer than 15 of its own. The smoke
+   test's `adventures` step fails on that too. Aim for 25–45 per level
+   (Levels 2–4 have 37–56).
+
+Nothing else is needed: the journal counts every map in the game, and
+adventures are saved per map (a spot id can repeat between maps, like every
+camp's `pool`).
+
+## 7. The boss
 
 - **Levels carry on**: level P's boss tops out at some level `M`; level N's
   boss runs `M + 1` to `M + 5` (`<BOSS>_LEVEL_MIN/MAX`, `<boss>Wins` saved, a
@@ -167,7 +224,7 @@ Use `tools/fight-sim.js` against the dev server:
 
 Put the table of results in `docs/level-N.md`.
 
-## 7. Shops and new gear
+## 8. Shops and new gear
 
 - Counters are hotspots with `swordShop` / `armorShop`. A counter can say what
   it sells (`"sells": "all"` or a list of ids) and what its keeper says
@@ -177,7 +234,7 @@ Put the table of results in `docs/level-N.md`.
   only this level's shop sells them. Prices in tens (change is given in $10
   coins).
 
-## 8. Hotspots that do their own thing
+## 9. Hotspots that do their own thing
 
 Use `registerHotspotKind({ match, interact, hint }, { first: true })` for
 locked doors and the like (`first` so it wins over the plain portal kind).
@@ -188,7 +245,7 @@ for anything you type into, and close it on Escape.
 
 An NPC that answers from the game itself (codes, facts): `registerNpcAnswer`.
 
-## 9. The smoke test (`tests/smoke.js`)
+## 10. The smoke test (`tests/smoke.js`)
 
 - Add an `async function levelNCamp(tab)` after the last level's, and call it
   after it in `singlePlayer`. Cover: the passage opening (force a win against
@@ -199,11 +256,13 @@ An NPC that answers from the game itself (codes, facts): `registerNpcAnswer`.
 - Add any new pop-up state to `backToPlaying`.
 - Add new saved values to the "some progress to save" step, its reset and
   the `resumed` note.
+- Adventures need no new test: the `adventures` step finds every level
+  itself, but it fails if the new level has fewer than 15 of its own.
 - `npm test` must pass. **Don't create or edit files in the repo while it
   runs**: the dev server's live reload reloads the page and the run aborts with
   "Execution context was destroyed". Write drafts in the scratchpad.
 
-## 10. Finish
+## 11. Finish
 
 - `npm run build:npc` (new NPCs and maps), and tell the user the PubNub
   Function has to be pasted again.
@@ -212,5 +271,8 @@ An NPC that answers from the game itself (codes, facts): `registerNpcAnswer`.
   hooks. Link it from the level below's doc and from any doc you touched.
 - Look at the screenshots from the smoke test (`--shots DIR`) for the new
   map, the boss and every pop-up.
-- In the summary: what was built, the decisions made without asking, and
-  anything the user has to do.
+- `docs/level-N.md`: a line on the level's adventures (how many, which
+  rooms), and the output of `check-adventures.js N`.
+- In the summary: what was built, how many adventures, the decisions made
+  without asking (with the adventures' text among them, so the user can read
+  them through for Louisa), and anything the user has to do.
