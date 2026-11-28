@@ -158,8 +158,11 @@ function assetJson() {
 class Tab {
   constructor(page, name) {
     this.page = page; this.name = name; this.inflight = 0;
-    // (the dev server's live-reload stream never finishes, so it doesn't count)
-    const counts = req => !req.url().includes('~~livereload');
+    // (the dev server's live-reload stream never finishes, so it doesn't count;
+    // nor does video: the browser stops reading a paused one, like the
+    // how-to-play video, so its request stays open and every settle() would
+    // wait out its whole timeout. Nothing in the game waits on it.)
+    const counts = req => !req.url().includes('~~livereload') && req.resourceType() !== 'media';
     page.on('request', req => { if (counts(req)) this.inflight++; });
     const done = req => { if (counts(req)) this.inflight--; };
     page.on('requestfinished', done);
