@@ -1,8 +1,8 @@
 # How to Play booklet and video
 
 The player-facing guide: `guide/index.html` (a three-page booklet that also
-prints as three Letter pages) and `guide/how-to-play.mp4` (a ~2½ minute
-captioned overview, embedded at the top of the booklet).
+prints as three Letter pages) and `guide/how-to-play.mp4` (a ~3 minute
+captioned overview of all five camps, embedded at the top of the booklet).
 
 **On the start menu** (`#menuMode`), two buttons under Single / Multi Player:
 - **▶️ Watch how to play** (`data-guide="video"`) opens `#guideVideoModal`, a
@@ -43,5 +43,7 @@ NPCs use their built-in replies and PubNub is stubbed out.
 booklet's text and re-run the script if the pictures are out of date. The
 facts in the booklet come from the feature docs (boss levels and prizes,
 shop prices, dessert strength, play time), so check them against those.
+The booklet's adventure count is `totalUsesCount()` (the journal's total).
 The booklet must still print on three pages: print-preview it (or render a
-PDF with Playwright) after a change.
+PDF with Playwright) after a change. In print, `.small` text is 10.5px and
+the top tips are three columns, to fit page 3.

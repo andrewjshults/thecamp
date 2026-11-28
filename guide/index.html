@@ -169,7 +169,9 @@ td:first-child { white-space: nowrap; }
   .box { padding: 8px 10px; border-radius: 10px; }
   .grid2 { gap: 10px; }
   .grid3 { gap: 8px; }
-  .tips { gap: 5px 14px; }
+  .tips { gap: 5px 12px; grid-template-columns: repeat(3, 1fr); }
+  .grid3.shops { grid-template-columns: 1fr 1fr 1.8fr; }
+  .small { font-size: 10.5px; }
   .tips li { padding-left: 26px; }
   .tips li::before { width: 19px; height: 19px; font-size: 11px; }
   figcaption { font-size: 10px; }
@@ -198,8 +200,8 @@ td:first-child { white-space: nowrap; }
       <source src="how-to-play.mp4" type="video/mp4">
     </video>
   </div>
-  <p class="videoNote">▶️ Watch the 2-minute video first, then read on for all the tips.</p>
-  <p class="printOnly muted">There's a 2-minute video too: open the game and click “📖 How to play” on the start screen.</p>
+  <p class="videoNote">▶️ Watch the 3-minute video first, then read on for all the tips.</p>
+  <p class="printOnly muted">There's a 3-minute video too: open the game and click “▶️ Watch how to play” on the start screen.</p>
 
   <h2><span class="num">1</span>Getting started</h2>
   <div class="grid2">
@@ -222,7 +224,7 @@ td:first-child { white-space: nowrap; }
       <tr><td><kbd>Space</kbd></td><td>Look at a spot, go through a door, cook, fight</td></tr>
       <tr><td><kbd>T</kbd></td><td>Talk to a friend</td></tr>
       <tr><td><kbd>B</kbd></td><td>Open your backpack</td></tr>
-      <tr><td><kbd>J</kbd></td><td>Open your Adventure Journal</td></tr>
+      <tr><td><kbd>J</kbd></td><td>Open your Adventure Journal (next to lava: hop to the next rock)</td></tr>
       <tr><td><kbd>E</kbd></td><td>Exploration mode on / off</td></tr>
       <tr><td><kbd>R</kbd></td><td>Spin around (just for fun)</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Menu (to switch campers)</td></tr>
@@ -232,7 +234,7 @@ td:first-child { white-space: nowrap; }
       <tr><td><kbd>←</kbd><kbd>→</kbd></td><td>Move</td></tr>
       <tr><td><kbd>↑</kbd></td><td>Jump</td></tr>
       <tr><td><kbd>Space</kbd></td><td>Swing your sword</td></tr>
-      <tr><td>hold <kbd>B</kbd></td><td>Block</td></tr>
+      <tr><td>hold <kbd>B</kbd></td><td>Block (a shield helps)</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Run away (counts as losing!)</td></tr>
       <tr><th colspan="2">On a tablet</th></tr>
       <tr><td>Tap the map</td><td>Walk there</td></tr>
@@ -252,7 +254,7 @@ td:first-child { white-space: nowrap; }
         <li><b>🔍 Find to use here:</b> faded items. Point at one to see where it is.</li>
       </ul>
       <p>You can't use an item where you found it, so carry things around the camp. There are
-        <b>73 adventures</b> to find, and each new one goes in your journal (<kbd>J</kbd>).</p>
+        <b>490 adventures</b> to find across the five camps, and each new one goes in your journal (<kbd>J</kbd>).</p>
     </div>
     <figure><img class="shot" src="img/hotspot.jpg" alt="The Big Tree pop-up with items to pick up and use" loading="lazy">
       <figcaption>At the Big Tree: three things to pick up, two to use</figcaption></figure>
@@ -291,7 +293,7 @@ td:first-child { white-space: nowrap; }
       <p>Penny the owl keeps your coins safe. <b>Deposit</b> them before a fight: if a boss beats you, it
         eats every coin <b>in your backpack</b>, but never the ones in the bank.</p>
       <p>Shops only take coins from your backpack, so <b>withdraw</b> before you go shopping.
-        There's a bank door on every camp, and it's the same bank everywhere.</p>
+        There's a bank door on the first four camps (the Fifth has none, so bring coins), and it's the same bank everywhere.</p>
       <img class="shot" src="img/bank.jpg" alt="The Camp Bank teller" loading="lazy">
     </div>
   </div>
@@ -324,8 +326,8 @@ td:first-child { white-space: nowrap; }
 
 <!-- ============================== PAGE 3 ============================== -->
 <section class="sheet">
-  <h2 style="margin-top:0"><span class="num">6</span>The four camps</h2>
-  <p>Beat a boss at its <b>top level</b> and a secret passage opens down to the next camp (it glows purple).
+  <h2 style="margin-top:0"><span class="num">6</span>The five camps</h2>
+  <p>Beat a boss at its <b>top level</b> and a secret passage opens to the next camp (it glows purple).
     Lose a fight down there, or run away, and you're sent back up, and the passage closes until you beat that top level again.
     So <b>get ready before you go down</b>.</p>
   <div class="scroll">
@@ -334,14 +336,16 @@ td:first-child { white-space: nowrap; }
     <tr><td>1 · First Camp</td><td>Glug Glub Blob</td><td>1–5</td><td>$10</td><td>It roams and chases you (only if you have a sword)</td><td>Beat it at level 5: the cave</td></tr>
     <tr><td>2 · Second Camp</td><td>Mega Mallow<br><span class="small muted">+ Mini Mallow ($10)</span></td><td>6–10</td><td>$20</td><td>They chase you <b>even with no sword</b>. Hide in the tents or the pool.</td><td>Beat Mega at 10: the hole in its lair</td></tr>
     <tr><td>3 · Third Camp</td><td>Brick Blaze</td><td>11–15</td><td>$30</td><td>The poison moat: 10 seconds in it and you're sent back. Use the bridge!</td><td>Beat it at 15: the castle trapdoor</td></tr>
-    <tr><td>4 · Fourth Camp</td><td>Slime Brick</td><td>16–20</td><td>$40</td><td>Doors need codes. The slime pit slows you, but not the Slime Brick.</td><td>Level 5 is coming soon!</td></tr>
+    <tr><td>4 · Fourth Camp</td><td>Slime Brick</td><td>16–20</td><td>$40</td><td>Doors need codes. The slime pit slows you, but not the Slime Brick.</td><td>Beat it at 20: the portal in its throne room</td></tr>
+    <tr><td>5 · Fifth Camp</td><td>The Moon</td><td>21–25</td><td>$50</td><td>Miss 3 swings in a row and it <b>freezes you</b> for 3 seconds. It floats over the lava too.</td><td>Level 6 is coming soon!</td></tr>
   </table>
   </div>
-  <p class="small muted" style="margin-top:6px">On the Fourth Camp, Beep the robot in the <b>Safe Zone</b> tells you each door's code (they never change for your camper, so write them down).
-    The throne needs the key from its hook.</p>
+  <p class="small muted" style="margin-top:6px">On the Fourth and Fifth Camps, the robot in the <b>Safe Zone</b> (Beep, then Bolt) tells you each door's code
+    (write them down: they never change). The Slime Brick's throne needs the key from its hook.
+    The Fifth Camp's <b>lava river</b>: press <kbd>J</kbd> (or tap a rock) to hop from rock to rock. 3 seconds in the lava sends you back.</p>
 
   <h2><span class="num">7</span>Shops</h2>
-  <div class="grid3">
+  <div class="grid3 shops">
     <div class="box red">
       <h3>🐉 Ember's Swords</h3>
       <p class="small" style="margin:0">On the Second Camp's pool deck.<br>
@@ -354,12 +358,14 @@ td:first-child { white-space: nowrap; }
     </div>
     <div class="box green">
       <h3>🦊 Charlie's Shop</h3>
-      <p class="small" style="margin:0">On the Fourth Camp (it has a door code). Everything above, plus
-        ☄️ Comet $90 · ⭐ Star Sword $150 · 🐉 Dragon Scale $130 · 🌟 Star Armor $150</p>
+      <p class="small" style="margin:0">On the Fourth and Fifth Camps (door codes). Everything above, plus
+        ☄️ Comet $90 · ⭐ Star Sword $150 · 🐉 Dragon Scale $130 · 🌟 Star Armor $150.<br>
+        <b>Fifth Camp only:</b> ☀️ Sun Sword $180 · 🖤 Obsidian Armor $180 · 🪵 Wooden Shield $40 · 🔥 Lava Rock Shield $80 · ⭐ Star Shield $120</p>
     </div>
   </div>
   <p class="small muted" style="margin-top:6px">Shop swords last about 2 fights (Rainbow and Star about 3), armor 2–6 fights.
-    The 🌋 Lava Sword is special: only 1 swing in 5 lands, but <b>one hit wins the whole fight</b>.</p>
+    The 🌋 Lava Sword is special: only 1 swing in 5 lands, but <b>one hit wins the whole fight</b>.
+    A <b>shield</b> makes your blocks hold more often, and the Lava Rock and Star Shields can bounce the boss back (“BOING!”).</p>
 
   <h2><span class="num">8</span>Top tips</h2>
   <ol class="tips">
@@ -371,14 +377,15 @@ td:first-child { white-space: nowrap; }
     <li><b>Do adventures between fights.</b> Each one spins the wheel, and charms, coins and free gear add up.</li>
     <li><b>Start with Mini Mallow.</b> It needs only 8 points and is easier, but only Mega Mallow wins open the way down.</li>
     <li><b>Gear up for the deep camps.</b> Armor makes the Brick much easier (💎 Crystal nearly doubles your chances).
-      For the Slime Brick, the ⭐ Star Sword + 🌟 Star Armor is the best team.</li>
-    <li><b>Get the door codes first.</b> Go to the Safe Zone on the Fourth Camp before anything else. The Slime Brick can catch you while you type!</li>
+      For the Slime Brick, the ⭐ Star Sword + 🌟 Star Armor is the best team. For the Moon: ☀️ Sun Sword, 🖤 Obsidian Armor and ⭐ Star Shield.</li>
+    <li><b>Get the door codes first.</b> Go to the Safe Zone on the Fourth and Fifth Camps before anything else. The bosses can catch you while you type!</li>
+    <li><b>Don't swing at nothing.</b> Against the Moon, 3 misses in a row freeze you. Wait until it's close and open.</li>
     <li><b>Scout with exploration mode.</b> Press <kbd>E</kbd> to walk every camp with no bosses, and find things for later.</li>
   </ol>
 
   <div class="box gold" style="margin-top:12px">
-    <p class="small" style="margin:0"><b>⏳ Play time:</b> you get 20 minutes of walking and fighting (the ⏳ in the corner counts down; standing still,
-      talking and shops don't count). Then it's a 1-hour break: go play outside! A grown-up can unlock more time with their code.</p>
+    <p class="small" style="margin:0"><b>⏳ Play time:</b> you get 15 minutes of play (the ⏳ in the top corner counts down). It pauses when you
+      stop playing for 10 seconds, and a fight always gets to finish. Then it's a 1-hour break: go play outside! A grown-up can unlock more time with their code.</p>
   </div>
   <span class="pageNo">3 / 3</span>
 </section>
