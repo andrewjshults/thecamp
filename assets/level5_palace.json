@@ -1,0 +1,283 @@
+{
+  "name": "Moon's Palace",
+  "where": "in the Moon's Palace",
+  "noSwordDrops": true,
+  "playerStart": {
+    "px": 0.1,
+    "py": 0.65
+  },
+  "spriteScale": 1.6,
+  "scene": {
+    "width": 2400,
+    "height": 1700,
+    "ceiling": {
+      "height": 0.05,
+      "color": "#1a237e",
+      "stripe": "#283593"
+    },
+    "wall": {
+      "pattern": "blocks",
+      "color": "#c5cae9"
+    },
+    "floor": {
+      "from": 0.5,
+      "pattern": "tiles",
+      "color": "#9fa8da",
+      "skirting": "#1a237e"
+    },
+    "props": [
+      {
+        "kind": "sign",
+        "text": "OUTSIDE",
+        "px": 0.025,
+        "py": 0.1,
+        "pw": 0.085,
+        "ph": 0.05,
+        "color": "#fff59d",
+        "rotate": -3
+      },
+      {
+        "kind": "door",
+        "px": 0.025,
+        "py": 0.18,
+        "pw": 0.085,
+        "ph": 0.34,
+        "color": "#5c6bc0"
+      },
+      {
+        "kind": "starrySky",
+        "px": 0.15,
+        "py": 0.07,
+        "pw": 0.58,
+        "ph": 0.36
+      },
+      {
+        "kind": "banner",
+        "px": 0.17,
+        "py": 0.1,
+        "pw": 0.06,
+        "ph": 0.24,
+        "color": "#fff59d",
+        "emoji": "🌙"
+      },
+      {
+        "kind": "banner",
+        "px": 0.66,
+        "py": 0.1,
+        "pw": 0.06,
+        "ph": 0.24,
+        "color": "#fff59d",
+        "emoji": "⭐"
+      },
+      {
+        "kind": "rug",
+        "px": 0.33,
+        "py": 0.52,
+        "pw": 0.24,
+        "ph": 0.44,
+        "colors": [
+          "#3949ab",
+          "#fff59d",
+          "#3949ab"
+        ]
+      },
+      {
+        "kind": "moonThrone",
+        "px": 0.36,
+        "py": 0.1,
+        "pw": 0.18,
+        "ph": 0.44
+      },
+      {
+        "kind": "box",
+        "px": 0.12,
+        "py": 0.6,
+        "pw": 0.1,
+        "ph": 0.14,
+        "label": "MOON CHEESE",
+        "peek": [
+          "🧀",
+          "🧀"
+        ]
+      },
+      {
+        "kind": "torch",
+        "px": 0.26,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "torch",
+        "px": 0.6,
+        "py": 0.14,
+        "pw": 0.04,
+        "ph": 0.18
+      },
+      {
+        "kind": "sign",
+        "text": "LEVEL 6",
+        "px": 0.79,
+        "py": 0.07,
+        "pw": 0.14,
+        "ph": 0.07,
+        "color": "#e1bee7",
+        "rotate": -3
+      },
+      {
+        "kind": "sign",
+        "text": "COMING SOON!",
+        "px": 0.77,
+        "py": 0.15,
+        "pw": 0.18,
+        "ph": 0.06,
+        "color": "#fff176",
+        "rotate": 2
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🌀",
+        "px": 0.79,
+        "py": 0.24,
+        "pw": 0.14,
+        "ph": 0.24
+      },
+      {
+        "kind": "emoji",
+        "emoji": "🏮",
+        "px": 0.64,
+        "py": 0.62,
+        "pw": 0.06,
+        "ph": 0.12
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "exit_door",
+      "name": "Back Outside",
+      "px": 0.02,
+      "py": 0.18,
+      "pw": 0.1,
+      "ph": 0.36,
+      "action": "enter",
+      "description": "Back out to the Fifth Camp",
+      "interactionText": "You sneak back out of the Moon's Palace.",
+      "items": [],
+      "uses": [],
+      "targetMap": "assets/camp_level5.json",
+      "targetHotspot": "moon_palace",
+      "arrive": {
+        "px": 0.817,
+        "py": 0.345
+      }
+    },
+    {
+      "id": "moon_throne",
+      "name": "The Moon's Throne",
+      "px": 0.36,
+      "py": 0.08,
+      "pw": 0.18,
+      "ph": 0.46,
+      "action": "explore",
+      "description": "Where the Moon rests between fights",
+      "interactionText": "A big silver throne shaped like a crescent moon. It's chilly to touch! The Moon must be out looking for campers... 🌙",
+      "items": [],
+      "uses": [
+        {
+          "itemId": "star_blanket",
+          "text": "You put the Star Blanket on the chilly throne. Now it's cozy! 🌠",
+          "animation": "sit"
+        },
+        {
+          "itemId": "fire_orb",
+          "text": "You put the Fire Orb on the throne. The frost melts away. Drip drip! 🔮",
+          "animation": "sit"
+        },
+        {
+          "itemId": "shield_sponge",
+          "text": "You scrub the throne with the sponge until it shines like a full moon. ✨🧽",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "cheese_box",
+      "name": "Moon Cheese Box",
+      "px": 0.11,
+      "py": 0.58,
+      "pw": 0.12,
+      "ph": 0.18,
+      "action": "eat",
+      "description": "Everyone knows the Moon is made of cheese!",
+      "interactionText": "A box FULL of Moon Cheese. It smells... cheesy! 🧀",
+      "items": [
+        {
+          "id": "moon_cheese",
+          "name": "Moon Cheese",
+          "emoji": "🧀"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "roasting_stick",
+          "text": "You stick a piece of Moon Cheese on your roasting stick. Cheese on a stick! 🍡🧀",
+          "animation": "eat"
+        },
+        {
+          "itemId": "oil_can",
+          "text": "Oops! You drip oil on the cheese. The Moon won't like THAT. 🛢️",
+          "animation": "eat"
+        }
+      ]
+    },
+    {
+      "id": "lantern",
+      "name": "Star Lantern",
+      "px": 0.62,
+      "py": 0.58,
+      "pw": 0.1,
+      "ph": 0.18,
+      "action": "explore",
+      "description": "A lantern full of tiny stars",
+      "interactionText": "A paper lantern full of tiny twinkling stars. You could take it with you! 🏮",
+      "items": [
+        {
+          "id": "star_lantern",
+          "name": "Star Lantern",
+          "emoji": "🏮"
+        }
+      ],
+      "uses": [
+        {
+          "itemId": "moonflower",
+          "text": "You hold the Moonflower under the stars. It opens up wide and glows silver! 🌸",
+          "animation": "explore"
+        },
+        {
+          "itemId": "telescope",
+          "text": "You look at the tiny stars through the telescope. They're HUGE now! 🔭",
+          "animation": "explore"
+        }
+      ]
+    },
+    {
+      "id": "level6_portal",
+      "name": "The Way to Level 6",
+      "px": 0.77,
+      "py": 0.22,
+      "pw": 0.18,
+      "ph": 0.3,
+      "action": "explore",
+      "comingSoon": true,
+      "glow": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "description": "Level 6... coming soon!",
+      "interactionText": "🌀 A swirly, glowy portal! This is the way to LEVEL 6... but it isn't finished yet. Coming soon! ✨",
+      "items": [],
+      "uses": []
+    }
+  ]
+}

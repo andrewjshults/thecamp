@@ -4,6 +4,7 @@
 // Keys and taps while you're out on a map (no dialog open).
 
 function playingKey(e) {
+  if (playingKeyTaken(e)) return;   // a feature's own key (registerPlayingKey)
   if (e.key === 'j' || e.key === 'J') {
     journalOpen = !journalOpen;
     if (journalOpen) { journalScroll = 0; journalScrollTarget = 0; }
@@ -44,6 +45,7 @@ function playingKey(e) {
 }
 
 function playingTap(screenX, screenY) {
+  if (!backpackOpen && playingTapTaken(screenX, screenY)) return;   // registerPlayingTap
   // Backpack overlay hit-tests (slots) take precedence when open
   if (backpackOpen) {
     const allRects = [

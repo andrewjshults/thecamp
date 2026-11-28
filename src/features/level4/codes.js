@@ -83,14 +83,14 @@ function openCodePad(obj) {
   setTimeout(() => { if (!codePadEl.hidden) codePadInput.focus(); }, 60);
 }
 
-// `caught`: the Slime Brick got you (no goodbye)
+// `caught`: a boss got you (no goodbye); a string says what got you
 function closeCodePad(caught) {
   if (state !== GameState.CODE_PAD) return;
   codePadEl.hidden = true;
   if (codePadEl.contains(document.activeElement)) document.activeElement.blur();
   state = GameState.PLAYING;
   codePadDoor = null;
-  if (caught) kitchenToast('🫧 SPLORCH! The Slime Brick got you while you were typing the code!');
+  if (caught) kitchenToast(typeof caught === 'string' ? caught : '🫧 SPLORCH! The Slime Brick got you while you were typing the code!');
 }
 
 function tryDoorCode() {
@@ -133,15 +133,18 @@ codePadEl.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { e.preventDefault(); closeCodePad(); }
 });
 
-// "It's coming!" while the Slime Brick is after you
+// "It's coming!" while a boss is after you. Each level's roaming boss adds a
+// check here that returns a warning, or '' (the Fifth Camp's Moon does too).
+const CODE_PAD_DANGERS = [() => {
+  if (typeof slimeOut !== 'function' || !slimeOut() || slime.where !== 'out') return '';
+  const p = slimePos();
+  const d = Math.hypot(player.x - p.x, player.y - p.y);
+  return d < (slimeCfg().sniff || 600) * bossK() ? '⚠️ The Slime Brick is coming! HURRY!' : '';
+}];
 registerFrameUpdate(13, () => {
   if (state !== GameState.CODE_PAD) return;
   let warn = '';
-  if (typeof slimeOut === 'function' && slimeOut() && slime.where === 'out') {
-    const p = slimePos();
-    const d = Math.hypot(player.x - p.x, player.y - p.y);
-    if (d < (slimeCfg().sniff || 600) * bossK()) warn = '⚠️ The Slime Brick is coming! HURRY!';
-  }
+  for (const fn of CODE_PAD_DANGERS) warn = warn || fn();
   if (codePadWarn.textContent !== warn) codePadWarn.textContent = warn;
 });
 
@@ -207,8 +210,11 @@ function openCodeKeeper(obj) {
     list.appendChild(b);
   }
   const who = player.character ? player.character.name : 'camper';
-  keeperSaysEl.textContent = `BEEP BOOP! Hi, ${who}! I'm ${codeKeeperName()}, the code finder. ` +
-    'The Slime Brick can\'t get you in here. Which door do you need the code for?';
+  // a keeper's own `greeting` ({name} = you, {keeper} = them), or Beep's
+  keeperSaysEl.textContent = codeKeeper.greeting
+    ? codeKeeper.greeting.replace(/\{name\}/g, who).replace(/\{keeper\}/g, codeKeeperName())
+    : `BEEP BOOP! Hi, ${who}! I'm ${codeKeeperName()}, the code finder. ` +
+      'The Slime Brick can\'t get you in here. Which door do you need the code for?';
   keeperEl.hidden = false;
   state = GameState.CODE_KEEPER;
   keeperOpenedAt = performance.now();
@@ -238,7 +244,8 @@ keeperEl.addEventListener('click', (e) => {
   if (b) {
     const lock = keeperLocks(codeKeeper).find(l => l.id === b.dataset.lock);
     if (lock) {
-      keeperSaysEl.textContent = `BEEP! ${codeAnswer(lock)} Type it on the keypad by the door. Quick, before the Slime Brick sees you!`;
+      keeperSaysEl.textContent = `BEEP! ${codeAnswer(lock)} Type it on the keypad by the door. ` +
+        (codeKeeper.hurry || 'Quick, before the Slime Brick sees you!');
       keeperSaysEl.animate([{ transform: 'scale(0.96)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
     }
     return;

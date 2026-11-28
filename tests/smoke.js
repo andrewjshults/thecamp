@@ -253,9 +253,9 @@ async function backToPlaying(tab) {
       if (await tab.state() === 'fighting') await tab.ev('endFight && endFight()');
       continue;
     }
-    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop' || s === 'armorShop' || s === 'codePad' || s === 'codeKeeper') {
+    if (s === 'bankModal' || s === 'kitchenModal' || s === 'swordShop' || s === 'armorShop' || s === 'shieldShop' || s === 'codePad' || s === 'codeKeeper') {
       // These pop-ups are HTML: Esc in the page is handled by their own listeners
-      await tab.ev({ bankModal: 'closeBank()', swordShop: 'closeSwordShop()', armorShop: 'closeArmorShop()', codePad: 'closeCodePad()', codeKeeper: 'closeCodeKeeper()' }[s] || 'closeKitchenModal()');
+      await tab.ev({ bankModal: 'closeBank()', swordShop: 'closeSwordShop()', armorShop: 'closeArmorShop()', shieldShop: 'closeShieldShop()', codePad: 'closeCodePad()', codeKeeper: 'closeCodeKeeper()' }[s] || 'closeKitchenModal()');
       continue;
     }
     if (s === 'itemAction' || s === 'usingItem' || s === 'interacting' || s === 'talking') {
@@ -334,7 +334,7 @@ async function singlePlayer(context) {
   for (const { path: mapPath, cfg } of crawlMaps()) {
     await tab.ev(`switchMap(${JSON.stringify(mapPath)}, null)`);
     await tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(mapPath)}`, `map ${mapPath}`);
-    await tab.ev('brick.restUntil = Infinity; slime.restUntil = Infinity');   // the Brick on its throne, the Slime Brick in its den (thirdCamp() / fourthCamp() fight them)
+    await tab.ev('brick.restUntil = Infinity; slime.restUntil = Infinity; moon.restUntil = Infinity');   // the Brick on its throne, the Slime Brick in its den, the Moon in its crater (thirdCamp() / fourthCamp() / fifthCamp() fight them)
     await tab.run(2500);   // camera settles
     const slug = path.basename(mapPath, '.json');
     await tab.shot(`map-${slug}`);
@@ -393,30 +393,31 @@ async function singlePlayer(context) {
   await tab.shot('fight');
   await backToPlaying(tab);
   tab.note({ step: 'after-fight', bossWins: await tab.ev('bossWins'), sword: await tab.ev('swordRating') });
-  await tab.ev('brick.restUntil = 0; slime.restUntil = 0');
+  await tab.ev('brick.restUntil = 0; slime.restUntil = 0; moon.restUntil = 0');
   await secondCamp(tab);
   await thirdCamp(tab);
   await fourthCamp(tab);
+  await fifthCamp(tab);
   await exploration(tab);
   await adventures(tab);
   await playtime(tab);
 
   // Some progress to save, so resuming has something to bring back
-  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; level4Open = true; slimeWins = 1; throneUnlocked = true; doorCodes = { bank: 'K7P' }; dishesMade = ['sandwich'];
+  await tab.ev(`strengthBoost = 7; bossWins = 2; bankBalance = 30; swordRating = 42; swordKind = 'flame'; level2Open = true; mallowWins = 3; level3Open = true; brickWins = 2; armorKind = 'chain'; armorRating = 77; level4Open = true; slimeWins = 1; throneUnlocked = true; doorCodes = { bank: 'K7P' }; level5Open = true; moonWins = 2; shieldKind = 'lava'; shieldRating = 99; lavaHopHinted = true; dishesMade = ['sandwich'];
     customRecipes = [{ id: 'custom_1', name: 'Tomato Surprise', needs: ['tomato', 'bread'], map: 'assets/camp_kitchen.json' }];
     completedUses = [{ hotspotId: 'tree', hotspotName: 'Tree', itemId: 'rope', itemName: 'Rope', itemEmoji: '🪢', text: 'Climbed!' }];
     backpack.push({ id: 'ten_dollar_coin', name: '$10 Coin', emoji: '🪙', coin: true, value: 10 }); writeSave();`);
   await tab.key('Escape');
   await tab.key('y');
   await tab.until('state === GameState.CHARACTER_SELECT');
-  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; level3Open = false; brickWins = 0; armorKind = null; armorRating = 0; level4Open = false; slimeWins = 0; throneUnlocked = false; doorCodes = {}; dishesMade = []; customRecipes = []`);
+  await tab.ev(`strengthBoost = 0; bossWins = 0; bankBalance = 0; swordRating = 100; swordKind = 'plain'; level2Open = false; mallowWins = 0; level3Open = false; brickWins = 0; armorKind = null; armorRating = 0; level4Open = false; slimeWins = 0; throneUnlocked = false; doorCodes = {}; level5Open = false; moonWins = 0; shieldKind = null; shieldRating = 0; lavaHopHinted = false; dishesMade = []; customRecipes = []`);
   await tab.key('Enter');
   await tab.until('state === GameState.RESUME_PROMPT');
   await tab.shot('resume-prompt');
   await tab.key('r');
   await tab.until('state === GameState.PLAYING');
   tab.note({ step: 'resumed', map: await tab.ev('currentMapPath'), backpack: await tab.ev('backpack.map(i => i.id)'),
-    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins, level3Open, brickWins, armorKind, armorRating, level4Open, slimeWins, throneUnlocked, doorCodes })`),
+    values: await tab.ev(`({ completedUses, dishesMade, customRecipes, strengthBoost, swordRating, swordKind, bossWins, bankBalance, level2Open, mallowWins, level3Open, brickWins, armorKind, armorRating, level4Open, slimeWins, throneUnlocked, doorCodes, level5Open, moonWins, shieldKind, shieldRating, lavaHopHinted })`),
     save: await tab.ev(SAVES_SORTED) });
   await taps(tab);
   await tab.page.close();
@@ -767,6 +768,166 @@ async function fourthCamp(tab) {
   tab.note({ step: 'l4-sent-back', open: await tab.ev('level4Open') });
   await tab.ev(`swordKind = "plain"; swordRating = 100; level2Open = false; level3Open = false; mallowWins = 0; brickWins = 0;
     slimeWins = 0; throneUnlocked = false; brick.restUntil = 0; slime.restUntil = 0; writeSave()`);
+  await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
+  await onMap('assets/game_design.json');
+}
+
+// The Fifth Camp: beating the top-level Slime Brick opens the throne room's
+// portal; hopping across the lava with J (and a tap); J is still the journal
+// away from the lava; 3 seconds in the lava sends you back to the Fourth Camp;
+// the robot's codes; Charlie's shields (and the Fifth Camp's own sword and
+// armor, only sold here); the Moon catches you (U: it can't freeze you) and
+// you win; three missed swings in a row freeze you; running away sends you
+// back with the portal shut
+async function fifthCamp(tab) {
+  const L4 = 'assets/camp_level4.json', L5 = 'assets/camp_level5.json', THRONE = 'assets/level4_throne.json';
+  const standAt = (id, fy = 0.5) => tab.ev(`(() => { const o = interactiveObjects.find(o => o.id === ${JSON.stringify(id)});
+    player.x = o.x + o.width / 2; player.y = o.y + o.height * ${fy}; tapTarget = null; })()`);
+  const onMap = (p, what) => tab.until(`state === GameState.PLAYING && currentMapPath === ${JSON.stringify(p)}`, what || p);
+  const check = (ok, what) => { if (!ok) errors.push(`[fifth camp] ${what}`); };
+  // Beat the level 20 Slime Brick: the portal opens
+  await tab.ev(`level2Open = true; level3Open = true; level4Open = true; switchMap(${JSON.stringify(L4)}, 'throne')`);
+  await onMap(L4);
+  await tab.ev('slime.restUntil = Infinity');
+  await tab.run(300);
+  await tab.ev(`slimeWins = 4; startFight(slimeFoe(false)); fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(500);
+  tab.note({ step: 'l5-unlock', open: await tab.ev('level5Open'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  check(await tab.ev('level5Open'), 'beating the level 20 Slime Brick didn\'t open the portal');
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  await tab.ev(`switchMap(${JSON.stringify(THRONE)}, 'exit_door')`);
+  await onMap(THRONE);
+  await standAt('level5_portal');
+  await tab.run(200);
+  await tab.shot('l5-portal-open');
+  await tab.key(' ');
+  await onMap(L5, 'the fifth camp');
+  await tab.ev('moon.restUntil = Infinity');
+  await tab.run(2500);
+  await tab.shot('l5-arrived');
+  // Onto a rock: the hint; J hops to the next one (not the journal)
+  await tab.ev(`(() => { const r = lavaCfg().rocks.find(r => Math.abs(r.cx - 0.31) < 0.01);
+    player.x = r.cx * scaledMapW; player.y = r.cy * scaledMapH; tapTarget = null; })()`);
+  await tab.run(300);
+  await tab.shot('l5-on-rock');
+  const before = await tab.ev('({ x: player.x, y: player.y, hinted: lavaHopHinted })');
+  await tab.ev('hop.dirX = 0; hop.dirY = -1');
+  await tab.key('j');
+  await tab.run(150);
+  await tab.shot('l5-hopping');
+  await tab.run(500);
+  const after = await tab.ev('({ x: player.x, y: player.y, lava: inLava(player.x, player.y), rock: !!rockAt(player.x, player.y), journal: journalOpen })');
+  tab.note({ step: 'l5-hop', before, after });
+  check(before.hinted && after.rock && !after.lava && !after.journal && after.y < before.y, `hopping with J: ${JSON.stringify({ before, after })}`);
+  // Tap a rock in reach: hop there
+  const tapped = await tab.ev(`(() => { const here = rockAt(player.x, player.y);
+    const r = lavaCfg().rocks.find(r => r !== here && Math.hypot(r.cx * scaledMapW - player.x, r.cy * scaledMapH - player.y) < hopReach() * 0.9);
+    playingTap(r.cx * scaledMapW - camera.x, r.cy * scaledMapH - camera.y); return r; })()`);
+  await tab.run(600);
+  const afterTap = await tab.ev('({ x: player.x, y: player.y, rock: rockAt(player.x, player.y) })');
+  tab.note({ step: 'l5-tap-hop', tapped, afterTap });
+  check(afterTap.rock && afterTap.rock.cx === tapped.cx && afterTap.rock.cy === tapped.cy, 'tapping a rock didn\'t hop onto it');
+  // Away from the lava, J is the journal
+  await standAt('safe_zone', 1.1);
+  await tab.run(100);
+  await tab.key('j');
+  tab.note({ step: 'l5-journal', open: await tab.ev('journalOpen') });
+  check(await tab.ev('journalOpen'), 'J away from the lava should open the journal');
+  await tab.key('j');
+  // Into the lava: 3 seconds, then back to the Fourth Camp (the portal stays open)
+  await tab.ev('player.x = scaledMapW * 0.5; player.y = scaledMapH * 0.55; tapTarget = null');
+  await tab.run(1200);
+  await tab.shot('l5-lava');
+  tab.note({ step: 'l5-lava', inLava: await tab.ev('inLava(player.x, player.y)'), ms: await tab.ev('lava.ms') });
+  await onMap(THRONE, 'sent back by the lava');
+  tab.note({ step: 'l5-lava-sent-back', open: await tab.ev('level5Open') });
+  // The robot in the Safe Zone knows the codes
+  await tab.ev(`switchMap('assets/level5_safe_zone.json', 'exit_door')`);
+  await onMap('assets/level5_safe_zone.json');
+  await standAt('code_finder', 0.9);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(500);
+  await tab.page.click('[data-lock=moon_palace]');
+  await tab.run(200);
+  await tab.shot('l5-code-robot');
+  tab.note({ step: 'l5-code-robot', says: await tab.ev('keeperSaysEl.textContent'),
+    asked: await tab.ev(`npcGameAnswer({ knowsCodes: true }, "what's the code for the moon palace?")`) });
+  await tab.ev('closeCodeKeeper()');
+  // The palace's keypad, with the robot's code
+  await tab.ev(`switchMap(${JSON.stringify(L5)}, 'moon_palace')`);
+  await onMap(L5);
+  await tab.ev('moon.restUntil = Infinity');
+  await standAt('moon_palace', 0.9);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(300);
+  await tab.page.fill('#codePadInput', await tab.ev(`codeFor('moon_palace').toLowerCase()`));
+  await tab.page.press('#codePadInput', 'Enter');
+  await onMap('assets/level5_palace.json', 'into the Moon\'s Palace with its code');
+  await tab.run(1500);
+  await tab.shot('l5-palace');
+  // Charlie's shields: buy the wooden one with a $50 coin ($10 change)
+  await tab.ev(`switchMap('assets/level5_shop.json', 'exit_door')`);
+  await onMap('assets/level5_shop.json');
+  await tab.ev(`backpack.push({ id: 'fifty_dollar_coin', name: '$50 Coin', emoji: '🪙', coin: true, value: 50 })`);
+  await standAt('shield_counter', 0.7);
+  await tab.run(200);
+  await tab.key(' ');
+  await tab.run(400);
+  await tab.page.click('[data-shield=wood]');
+  await tab.run(200);
+  await tab.shot('l5-shield-shop');
+  const bought = await tab.ev(`({ kind: shieldKind, rating: shieldRating, coins: backpack.filter(isCoin).map(c => c.value), state })`);
+  tab.note({ step: 'l5-shield', bought, says: await tab.ev('shieldSaysEl.textContent') });
+  check(bought.kind === 'wood' && bought.coins.join() === '10', `buying a shield: ${JSON.stringify(bought)}`);
+  await tab.ev('closeShieldShop()');
+  tab.note({ step: 'l5-gear',
+    charlie5: await tab.ev(`swordsForSale({ sells: 'all' }).map(([id]) => id).concat(armorForSale({ sells: 'all' }).map(([id]) => id))`),
+    charlie4: await tab.ev(`(() => { const c = allMapConfigs['assets/level4_shop.json'] || {}; return JSON.stringify((c.hotspots || []).map(h => (h.swordShop || h.armorShop || {}).sells).filter(Boolean)); })()`),
+    ember: await tab.ev(`swordsForSale({}).map(([id]) => id)`) });
+  // The Moon catches you; U during the intro: no freezing; and you win
+  await tab.ev(`switchMap(${JSON.stringify(L5)}, 'moon_palace')`);
+  await onMap(L5);
+  await tab.ev(`moon.map = currentMapPath; moon.restUntil = 0; moon.where = 'out'; moon.outUntil = Infinity; moon.graceUntil = 0;
+    moon.fx = (player.x + 300) / scaledMapW; moon.fy = player.y / scaledMapH`);
+  await tab.run(400);
+  await tab.shot('l5-moon-map');
+  await tab.until('state === GameState.FIGHTING', 'the Moon catches you', 15000);
+  await tab.run(500);
+  await tab.key('u');
+  tab.note({ step: 'l5-cheat', proof: await tab.ev('!!(fight.moonFreeze && fight.moonFreeze.proof)') });
+  check(await tab.ev('!!(fight.moonFreeze && fight.moonFreeze.proof)'), 'U at the start of the Moon fight didn\'t work');
+  await tab.run(2500);
+  await tab.shot('l5-fight');
+  await tab.ev(`fight.winner = 'player'; fight.p.score = fight.toWin; finishFight(false)`);
+  await tab.run(300);
+  await tab.shot('l5-won');
+  tab.note({ step: 'l5-won', wins: await tab.ev('moonWins'), lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await tab.until('state === GameState.PLAYING');
+  // Three swings that miss in a row: frozen
+  await tab.ev('moon.restUntil = Infinity; moon.where = "home"; startFight(moonFoe(false))');
+  await tab.run(2400);
+  await tab.ev(`fight.p.x = 150; fight.b.x = 880; fight.b.ai = 'wait'; fight.bossThinkAt = Infinity`);
+  for (let i = 0; i < 3; i++) { await tab.key(' '); await tab.run(700); }
+  await tab.shot('l5-frozen');
+  const frozen = await tab.ev(`({ act: fight.p.act, left: fight.p.frozenUntil - performance.now() })`);
+  tab.note({ step: 'l5-frozen', frozen });
+  check(frozen.act === 'frozen' && frozen.left > 0, `three missed swings should freeze you: ${JSON.stringify(frozen)}`);
+  // Run away: back to the Fourth Camp, and the portal shuts
+  await tab.run(3000);
+  await tab.key('Escape');
+  await tab.run(300);
+  tab.note({ step: 'l5-fled', lines: await tab.ev('fight.result.lines.map(l => l.text || l)') });
+  await tab.key(' ');
+  await onMap(L4, 'back at the fourth camp');
+  tab.note({ step: 'l5-sent-back', open: await tab.ev('level5Open') });
+  check(!await tab.ev('level5Open'), 'losing to the Moon should shut the portal');
+  await tab.ev(`swordKind = "plain"; swordRating = 100; level2Open = false; level3Open = false; level4Open = false; mallowWins = 0; brickWins = 0;
+    slimeWins = 0; moonWins = 0; shieldKind = null; shieldRating = 0; lavaHopHinted = false; backpack = backpack.filter(i => !isCoin(i));
+    slime.restUntil = 0; moon.restUntil = 0; writeSave()`);
   await tab.ev(`switchMap('assets/game_design.json', 'cave')`);
   await onMap('assets/game_design.json');
 }

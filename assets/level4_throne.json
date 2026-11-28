@@ -125,16 +125,6 @@
         "rotate": -3
       },
       {
-        "kind": "sign",
-        "text": "COMING SOON!",
-        "px": 0.77,
-        "py": 0.15,
-        "pw": 0.18,
-        "ph": 0.06,
-        "color": "#fff176",
-        "rotate": 2
-      },
-      {
         "kind": "emoji",
         "emoji": "🌀",
         "px": 0.79,
@@ -154,14 +144,15 @@
       "ph": 0.36,
       "action": "enter",
       "description": "Back out to the Fourth Camp",
-      "interactionText": {
-        "px": 0.857,
-        "py": 0.75
-      },
+      "interactionText": "You slip back out of the throne room.",
       "items": [],
       "uses": [],
       "targetMap": "assets/camp_level4.json",
-      "targetHotspot": "You slip back out of the throne room."
+      "targetHotspot": "throne",
+      "arrive": {
+        "px": 0.857,
+        "py": 0.75
+      }
     },
     {
       "id": "slime_throne",
@@ -231,15 +222,23 @@
       "pw": 0.18,
       "ph": 0.3,
       "action": "explore",
-      "comingSoon": true,
       "glow": {
         "x": 0.5,
         "y": 0.55
       },
-      "description": "Level 5... coming soon!",
-      "interactionText": "🌀 A swirly, glowy portal! This is the way to LEVEL 5... but it isn't finished yet. Coming soon! ✨",
+      "description": "The swirly portal to Level 5!",
+      "interactionText": "🌀 A swirly portal... but it's closed tight. Beat the Slime Brick at Level 20 to open it! ✨",
       "items": [],
-      "uses": []
+      "uses": [],
+      "passage": {
+        "targetMap": "assets/camp_level5.json",
+        "targetHotspot": "passage_back",
+        "lock": "level5",
+        "glow": {
+          "x": 0.5,
+          "y": 0.55
+        }
+      }
     }
   ]
 }

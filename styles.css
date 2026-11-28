@@ -304,6 +304,43 @@ canvas {
 #armorKinds button.tooPricey { background: #78909c; }
 @media (max-width: 560px) { #armorKinds { grid-template-columns: 1fr; } }
 
+/* --- Shield shop pop-up (Fifth Camp): one button per kind of shield --- */
+#shieldShopModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+#shieldShopModal[hidden] { display: none !important; }
+#shieldShopModal .menuPanel { max-height: 94vh; overflow-y: auto; }
+#shieldShopModal h2 { font-size: 28px; color: #FFD54F; }
+#shieldKeeper { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
+#shieldKeeperFace {
+  flex: none;
+  font-size: 54px;
+  line-height: 1;
+  animation: bankBob 1.6s ease-in-out infinite;
+}
+#shieldSays {
+  flex: 1;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #FFF8E1;
+  color: #263238;
+  font-size: 17px;
+}
+#shieldWallet, #shieldCarrying { font-size: 15px; color: #CFD8DC; margin: 4px 0; }
+#shieldKinds { display: grid; grid-template-columns: 1fr; gap: 8px; }
+#shieldKinds button { text-align: left; }
+#shieldKinds .shopName { display: block; }
+#shieldKinds .shopPrice { color: #FFF59D; white-space: nowrap; }
+#shieldKinds button.tooPricey { background: #78909c; }
+
 /* --- Play time: the break screen, the grown-up code, more time --- */
 #playtimeModal {
   position: fixed;
