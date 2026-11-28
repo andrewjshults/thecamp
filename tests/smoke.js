@@ -871,7 +871,7 @@ async function fifthCamp(tab) {
   // Charlie's shields: buy the wooden one with a $50 coin ($10 change)
   await tab.ev(`switchMap('assets/level5_shop.json', 'exit_door')`);
   await onMap('assets/level5_shop.json');
-  await tab.ev(`backpack.push({ id: 'fifty_dollar_coin', name: '$50 Coin', emoji: '🪙', coin: true, value: 50 })`);
+  await tab.ev(`backpack = backpack.filter(i => !isCoin(i)); backpack.push({ id: 'fifty_dollar_coin', name: '$50 Coin', emoji: '🪙', coin: true, value: 50 })`);
   await standAt('shield_counter', 0.7);
   await tab.run(200);
   await tab.key(' ');

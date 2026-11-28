@@ -101,7 +101,7 @@ this doesn't shut the portal, and it works in exploration mode too.
 The doors work like the Fourth Camp's (see [level-four.md](level-four.md#door-codes)),
 with their own lock ids: `l5_shop`, `moon_palace`, `l5_boys`, `l5_girls`.
 Bolt the robot 🤖 in the Safe Zone is the code finder (its `codeKeeper` lists
-those four locks, with its own `greeting` and `hurry` lines), and you can
+those four locks, with its own `greeting`, `hurry` and `beep` lines), and you can
 ask Bolt by typing too (`"knowsCodes": true`). The keypad warns you when the
 Moon is coming (each roaming boss adds a check to `CODE_PAD_DANGERS` in
 `codes.js`), and the Moon can catch you while you type.

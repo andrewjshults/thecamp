@@ -11,6 +11,7 @@
 // and numbers, made up the first time they're needed. You get them from the
 // code keeper in the Safe Zone: a hotspot with a `codeKeeper` object opens
 // #codeKeeperModal (state CODE_KEEPER), one button per lock:
+// (it can also have its own `greeting`, `hurry` and `beep`: see docs/level-five.md)
 //   "codeKeeper": { "keeper": "Beep", "emoji": "🤖",
 //                   "locks": [ { "id": "bank", "name": "the Camp Bank", "emoji": "🏦", "words": ["bank", "money"] } ] }
 // And an NPC with `"knowsCodes": true` on that map answers typed questions
@@ -244,7 +245,7 @@ keeperEl.addEventListener('click', (e) => {
   if (b) {
     const lock = keeperLocks(codeKeeper).find(l => l.id === b.dataset.lock);
     if (lock) {
-      keeperSaysEl.textContent = `BEEP! ${codeAnswer(lock)} Type it on the keypad by the door. ` +
+      keeperSaysEl.textContent = `${codeKeeper.beep || 'BEEP!'} ${codeAnswer(lock)} Type it on the keypad by the door. ` +
         (codeKeeper.hurry || 'Quick, before the Slime Brick sees you!');
       keeperSaysEl.animate([{ transform: 'scale(0.96)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
     }
@@ -275,6 +276,7 @@ registerNpcAnswer((npc, line) => {
   const score = l => (l.words || [l.id]).filter(w => new RegExp(`\\b${w}`).test(text)).length;
   const best = Math.max(0, ...locks.map(score));
   const asked = best ? locks.filter(l => score(l) === best) : [];
-  if (asked.length) return `Beep boop! ${asked.map(codeAnswer).join(' ')}`;
-  return `Beep! I know the codes for ${locks.map(l => `${l.emoji || ''} ${l.name}`.trim()).join(', ')}. Which one do you want?`;
+  const beep = (keeperSpot.codeKeeper && keeperSpot.codeKeeper.beep) || 'Beep boop!';
+  if (asked.length) return `${beep} ${asked.map(codeAnswer).join(' ')}`;
+  return `${(keeperSpot.codeKeeper && keeperSpot.codeKeeper.beep) || 'Beep!'} I know the codes for ${locks.map(l => `${l.emoji || ''} ${l.name}`.trim()).join(', ')}. Which one do you want?`;
 });
